@@ -1,0 +1,27 @@
+:root {
+  font-family:
+    Inter, Arial, Helvetica, sans-serif;
+  color: #edf1ee;
+  background: #121613;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: #121613;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, #222a24 0, transparent 35%),
+    #121613;
+}
+
+#root {
+  min-height: 100vh;
+}
