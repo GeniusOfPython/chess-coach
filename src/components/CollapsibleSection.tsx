@@ -3,6 +3,10 @@ import {
   useEffect,
   useState,
 } from "react";
+import {
+  readStorageValue,
+  writeStorageValue,
+} from "../platform/appStorage";
 import "./CollapsibleSection.css";
 
 type Props = {
@@ -21,7 +25,7 @@ function readStoredOpenState(
     return defaultOpen;
   }
 
-  const value = window.localStorage.getItem(storageKey);
+  const value = readStorageValue(storageKey);
 
   if (value === "open") {
     return true;
@@ -50,10 +54,7 @@ export default function CollapsibleSection({
       return;
     }
 
-    window.localStorage.setItem(
-      storageKey,
-      isOpen ? "open" : "closed",
-    );
+    writeStorageValue(storageKey, isOpen ? "open" : "closed");
   }, [isOpen, storageKey]);
 
   return (

@@ -55,6 +55,11 @@ import {
 } from "./types/bot";
 import { isNativeMobileShell } from "./platform/mobile";
 import {
+  readStorageValue,
+  writeJsonStorageValue,
+  writeStorageValue,
+} from "./platform/appStorage";
+import {
   triggerErrorHaptic,
   triggerLightHaptic,
   triggerMoveHaptic,
@@ -161,7 +166,7 @@ function readStoredBoolean({
   key: string;
   fallback: boolean;
 }) {
-  const value = window.localStorage.getItem(key);
+  const value = readStorageValue(key);
 
   if (value === "true") {
     return true;
@@ -175,7 +180,7 @@ function readStoredBoolean({
 }
 
 function readStoredGameMode(): GameMode {
-  const value = window.localStorage.getItem(
+  const value = readStorageValue(
     settingsStorageKeys.gameMode,
   );
 
@@ -185,7 +190,7 @@ function readStoredGameMode(): GameMode {
 }
 
 function readStoredPlayerSide(): Color {
-  const value = window.localStorage.getItem(
+  const value = readStorageValue(
     settingsStorageKeys.playerSide,
   );
 
@@ -193,7 +198,7 @@ function readStoredPlayerSide(): Color {
 }
 
 function readStoredBotLevelId(): BotLevelId {
-  const value = window.localStorage.getItem(
+  const value = readStorageValue(
     settingsStorageKeys.botLevelId,
   );
 
@@ -211,7 +216,7 @@ function readStoredBotLevelId(): BotLevelId {
 }
 
 function readStoredSubscriptionTier(): SubscriptionTier {
-  const value = window.localStorage.getItem(
+  const value = readStorageValue(
     settingsStorageKeys.subscriptionTier,
   );
 
@@ -220,14 +225,14 @@ function readStoredSubscriptionTier(): SubscriptionTier {
 
 function readStoredPrivacyConsent(): PrivacyConsentState {
   return parsePrivacyConsent(
-    window.localStorage.getItem(
+    readStorageValue(
       settingsStorageKeys.privacyConsent,
     ),
   );
 }
 
 function readStoredWorkspace(): WorkspaceId {
-  const value = window.localStorage.getItem(
+  const value = readStorageValue(
     settingsStorageKeys.activeWorkspace,
   );
 
@@ -307,58 +312,43 @@ function App() {
   const showAdvertisingUi = isNativeMobileShell();
 
   useEffect(() => {
-    window.localStorage.setItem(
-      settingsStorageKeys.gameMode,
-      gameMode,
-    );
+    writeStorageValue(settingsStorageKeys.gameMode, gameMode);
   }, [gameMode]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      settingsStorageKeys.playerSide,
-      playerSide,
-    );
+    writeStorageValue(settingsStorageKeys.playerSide, playerSide);
   }, [playerSide]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      settingsStorageKeys.botLevelId,
-      botLevelId,
-    );
+    writeStorageValue(settingsStorageKeys.botLevelId, botLevelId);
   }, [botLevelId]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      settingsStorageKeys.compactUi,
-      String(compactUi),
-    );
+    writeStorageValue(settingsStorageKeys.compactUi, String(compactUi));
   }, [compactUi]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      settingsStorageKeys.activeWorkspace,
-      activeWorkspace,
-    );
+    writeStorageValue(settingsStorageKeys.activeWorkspace, activeWorkspace);
   }, [activeWorkspace]);
 
   useEffect(() => {
-    window.localStorage.setItem(
+    writeStorageValue(
       settingsStorageKeys.showAnalysisArrows,
       String(showAnalysisArrows),
     );
   }, [showAnalysisArrows]);
 
   useEffect(() => {
-    window.localStorage.setItem(
+    writeStorageValue(
       settingsStorageKeys.subscriptionTier,
       subscriptionTier,
     );
   }, [subscriptionTier]);
 
   useEffect(() => {
-    window.localStorage.setItem(
+    writeJsonStorageValue(
       settingsStorageKeys.privacyConsent,
-      JSON.stringify(privacyConsent),
+      privacyConsent,
     );
   }, [privacyConsent]);
 
@@ -401,11 +391,8 @@ function App() {
 
 
   useEffect(() => {
-    window.localStorage.setItem(
-      settingsStorageKeys.currentPgn,
-      getPgn(),
-    );
-  }, [position, history.length]);
+    writeStorageValue(settingsStorageKeys.currentPgn, getPgn());
+  }, [position, history.length, getPgn]);
 
   const boardOrientation =
     gameMode === "bot" && playerSide === "b"
