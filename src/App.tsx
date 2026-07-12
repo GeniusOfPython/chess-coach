@@ -23,6 +23,9 @@ import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
 import BestMoveTrainingPanel, {
   type BestMoveTrainingTask,
 } from "./components/BestMoveTrainingPanel";
+import LearningJournalPanel, {
+  type LearningJournalItem,
+} from "./components/LearningJournalPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -37,6 +40,7 @@ import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
 import "./components/MoveNavigatorPanel.css";
 import "./components/BestMoveTrainingPanel.css";
+import "./components/LearningJournalPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -61,6 +65,20 @@ function getWhiteEvaluation(
   return turn === "w"
     ? analysis.evaluation
     : -analysis.evaluation;
+}
+
+function getFullMoveNumber(fen: string) {
+  const value = Number(fen.split(" ")[5]);
+
+  return Number.isFinite(value) ? value : 1;
+}
+
+function shouldAddToLearningJournal(verdict: MoveReviewVerdict) {
+  return (
+    verdict === "inaccuracy" ||
+    verdict === "mistake" ||
+    verdict === "blunder"
+  );
 }
 
 function getVerdict({
@@ -167,6 +185,9 @@ function App() {
 
   const [bestMoveTrainingTask, setBestMoveTrainingTask] =
     useState<BestMoveTrainingTask>(initialTrainingTask);
+
+  const [learningJournalItems, setLearningJournalItems] =
+    useState<LearningJournalItem[]>([]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -357,11 +378,13 @@ function App() {
     playedMove,
     matchedBestMove,
     positionBeforeMove,
+    bestMove,
     positionAfterMove,
     evaluationBeforeWhite,
     movingSide,
   }: {
     playedMove: string;
+    bestMove: string;
     matchedBestMove: boolean;
     positionBeforeMove: string;
     positionAfterMove: string;
@@ -409,6 +432,30 @@ function App() {
           : evaluationAfterWhite - evaluationBeforeWhite;
 
       const evaluationLoss = Math.max(0, rawLoss);
+      const verdict = getVerdict({
+        matchedBestMove,
+        evaluationLoss,
+      });
+
+      if (shouldAddToLearningJournal(verdict)) {
+        const journalItem: LearningJournalItem = {
+          id: `${positionBeforeMove}-${playedMove}`,
+          moveNumber: getFullMoveNumber(positionBeforeMove),
+          side: movingSide,
+          playedMove,
+          bestMove,
+          verdict,
+          evaluationLoss,
+        };
+
+        setLearningJournalItems((items) => {
+          if (items.some((item) => item.id === journalItem.id)) {
+            return items;
+          }
+
+          return [journalItem, ...items].slice(0, 12);
+        });
+      }
 
       setLastMoveReview((currentReview) => {
         if (
@@ -425,10 +472,7 @@ function App() {
           isEvaluating: false,
           evaluationAfterWhite,
           evaluationLoss,
-          verdict: getVerdict({
-            matchedBestMove,
-            evaluationLoss,
-          }),
+          verdict,
         };
       });
     });
@@ -578,6 +622,7 @@ function App() {
       ) {
         reviewMoveAfterEngineEvaluation({
           playedMove,
+          bestMove: suggestedBestMove,
           matchedBestMove: false,
           positionBeforeMove,
           positionAfterMove: game.fen(),
@@ -631,6 +676,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    setLearningJournalItems([]);
     resetBestMoveTraining();
     clearAnalysis();
   }
@@ -645,6 +691,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(true);
     setLastMoveReview(null);
+    setLearningJournalItems([]);
     resetBestMoveTraining();
     clearAnalysis();
 
@@ -732,6 +779,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    setLearningJournalItems([]);
     resetBestMoveTraining();
     clearAnalysis();
 
@@ -755,6 +803,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    setLearningJournalItems([]);
     resetBestMoveTraining();
     clearAnalysis();
 
@@ -869,10 +918,20 @@ function App() {
             description="Баланс позиции, качество последнего хода и варианты Stockfish"
             storageKey="chess-coach.section.analysis"
           >
-            <GameResultPanel
-              game={game}
-              historyLength={history.length}
-              onNewGame={handleNewGame}
+            <CoachPanel
+              analysis={analysis}
+              position={displayedPosition}
+            />
+
+            <AnalysisPanel
+              analysis={analysis}
+              analyzedTurn={analyzedTurn}
+              position={displayedPosition}
+              isAnalyzing={isAnalyzing}
+              error={error}
+              canShowExplanations={
+                featureAccess.canUseMoveExplanations
+              }
             />
 
             <BestMoveTrainingPanel
@@ -884,16 +943,6 @@ function App() {
               }
               onStart={handleStartBestMoveTraining}
               onReset={resetBestMoveTraining}
-            />
-
-            <EvaluationBar
-              analysis={analysis}
-              analyzedTurn={analyzedTurn}
-            />
-
-            <CoachPanel
-              analysis={analysis}
-              position={displayedPosition}
             />
 
             {featureAccess.canUseMoveReview ? (
@@ -910,15 +959,20 @@ function App() {
               />
             )}
 
-            <AnalysisPanel
+            <LearningJournalPanel
+              items={learningJournalItems}
+              onClear={() => setLearningJournalItems([])}
+            />
+
+            <EvaluationBar
               analysis={analysis}
               analyzedTurn={analyzedTurn}
-              position={displayedPosition}
-              isAnalyzing={isAnalyzing}
-              error={error}
-              canShowExplanations={
-                featureAccess.canUseMoveExplanations
-              }
+            />
+
+            <GameResultPanel
+              game={game}
+              historyLength={history.length}
+              onNewGame={handleNewGame}
             />
           </CollapsibleSection>
 

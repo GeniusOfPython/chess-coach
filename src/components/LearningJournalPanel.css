@@ -1,0 +1,94 @@
+.learning-journal-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.learning-journal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learning-journal-clear {
+  border: 1px solid #303733;
+  border-radius: 999px;
+  background: #171c19;
+  color: #d2d8d4;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 10px;
+}
+
+.learning-journal-clear:hover {
+  border-color: #5f6b63;
+}
+
+.learning-journal-empty {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.learning-journal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.learning-journal-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.learning-journal-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learning-journal-verdict {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.learning-journal-verdict.inaccuracy {
+  background: rgba(255, 200, 80, 0.14);
+  color: #ffd27a;
+}
+
+.learning-journal-verdict.mistake {
+  background: rgba(255, 170, 40, 0.18);
+  color: #ffb650;
+}
+
+.learning-journal-verdict.blunder {
+  background: rgba(255, 90, 90, 0.18);
+  color: #ff8d8d;
+}
+
+.learning-journal-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 14px;
+}
+
+.learning-journal-grid span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.learning-journal-grid b {
+  text-align: right;
+}
