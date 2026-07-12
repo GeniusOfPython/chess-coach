@@ -3,26 +3,50 @@ import { Chessboard } from "react-chessboard";
 type Props = {
   position: string;
   bestMove?: string;
+  candidateMoves?: string[];
   onPieceDrop: (args: {
     sourceSquare: string;
     targetSquare: string | null;
   }) => boolean;
 };
 
+function createArrow(move: string, color: string) {
+  return {
+    startSquare: move.slice(0, 2),
+    endSquare: move.slice(2, 4),
+    color,
+  };
+}
+
 export default function ChessBoard({
   position,
   bestMove,
+  candidateMoves = [],
   onPieceDrop,
 }: Props) {
-  const arrows = bestMove
-    ? [
-        {
-          startSquare: bestMove.slice(0, 2),
-          endSquare: bestMove.slice(2, 4),
-          color: "rgba(70, 180, 90, 0.85)",
-        },
-      ]
-    : [];
+  const uniqueCandidates = candidateMoves.filter(
+    (move, index, array) =>
+      move &&
+      move !== bestMove &&
+      array.indexOf(move) === index,
+  );
+
+  const arrowColors = [
+    "rgba(60, 200, 90, 0.90)",   // лучший ход — зелёный
+    "rgba(70, 140, 255, 0.82)",  // 2 вариант — синий
+    "rgba(255, 170, 40, 0.78)",  // 3 вариант — оранжевый
+  ];
+
+  const arrows = [
+    ...(bestMove
+      ? [createArrow(bestMove, arrowColors[0])]
+      : []),
+    ...uniqueCandidates
+      .slice(0, 2)
+      .map((move, index) =>
+        createArrow(move, arrowColors[index + 1]),
+      ),
+  ];
 
   return (
     <Chessboard

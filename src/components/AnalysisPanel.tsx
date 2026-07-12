@@ -1,5 +1,8 @@
 import type { Color } from "chess.js";
-import type { EngineAnalysis } from "../types/chess";
+import type {
+  EngineAnalysis,
+  EngineLine,
+} from "../types/chess";
 import { explainEngineMove } from "../utils/explainMove";
 
 type Props = {
@@ -9,6 +12,12 @@ type Props = {
   isAnalyzing: boolean;
   error: string;
 };
+
+const lineColors = [
+  "rgb(60, 200, 90)",
+  "rgb(70, 140, 255)",
+  "rgb(255, 170, 40)",
+];
 
 function formatMove(move: string) {
   if (!move || move === "(none)") {
@@ -26,33 +35,41 @@ function formatMove(move: string) {
   return `${from} → ${to}`;
 }
 
-function formatEvaluation(
-  analysis: EngineAnalysis,
+function formatEvaluationValue(
+  evaluation: number | null,
+  mate: number | null,
   analyzedTurn: Color,
 ) {
-  if (analysis.mate !== null) {
+  if (mate !== null) {
     const mateForWhite =
-      analyzedTurn === "w"
-        ? analysis.mate
-        : -analysis.mate;
+      analyzedTurn === "w" ? mate : -mate;
 
     return mateForWhite > 0
-      ? `Мат в пользу белых за ${Math.abs(mateForWhite)}`
-      : `Мат в пользу чёрных за ${Math.abs(mateForWhite)}`;
+      ? `Мат за ${Math.abs(mateForWhite)} в пользу белых`
+      : `Мат за ${Math.abs(mateForWhite)} в пользу чёрных`;
   }
 
-  if (analysis.evaluation === null) {
+  if (evaluation === null) {
     return "Нет оценки";
   }
 
   const whiteEvaluation =
-    analyzedTurn === "w"
-      ? analysis.evaluation
-      : -analysis.evaluation;
+    analyzedTurn === "w" ? evaluation : -evaluation;
 
   const sign = whiteEvaluation > 0 ? "+" : "";
 
   return `${sign}${whiteEvaluation.toFixed(2)}`;
+}
+
+function formatLineEvaluation(
+  line: EngineLine,
+  analyzedTurn: Color,
+) {
+  return formatEvaluationValue(
+    line.evaluation,
+    line.mate,
+    analyzedTurn,
+  );
 }
 
 export default function AnalysisPanel({
@@ -96,8 +113,9 @@ export default function AnalysisPanel({
           <div className="analysis-row">
             <span>Оценка для белых</span>
             <strong>
-              {formatEvaluation(
-                analysis,
+              {formatEvaluationValue(
+                analysis.evaluation,
+                analysis.mate,
                 analyzedTurn,
               )}
             </strong>
@@ -117,6 +135,44 @@ export default function AnalysisPanel({
                 .map(formatMove)
                 .join(" • ")}
             </p>
+          </div>
+
+          <div className="engine-lines">
+            <span>Лучшие варианты</span>
+
+            <div className="engine-lines-list">
+              {analysis.lines.slice(0, 3).map((line, index) => (
+                <div
+                  className={
+                    index === 0
+                      ? "engine-line primary"
+                      : "engine-line"
+                  }
+                  key={`${index}-${line.bestMove}`}
+                >
+                  <strong>
+                    <span
+                      style={{
+                        color: lineColors[index] ?? lineColors[0],
+                        fontSize: "18px",
+                        lineHeight: 1,
+                        marginRight: "8px",
+                      }}
+                    >
+                      ●
+                    </span>
+                    {index + 1}. {formatMove(line.bestMove)}
+                  </strong>
+
+                  <span className="engine-line-evaluation">
+                    {formatLineEvaluation(
+                      line,
+                      analyzedTurn,
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="explanation">

@@ -1,9 +1,11 @@
-export type EngineAnalysis = {
-  bestMove: string;
-  evaluation: number | null;
-  mate: number | null;
-  depth: number;
-  variation: string[];
+import type {
+  EngineAnalysis,
+  EngineLine,
+} from "../types/chess";
+
+type AnalyzeOptions = {
+  movetime?: number;
+  multiPv?: number;
 };
 
 export class StockfishService {
@@ -19,10 +21,7 @@ export class StockfishService {
     | ((error: Error) => void)
     | null = null;
 
-  private evaluation: number | null = null;
-  private mate: number | null = null;
-  private depth = 0;
-  private variation: string[] = [];
+  private lines = new Map<number, EngineLine>();
 
   constructor() {
     this.worker = new Worker(
@@ -52,6 +51,8 @@ export class StockfishService {
 
   private handleMessage(message: string) {
     if (message === "uciok") {
+      this.send("setoption name Threads value 1");
+      this.send("setoption name Hash value 32");
       this.send("isready");
       return;
     }
@@ -73,6 +74,7 @@ export class StockfishService {
   }
 
   private parseInfo(message: string) {
+    const rankMatch = message.match(/\bmultipv\s+(\d+)/);
     const depthMatch = message.match(/\bdepth\s+(\d+)/);
     const cpMatch = message.match(
       /\bscore\s+cp\s+(-?\d+)/,
@@ -82,38 +84,96 @@ export class StockfishService {
     );
     const pvMatch = message.match(/\bpv\s+(.+)$/);
 
+    const rank = rankMatch ? Number(rankMatch[1]) : 1;
+
+    const existing: EngineLine =
+      this.lines.get(rank) ?? {
+        rank,
+        bestMove: "",
+        evaluation: null,
+        mate: null,
+        depth: 0,
+        variation: [],
+      };
+
     if (depthMatch) {
-      this.depth = Number(depthMatch[1]);
+      existing.depth = Number(depthMatch[1]);
     }
 
     if (cpMatch) {
-      this.evaluation = Number(cpMatch[1]) / 100;
-      this.mate = null;
+      existing.evaluation = Number(cpMatch[1]) / 100;
+      existing.mate = null;
     }
 
     if (mateMatch) {
-      this.mate = Number(mateMatch[1]);
-      this.evaluation = null;
+      existing.mate = Number(mateMatch[1]);
+      existing.evaluation = null;
     }
 
     if (pvMatch) {
-      this.variation = pvMatch[1]
+      existing.variation = pvMatch[1]
         .trim()
         .split(/\s+/);
+
+      existing.bestMove = existing.variation[0] ?? "";
     }
+
+    this.lines.set(rank, existing);
   }
 
   private finishAnalysis(message: string) {
     const bestMove =
       message.match(/^bestmove\s+(\S+)/)?.[1] ?? "";
 
-    this.resolveAnalysis?.({
-      bestMove,
-      evaluation: this.evaluation,
-      mate: this.mate,
-      depth: this.depth,
-      variation: this.variation,
-    });
+    if (!bestMove || bestMove === "(none)") {
+      this.rejectAnalysis?.(
+        new Error("Stockfish не вернул допустимый ход"),
+      );
+
+      this.resolveAnalysis = null;
+      this.rejectAnalysis = null;
+      return;
+    }
+
+    const sortedLines = Array.from(this.lines.values())
+      .filter((line) => line.bestMove)
+      .sort((a, b) => a.rank - b.rank);
+
+    if (sortedLines.length === 0) {
+      sortedLines.push({
+        rank: 1,
+        bestMove,
+        evaluation: null,
+        mate: null,
+        depth: 0,
+        variation: [bestMove],
+      });
+    }
+
+    const firstLine = sortedLines[0];
+
+    const primary: EngineLine = {
+      ...firstLine,
+      bestMove: bestMove || firstLine.bestMove,
+      variation:
+        firstLine.variation.length > 0
+          ? firstLine.variation
+          : [bestMove],
+    };
+
+    const result: EngineAnalysis = {
+      ...primary,
+      lines: [
+        primary,
+        ...sortedLines
+          .slice(1)
+          .filter(
+            (line) => line.bestMove !== primary.bestMove,
+          ),
+      ],
+    };
+
+    this.resolveAnalysis?.(result);
 
     this.resolveAnalysis = null;
     this.rejectAnalysis = null;
@@ -121,22 +181,25 @@ export class StockfishService {
 
   async analyze(
     fen: string,
+    options: AnalyzeOptions = {},
   ): Promise<EngineAnalysis> {
     await this.readyPromise;
 
-    
-    this.evaluation = null;
-    this.mate = null;
-    this.depth = 0;
-    this.variation = [];
+    this.lines.clear();
+
+    const multiPv = options.multiPv ?? 1;
+    const movetime = options.movetime ?? 1500;
 
     return new Promise<EngineAnalysis>(
       (resolve, reject) => {
         this.resolveAnalysis = resolve;
         this.rejectAnalysis = reject;
 
+        this.send(
+          `setoption name MultiPV value ${multiPv}`,
+        );
         this.send(`position fen ${fen}`);
-        this.send("go movetime 1500");
+        this.send(`go movetime ${movetime}`);
       },
     );
   }

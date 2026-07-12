@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { Color } from "chess.js";
-import PlayerSideSelector from "./components/PlayerSideSelector";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
@@ -8,18 +7,28 @@ import GameControls from "./components/GameControls";
 import GameModeSelector, {
   type GameMode,
 } from "./components/GameModeSelector";
+import PlayerSideSelector from "./components/PlayerSideSelector";
+import BotLevelSelector from "./components/BotLevelSelector";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
+import {
+  getBotLevel,
+  type BotLevelId,
+} from "./types/bot";
 import "./App.css";
 
 function App() {
-  const [isBotThinking, setIsBotThinking] = useState(false);
+  const [isBotThinking, setIsBotThinking] =
+    useState(false);
 
   const [gameMode, setGameMode] =
     useState<GameMode>("analysis");
 
-    const [playerSide, setPlayerSide] =
-  useState<Color>("w");
+  const [playerSide, setPlayerSide] =
+    useState<Color>("w");
+
+  const [botLevelId, setBotLevelId] =
+    useState<BotLevelId>("casual");
 
   const {
     analysis,
@@ -44,6 +53,28 @@ function App() {
     onPositionChanged: clearAnalysis,
   });
 
+  function isBotTurnFor({
+    mode = gameMode,
+    side = playerSide,
+  }: {
+    mode?: GameMode;
+    side?: Color;
+  } = {}) {
+    return (
+      mode === "bot" &&
+      !game.isGameOver() &&
+      game.turn() !== side
+    );
+  }
+
+  function isPlayerTurn() {
+    if (gameMode === "analysis") {
+      return true;
+    }
+
+    return game.turn() === playerSide;
+  }
+
   function handleAnalyzePosition() {
     void analyzePosition({
       fen: game.fen(),
@@ -52,167 +83,149 @@ function App() {
     });
   }
 
-  function isBotTurnFor({
-  mode = gameMode,
-  side = playerSide,
-}: {
-  mode?: GameMode;
-  side?: Color;
-} = {}) {
-  return (
-    mode === "bot" &&
-    !game.isGameOver() &&
-    game.turn() !== side
-  );
-}
-
-function isPlayerTurn() {
-  if (gameMode === "analysis") {
-    return true;
-  }
-
-  return game.turn() === playerSide;
-}
-
-async function makeBotMove({
-  mode = gameMode,
-  side = playerSide,
-}: {
-  mode?: GameMode;
-  side?: Color;
-} = {}) {
-  if (!isBotTurnFor({ mode, side })) {
-    return;
-  }
-
-  setIsBotThinking(true);
-
-  try {
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 500);
-    });
-
-    const bestMove = await calculateBestMove({
-      fen: game.fen(),
-      isGameOver: game.isGameOver(),
-    });
-
-    if (!bestMove) {
-      return;
-    }
-
+  async function makeBotMove({
+    mode = gameMode,
+    side = playerSide,
+  }: {
+    mode?: GameMode;
+    side?: Color;
+  } = {}) {
     if (!isBotTurnFor({ mode, side })) {
       return;
     }
 
-    makeEngineMove(bestMove);
-  } finally {
-    setIsBotThinking(false);
-  }
-}
+    setIsBotThinking(true);
 
-function requestBotMove({
-  mode = gameMode,
-  side = playerSide,
-}: {
-  mode?: GameMode;
-  side?: Color;
-} = {}) {
-  window.setTimeout(() => {
-    void makeBotMove({ mode, side });
-  }, 0);
-}
+    try {
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 500);
+      });
+
+      const botLevel = getBotLevel(botLevelId);
+
+      const bestMove = await calculateBestMove({
+        fen: game.fen(),
+        isGameOver: game.isGameOver(),
+        movetime: botLevel.movetime,
+      });
+
+      if (!bestMove) {
+        return;
+      }
+
+      if (!isBotTurnFor({ mode, side })) {
+        return;
+      }
+
+      makeEngineMove(bestMove);
+    } finally {
+      setIsBotThinking(false);
+    }
+  }
+
+  function requestBotMove({
+    mode = gameMode,
+    side = playerSide,
+  }: {
+    mode?: GameMode;
+    side?: Color;
+  } = {}) {
+    window.setTimeout(() => {
+      void makeBotMove({ mode, side });
+    }, 0);
+  }
 
   function handlePieceDrop(args: {
-  sourceSquare: string;
-  targetSquare: string | null;
-}) {
-  if (isBotThinking) {
-    return false;
+    sourceSquare: string;
+    targetSquare: string | null;
+  }) {
+    if (isBotThinking) {
+      return false;
+    }
+
+    if (!isPlayerTurn()) {
+      return false;
+    }
+
+    const moveWasMade = onPieceDrop(args);
+
+    if (moveWasMade && isBotTurnFor()) {
+      requestBotMove();
+    }
+
+    return moveWasMade;
   }
-
-  if (!isPlayerTurn()) {
-    return false;
-  }
-
-  const moveWasMade = onPieceDrop(args);
-
-  if (moveWasMade && isBotTurnFor()) {
-    requestBotMove();
-  }
-
-  return moveWasMade;
-}
 
   function handleNewGame() {
-  newGame();
-  setIsBotThinking(false);
-  clearAnalysis();
-
-  if (gameMode === "bot" && playerSide === "b") {
-    requestBotMove({
-      mode: gameMode,
-      side: playerSide,
-    });
-  }
-}
-
-  function handleUndoMove() {
-  if (isBotThinking) {
-    return;
-  }
-
-  if (gameMode === "analysis") {
-    undoMove();
+    newGame();
     setIsBotThinking(false);
     clearAnalysis();
-    return;
+
+    if (gameMode === "bot" && playerSide === "b") {
+      requestBotMove({
+        mode: gameMode,
+        side: playerSide,
+      });
+    }
   }
 
-  undoMove();
+  function handleUndoMove() {
+    if (isBotThinking) {
+      return;
+    }
 
-  if (isBotTurnFor()) {
+    if (gameMode === "analysis") {
+      undoMove();
+      setIsBotThinking(false);
+      clearAnalysis();
+      return;
+    }
+
     undoMove();
-  }
 
-  setIsBotThinking(false);
-  clearAnalysis();
-}
+    if (isBotTurnFor()) {
+      undoMove();
+    }
+
+    setIsBotThinking(false);
+    clearAnalysis();
+  }
 
   function handleModeChange(mode: GameMode) {
-  if (isBotThinking) {
-    return;
+    if (isBotThinking) {
+      return;
+    }
+
+    setGameMode(mode);
+    setIsBotThinking(false);
+    clearAnalysis();
+
+    if (mode === "bot" && playerSide === "b") {
+      requestBotMove({
+        mode,
+        side: playerSide,
+      });
+    }
   }
 
-  setGameMode(mode);
-  setIsBotThinking(false);
-  clearAnalysis();
+  function handlePlayerSideChange(side: Color) {
+    if (isBotThinking) {
+      return;
+    }
 
-  if (mode === "bot" && playerSide === "b") {
-    requestBotMove({
-      mode,
-      side: playerSide,
-    });
+    setPlayerSide(side);
+    setIsBotThinking(false);
+    clearAnalysis();
+    newGame();
+
+    if (gameMode === "bot" && side === "b") {
+      requestBotMove({
+        mode: gameMode,
+        side,
+      });
+    }
   }
-}
 
-function handlePlayerSideChange(side: Color) {
-  if (isBotThinking) {
-    return;
-  }
-
-  setPlayerSide(side);
-  setIsBotThinking(false);
-  clearAnalysis();
-  newGame();
-
-  if (gameMode === "bot" && side === "b") {
-    requestBotMove({
-      mode: gameMode,
-      side,
-    });
-  }
-}
   return (
     <main className="app">
       <header className="header">
@@ -232,6 +245,9 @@ function handlePlayerSideChange(side: Color) {
           <ChessBoard
             position={position}
             bestMove={analysis?.bestMove}
+            candidateMoves={analysis?.lines
+              .slice(1, 3)
+              .map((line) => line.bestMove)}
             onPieceDrop={handlePieceDrop}
           />
         </div>
@@ -254,12 +270,20 @@ function handlePlayerSideChange(side: Color) {
           />
 
           {gameMode === "bot" && (
-  <PlayerSideSelector
-  side={playerSide}
-  disabled={isBotThinking}
-  onChange={handlePlayerSideChange}
-/>
-)}
+            <PlayerSideSelector
+              side={playerSide}
+              disabled={isBotThinking}
+              onChange={handlePlayerSideChange}
+            />
+          )}
+
+          {gameMode === "bot" && (
+            <BotLevelSelector
+              levelId={botLevelId}
+              disabled={isBotThinking}
+              onChange={setBotLevelId}
+            />
+          )}
 
           <GameControls
             canUndo={history.length > 0 && !isBotThinking}

@@ -258,3 +258,119 @@ button:disabled {
   color: #d2d8d4;
   line-height: 1.45;
 }
+.mode-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.mode-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mode-button {
+  min-height: 42px;
+  border-color: #49534d;
+  background: transparent;
+  color: #e9eeea;
+}
+
+.mode-button.active {
+  border-color: #839376;
+  background: #839376;
+  color: #101410;
+}
+
+.mode-description {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.engine-lines {
+  display: grid;
+  gap: 10px;
+}
+
+.engine-lines > span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.engine-lines-list {
+  display: grid;
+  gap: 8px;
+}
+
+.engine-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid #303733;
+  border-radius: 10px;
+  background: #171c19;
+}
+
+.engine-line.primary {
+  border-color: #839376;
+}
+
+.engine-line strong {
+  font-size: 14px;
+}
+
+.bot-level-select {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid #49534d;
+  border-radius: 10px;
+  background: #151a17;
+  color: #e9eeea;
+  padding: 0 12px;
+  outline: none;
+}
+
+.bot-level-select:focus {
+  border-color: #839376;
+}
+
+.bot-level-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.engine-line-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.engine-line-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.engine-line-marker.green {
+  background: rgb(60, 200, 90);
+}
+
+.engine-line-marker.blue {
+  background: rgb(70, 140, 255);
+}
+
+.engine-line-marker.orange {
+  background: rgb(255, 170, 40);
+}
+
+.engine-line-evaluation {
+  color: #b6bdb8;
+  font-size: 13px;
+  white-space: nowrap;
+}

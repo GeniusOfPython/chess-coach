@@ -10,14 +10,14 @@ import type { EngineAnalysis } from "../types/chess";
 
 export function useEngineAnalysis() {
   const analysisEngine = useMemo(
-  () => new StockfishService(),
-  [],
-);
+    () => new StockfishService(),
+    [],
+  );
 
-const botEngine = useMemo(
-  () => new StockfishService(),
-  [],
-);
+  const botEngine = useMemo(
+    () => new StockfishService(),
+    [],
+  );
 
   const [analysis, setAnalysis] =
     useState<EngineAnalysis | null>(null);
@@ -31,11 +31,11 @@ const botEngine = useMemo(
   const [error, setError] = useState("");
 
   useEffect(() => {
-  return () => {
-    analysisEngine.destroy();
-    botEngine.destroy();
-  };
-}, [analysisEngine, botEngine]);
+    return () => {
+      analysisEngine.destroy();
+      botEngine.destroy();
+    };
+  }, [analysisEngine, botEngine]);
 
   const clearAnalysis = useCallback(() => {
     analysisEngine.stop();
@@ -64,7 +64,10 @@ const botEngine = useMemo(
       setError("");
 
       try {
-        const result = await analysisEngine.analyze(fen);
+        const result = await analysisEngine.analyze(fen, {
+          movetime: 1500,
+          multiPv: 3,
+        });
 
         setAnalyzedTurn(turn);
         setAnalysis(result);
@@ -82,35 +85,41 @@ const botEngine = useMemo(
   );
 
   const calculateBestMove = useCallback(
-  async ({
-    fen,
-    isGameOver,
-  }: {
-    fen: string;
-    isGameOver: boolean;
-  }) => {
-    if (isGameOver) {
-      return null;
-    }
-
-    try {
-      const result = await botEngine.analyze(fen);
-
-      if (
-        !result.bestMove ||
-        result.bestMove === "(none)"
-      ) {
+    async ({
+      fen,
+      isGameOver,
+      movetime = 1000,
+    }: {
+      fen: string;
+      isGameOver: boolean;
+      movetime?: number;
+    }) => {
+      if (isGameOver) {
         return null;
       }
 
-      return result.bestMove;
-    } catch (error) {
-      console.error("Ошибка расчёта хода бота:", error);
-      return null;
-    }
-  },
-  [botEngine],
-);
+      try {
+        const result = await botEngine.analyze(fen, {
+          movetime,
+          multiPv: 1,
+        });
+
+        if (
+          !result.bestMove ||
+          result.bestMove === "(none)"
+        ) {
+          return null;
+        }
+
+        return result.bestMove;
+      } catch (error) {
+        console.error("Ошибка расчёта хода бота:", error);
+        return null;
+      }
+    },
+    [botEngine],
+  );
+
   return {
     analysis,
     analyzedTurn,
