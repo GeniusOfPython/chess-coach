@@ -18,6 +18,7 @@ import PgnPanel from "./components/PgnPanel";
 import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
 import CoachPanel from "./components/CoachPanel";
+import GameResultPanel from "./components/GameResultPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -29,6 +30,7 @@ import {
   type BotLevelId,
 } from "./types/bot";
 import "./components/CoachPanel.css";
+import "./components/GameResultPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -732,6 +734,12 @@ function App() {
             description="Баланс позиции, качество последнего хода и варианты Stockfish"
             storageKey="chess-coach.section.analysis"
           >
+            <GameResultPanel
+              game={game}
+              historyLength={history.length}
+              onNewGame={handleNewGame}
+            />
+
             <EvaluationBar
               analysis={analysis}
               analyzedTurn={analyzedTurn}
