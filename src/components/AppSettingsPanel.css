@@ -115,3 +115,58 @@
     width: 100%;
   }
 }
+
+.consent-row {
+  align-items: start;
+}
+
+.consent-status {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 4px 9px;
+  border: 1px solid rgba(131, 147, 118, 0.45);
+  border-radius: 999px;
+  color: #cbd7c5;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.consent-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.consent-option {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #3a433c;
+  border-radius: 999px;
+  background: #202720;
+  color: #dfe6df;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.consent-option.active {
+  border-color: rgba(131, 147, 118, 0.75);
+  background: #839376;
+  color: #111511;
+}
+
+.consent-option.reset {
+  color: #b6bdb8;
+}
+
+@media (max-width: 720px) {
+  .consent-options {
+    justify-content: stretch;
+    max-width: none;
+  }
+
+  .consent-option {
+    flex: 1 1 100%;
+  }
+}

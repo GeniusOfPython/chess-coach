@@ -1,21 +1,34 @@
+import {
+  getAdsConsentLabel,
+  type AdsConsentStatus,
+  type PrivacyConsentState,
+} from "../features/consent";
 import type { SubscriptionTier } from "../features/featureAccess";
 
 type Props = {
   compactUi: boolean;
   showAnalysisArrows: boolean;
   subscriptionTier: SubscriptionTier;
+  privacyConsent: PrivacyConsentState;
+  showMonetizationSettings: boolean;
   onCompactUiChange: (enabled: boolean) => void;
   onShowAnalysisArrowsChange: (enabled: boolean) => void;
   onSubscriptionTierChange: (tier: SubscriptionTier) => void;
+  onPrivacyConsentChange: (status: AdsConsentStatus) => void;
+  onPrivacyConsentReset: () => void;
 };
 
 export default function AppSettingsPanel({
   compactUi,
   showAnalysisArrows,
   subscriptionTier,
+  privacyConsent,
+  showMonetizationSettings,
   onCompactUiChange,
   onShowAnalysisArrowsChange,
   onSubscriptionTierChange,
+  onPrivacyConsentChange,
+  onPrivacyConsentReset,
 }: Props) {
   return (
     <div className="app-settings-card">
@@ -61,43 +74,114 @@ export default function AppSettingsPanel({
         </label>
       </div>
 
-      <div className="setting-row subscription-row">
-        <div>
-          <strong>Режим монетизации</strong>
-          <p>
-            Тестовый переключатель для будущих Android/iOS версий:
-            в бесплатном режиме показываются рекламные места, в
-            премиум-режиме реклама скрыта и доступны учебные
-            премиум-функции.
-          </p>
-        </div>
+      {showMonetizationSettings && (
+        <>
+          <div className="setting-row subscription-row">
+            <div>
+              <strong>Режим монетизации</strong>
+              <p>
+                Тестовый переключатель для будущих Android/iOS версий:
+                в бесплатном режиме показываются рекламные места, в
+                премиум-режиме реклама скрыта и доступны учебные
+                премиум-функции.
+              </p>
+            </div>
 
-        <div className="subscription-toggle">
-          <button
-            type="button"
-            className={
-              subscriptionTier === "free"
-                ? "subscription-option active"
-                : "subscription-option"
-            }
-            onClick={() => onSubscriptionTierChange("free")}
-          >
-            Free
-          </button>
+            <div className="subscription-toggle">
+              <button
+                type="button"
+                className={
+                  subscriptionTier === "free"
+                    ? "subscription-option active"
+                    : "subscription-option"
+                }
+                onClick={() => onSubscriptionTierChange("free")}
+              >
+                Free
+              </button>
 
-          <button
-            type="button"
-            className={
-              subscriptionTier === "premium"
-                ? "subscription-option active"
-                : "subscription-option"
-            }
-            onClick={() => onSubscriptionTierChange("premium")}
-          >
-            Premium
-          </button>
-        </div>
-      </div>
+              <button
+                type="button"
+                className={
+                  subscriptionTier === "premium"
+                    ? "subscription-option active"
+                    : "subscription-option"
+                }
+                onClick={() => onSubscriptionTierChange("premium")}
+              >
+                Premium
+              </button>
+            </div>
+          </div>
+
+          <div className="setting-row consent-row">
+            <div>
+              <strong>Согласие на рекламу</strong>
+              <p>
+                Заготовка под требования мобильной бесплатной версии. В
+                реальном релизе этот слой будет связан с рекламным SDK и
+                экраном политики конфиденциальности.
+              </p>
+
+              <span className="consent-status">
+                {getAdsConsentLabel(privacyConsent)}
+              </span>
+            </div>
+
+            <div className="consent-options">
+              <button
+                type="button"
+                className={
+                  privacyConsent.ads === "personalized"
+                    ? "consent-option active"
+                    : "consent-option"
+                }
+                onClick={() =>
+                  onPrivacyConsentChange("personalized")
+                }
+              >
+                Персонализированная
+              </button>
+
+              <button
+                type="button"
+                className={
+                  privacyConsent.ads === "nonPersonalized"
+                    ? "consent-option active"
+                    : "consent-option"
+                }
+                onClick={() =>
+                  onPrivacyConsentChange("nonPersonalized")
+                }
+              >
+                Обычная
+              </button>
+
+              <button
+                type="button"
+                className={
+                  privacyConsent.ads === "declined"
+                    ? "consent-option active"
+                    : "consent-option"
+                }
+                onClick={() =>
+                  onPrivacyConsentChange("declined")
+                }
+              >
+                Отклонить
+              </button>
+
+              <button
+                type="button"
+                className="consent-option reset"
+                onClick={onPrivacyConsentReset}
+              >
+                Сбросить
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

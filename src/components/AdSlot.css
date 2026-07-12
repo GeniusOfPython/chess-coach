@@ -36,3 +36,9 @@
   font-size: 13px;
   line-height: 1.45;
 }
+
+.ad-slot-disabled {
+  opacity: 0.72;
+  border-color: rgba(80, 91, 84, 0.75);
+  background: #171c19;
+}

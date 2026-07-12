@@ -29,6 +29,7 @@ import LearningJournalPanel, {
 import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
 import AppSettingsPanel from "./components/AppSettingsPanel";
 import AdSlot from "./components/AdSlot";
+import ConsentBanner from "./components/ConsentBanner";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -39,9 +40,16 @@ import {
   type SubscriptionTier,
 } from "./features/featureAccess";
 import {
+  createPrivacyConsent,
+  parsePrivacyConsent,
+  type AdsConsentStatus,
+  type PrivacyConsentState,
+} from "./features/consent";
+import {
   getBotLevel,
   type BotLevelId,
 } from "./types/bot";
+import { isNativeMobileShell } from "./platform/mobile";
 import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
 import "./components/MoveNavigatorPanel.css";
@@ -50,6 +58,7 @@ import "./components/LearningJournalPanel.css";
 import "./components/TrainingSummaryPanel.css";
 import "./components/AppSettingsPanel.css";
 import "./components/AdSlot.css";
+import "./components/ConsentBanner.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -127,6 +136,7 @@ const settingsStorageKeys = {
   compactUi: "chess-coach.compact-ui",
   showAnalysisArrows: "chess-coach.show-analysis-arrows",
   subscriptionTier: "chess-coach.subscription-tier",
+  privacyConsent: "chess-coach.privacy-consent",
 };
 
 function readStoredBoolean({
@@ -193,12 +203,21 @@ function readStoredSubscriptionTier(): SubscriptionTier {
   return value === "free" ? "free" : "premium";
 }
 
+function readStoredPrivacyConsent(): PrivacyConsentState {
+  return parsePrivacyConsent(
+    window.localStorage.getItem(
+      settingsStorageKeys.privacyConsent,
+    ),
+  );
+}
+
 const initialTrainingTask: BestMoveTrainingTask = {
   status: "idle",
   positionFen: null,
   bestMove: null,
   playedMove: null,
   error: null,
+  hintLevel: 0,
 };
 
 function App() {
@@ -249,7 +268,13 @@ function App() {
       readStoredSubscriptionTier(),
     );
 
+  const [privacyConsent, setPrivacyConsent] =
+    useState<PrivacyConsentState>(() =>
+      readStoredPrivacyConsent(),
+    );
+
   const access = getFeatureAccess(subscriptionTier);
+  const showAdvertisingUi = isNativeMobileShell();
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -292,6 +317,13 @@ function App() {
       subscriptionTier,
     );
   }, [subscriptionTier]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.privacyConsent,
+      JSON.stringify(privacyConsent),
+    );
+  }, [privacyConsent]);
 
   const {
     analysis,
@@ -598,6 +630,7 @@ function App() {
       bestMove: null,
       playedMove: null,
       error: null,
+      hintLevel: 0,
     });
 
     const trainingAnalysis = await calculatePositionAnalysis({
@@ -613,6 +646,7 @@ function App() {
         bestMove: null,
         playedMove: null,
         error: "Не удалось подготовить задачу из текущей позиции.",
+        hintLevel: 0,
       });
       return;
     }
@@ -623,6 +657,20 @@ function App() {
       bestMove: trainingAnalysis.bestMove,
       playedMove: null,
       error: null,
+      hintLevel: 0,
+    });
+  }
+
+  function handleRevealBestMoveHint() {
+    setBestMoveTrainingTask((task) => {
+      if (task.status !== "ready") {
+        return task;
+      }
+
+      return {
+        ...task,
+        hintLevel: Math.min(task.hintLevel + 1, 3),
+      };
     });
   }
 
@@ -869,6 +917,14 @@ function App() {
     return true;
   }
 
+  function handlePrivacyConsentChange(status: AdsConsentStatus) {
+    setPrivacyConsent(createPrivacyConsent(status));
+  }
+
+  function handleResetPrivacyConsent() {
+    setPrivacyConsent(createPrivacyConsent("unknown"));
+  }
+
   function handleImportPgn(pgn: string) {
     if (isBotThinking) {
       return false;
@@ -906,6 +962,14 @@ function App() {
           Игра против Stockfish и анализ позиции
         </p>
       </header>
+
+      {showAdvertisingUi && (
+        <ConsentBanner
+          tier={subscriptionTier}
+          consent={privacyConsent}
+          onChange={handlePrivacyConsentChange}
+        />
+      )}
 
       <section className="game-layout">
         <div className="board-panel">
@@ -997,10 +1061,13 @@ function App() {
             onAnalyze={handleAnalyzePosition}
           />
 
-          <AdSlot
-            tier={subscriptionTier}
-            placement="sidePanel"
-          />
+          {showAdvertisingUi && (
+            <AdSlot
+              tier={subscriptionTier}
+              placement="sidePanel"
+              consent={privacyConsent}
+            />
+          )}
 
           <CollapsibleSection
             title="Анализ и разбор"
@@ -1031,13 +1098,17 @@ function App() {
                 !game.isGameOver()
               }
               onStart={handleStartBestMoveTraining}
+              onRevealHint={handleRevealBestMoveHint}
               onReset={resetBestMoveTraining}
             />
 
-            <AdSlot
-              tier={subscriptionTier}
-              placement="analysis"
-            />
+            {showAdvertisingUi && (
+              <AdSlot
+                tier={subscriptionTier}
+                placement="analysis"
+                consent={privacyConsent}
+              />
+            )}
 
             {access.canUseMoveReview ? (
               <MoveReviewPanel
@@ -1085,9 +1156,13 @@ function App() {
               compactUi={compactUi}
               showAnalysisArrows={showAnalysisArrows}
               subscriptionTier={subscriptionTier}
+              privacyConsent={privacyConsent}
+              showMonetizationSettings={showAdvertisingUi}
               onCompactUiChange={setCompactUi}
               onShowAnalysisArrowsChange={setShowAnalysisArrows}
               onSubscriptionTierChange={setSubscriptionTier}
+              onPrivacyConsentChange={handlePrivacyConsentChange}
+              onPrivacyConsentReset={handleResetPrivacyConsent}
             />
           </CollapsibleSection>
 

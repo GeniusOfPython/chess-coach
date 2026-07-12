@@ -13,12 +13,14 @@ export type BestMoveTrainingTask = {
   bestMove: string | null;
   playedMove: string | null;
   error: string | null;
+  hintLevel: number;
 };
 
 type Props = {
   task: BestMoveTrainingTask;
   canStart: boolean;
   onStart: () => void;
+  onRevealHint: () => void;
   onReset: () => void;
 };
 
@@ -36,6 +38,22 @@ function formatMove(move: string | null) {
   }
 
   return `${from} → ${to}`;
+}
+
+function getPieceHint(move: string | null) {
+  if (!move || move === "(none)") {
+    return "Лучший ход пока не определён.";
+  }
+
+  return `Подсказка 1: начни с фигуры на поле ${move.slice(0, 2)}.`;
+}
+
+function getTargetHint(move: string | null) {
+  if (!move || move === "(none)") {
+    return "Лучший ход пока не определён.";
+  }
+
+  return `Подсказка 2: идея связана с полем ${move.slice(2, 4)}.`;
 }
 
 function getStatusText(task: BestMoveTrainingTask) {
@@ -58,16 +76,41 @@ function getStatusText(task: BestMoveTrainingTask) {
   return "Запусти тренировку, чтобы попробовать самому найти лучший ход без подсказки.";
 }
 
+function getVisibleHints(task: BestMoveTrainingTask) {
+  if (task.status !== "ready") {
+    return [];
+  }
+
+  const hints: string[] = [];
+
+  if (task.hintLevel >= 1) {
+    hints.push(getPieceHint(task.bestMove));
+  }
+
+  if (task.hintLevel >= 2) {
+    hints.push(getTargetHint(task.bestMove));
+  }
+
+  if (task.hintLevel >= 3) {
+    hints.push(`Подсказка 3: лучший ход — ${formatMove(task.bestMove)}.`);
+  }
+
+  return hints;
+}
+
 export default function BestMoveTrainingPanel({
   task,
   canStart,
   onStart,
+  onRevealHint,
   onReset,
 }: Props) {
   const explanations =
     task.positionFen && task.bestMove
       ? explainEngineMove(task.positionFen, task.bestMove)
       : [];
+
+  const visibleHints = getVisibleHints(task);
 
   return (
     <div className="best-move-training-card">
@@ -83,10 +126,20 @@ export default function BestMoveTrainingPanel({
         )}
 
         {task.status === "ready" && (
-          <p>
-            Сделай ход на доске. После хода приложение
-            скажет, совпал ли он с лучшим ходом Stockfish.
-          </p>
+          <>
+            <p>
+              Сделай ход на доске. После хода приложение
+              скажет, совпал ли он с лучшим ходом Stockfish.
+            </p>
+
+            {visibleHints.length > 0 && (
+              <div className="best-move-training-hints">
+                {visibleHints.map((hint) => (
+                  <p key={hint}>{hint}</p>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {task.status === "success" && (
@@ -131,6 +184,19 @@ export default function BestMoveTrainingPanel({
               ? "Начать тренировку"
               : "Новая задача из позиции"}
           </button>
+
+          {task.status === "ready" && (
+            <button
+              type="button"
+              className="secondary ghost"
+              disabled={task.hintLevel >= 3}
+              onClick={onRevealHint}
+            >
+              {task.hintLevel >= 3
+                ? "Все подсказки открыты"
+                : "Дать подсказку"}
+            </button>
+          )}
 
           {task.status !== "idle" && (
             <button

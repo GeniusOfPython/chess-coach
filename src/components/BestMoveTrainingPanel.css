@@ -82,3 +82,16 @@
 .secondary.ghost {
   opacity: 0.8;
 }
+
+.best-move-training-hints {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(70, 140, 255, 0.42);
+  border-radius: 12px;
+  background: rgba(70, 140, 255, 0.08);
+}
+
+.best-move-training-hints p {
+  color: #d7e2ff;
+}

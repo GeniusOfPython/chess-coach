@@ -24,3 +24,18 @@ export function isTouchDevice() {
     window.navigator.maxTouchPoints > 0
   );
 }
+
+
+type CapacitorBridge = {
+  isNativePlatform?: () => boolean;
+};
+
+export function isNativeMobileShell() {
+  const globalWindow = window as Window & {
+    Capacitor?: CapacitorBridge;
+  };
+
+  return Boolean(
+    globalWindow.Capacitor?.isNativePlatform?.(),
+  );
+}
