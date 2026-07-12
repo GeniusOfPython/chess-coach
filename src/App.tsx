@@ -179,6 +179,7 @@ function App() {
     position,
     history,
     status,
+    lastMove,
     onPieceDrop,
     newGame,
     undoMove,
@@ -559,6 +560,7 @@ function App() {
               .slice(1, 3)
               .map((line) => line.bestMove)}
             boardOrientation={boardOrientation}
+            lastMove={lastMove}
             onPieceDrop={handlePieceDrop}
           />
         </div>

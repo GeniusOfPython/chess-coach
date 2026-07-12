@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
+import type { LastMoveSquares } from "../components/ChessBoard";
 
 type UseChessGameOptions = {
   onPositionChanged?: () => void;
@@ -13,6 +14,8 @@ export function useChessGame({
   const [position, setPosition] = useState(game.fen());
   const [history, setHistory] = useState<string[]>([]);
   const [status, setStatus] = useState("Ход белых");
+  const [lastMove, setLastMove] =
+    useState<LastMoveSquares | null>(null);
 
   function updateStatus() {
     if (game.isCheckmate()) {
@@ -47,6 +50,21 @@ export function useChessGame({
     onPositionChanged?.();
   }
 
+  function updateLastMoveFromHistory() {
+    const verboseHistory = game.history({ verbose: true });
+    const latestMove = verboseHistory.at(-1);
+
+    if (!latestMove) {
+      setLastMove(null);
+      return;
+    }
+
+    setLastMove({
+      from: latestMove.from,
+      to: latestMove.to,
+    });
+  }
+
   function onPieceDrop({
     sourceSquare,
     targetSquare,
@@ -69,6 +87,11 @@ export function useChessGame({
         return false;
       }
 
+      setLastMove({
+        from: move.from,
+        to: move.to,
+      });
+
       syncPosition();
 
       return true;
@@ -79,6 +102,7 @@ export function useChessGame({
 
   function newGame() {
     game.reset();
+    setLastMove(null);
     syncPosition();
   }
 
@@ -118,6 +142,7 @@ export function useChessGame({
         return false;
       }
 
+      updateLastMoveFromHistory();
       syncPosition();
 
       return true;
@@ -133,41 +158,49 @@ export function useChessGame({
       return;
     }
 
+    updateLastMoveFromHistory();
     syncPosition();
   }
 
   function makeEngineMove(uciMove: string) {
-  if (!uciMove || uciMove === "(none)") {
-    return false;
-  }
-
-  const from = uciMove.slice(0, 2) as Square;
-  const to = uciMove.slice(2, 4) as Square;
-  const promotion = uciMove.slice(4) || "q";
-
-  try {
-    const move = game.move({
-      from,
-      to,
-      promotion,
-    });
-
-    if (!move) {
+    if (!uciMove || uciMove === "(none)") {
       return false;
     }
 
-    syncPosition();
+    const from = uciMove.slice(0, 2) as Square;
+    const to = uciMove.slice(2, 4) as Square;
+    const promotion = uciMove.slice(4) || "q";
 
-    return true;
-  } catch {
-    return false;
+    try {
+      const move = game.move({
+        from,
+        to,
+        promotion,
+      });
+
+      if (!move) {
+        return false;
+      }
+
+      setLastMove({
+        from: move.from,
+        to: move.to,
+      });
+
+      syncPosition();
+
+      return true;
+    } catch {
+      return false;
+    }
   }
-}
+
   return {
     game,
     position,
     history,
     status,
+    lastMove,
     onPieceDrop,
     newGame,
     undoMove,

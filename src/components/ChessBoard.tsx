@@ -1,4 +1,10 @@
+import type { CSSProperties } from "react";
 import { Chessboard } from "react-chessboard";
+
+export type LastMoveSquares = {
+  from: string;
+  to: string;
+};
 
 type BoardOrientation = "white" | "black";
 
@@ -7,6 +13,7 @@ type Props = {
   bestMove?: string;
   candidateMoves?: string[];
   boardOrientation?: BoardOrientation;
+  lastMove?: LastMoveSquares | null;
   onPieceDrop: (args: {
     sourceSquare: string;
     targetSquare: string | null;
@@ -21,11 +28,31 @@ function createArrow(move: string, color: string) {
   };
 }
 
+function createLastMoveStyles(
+  lastMove: LastMoveSquares | null | undefined,
+): Record<string, CSSProperties> {
+  if (!lastMove) {
+    return {};
+  }
+
+  return {
+    [lastMove.from]: {
+      background:
+        "radial-gradient(circle, rgba(255, 224, 102, 0.72) 0%, rgba(255, 224, 102, 0.32) 55%, transparent 78%)",
+    },
+    [lastMove.to]: {
+      background:
+        "radial-gradient(circle, rgba(255, 224, 102, 0.82) 0%, rgba(255, 224, 102, 0.38) 55%, transparent 78%)",
+    },
+  };
+}
+
 export default function ChessBoard({
   position,
   bestMove,
   candidateMoves = [],
   boardOrientation = "white",
+  lastMove = null,
   onPieceDrop,
 }: Props) {
   const uniqueCandidates = candidateMoves.filter(
@@ -59,6 +86,7 @@ export default function ChessBoard({
         boardOrientation,
         onPieceDrop,
         arrows,
+        squareStyles: createLastMoveStyles(lastMove),
         boardStyle: {
           borderRadius: "10px",
           boxShadow: "0 14px 40px rgba(0,0,0,.3)",
