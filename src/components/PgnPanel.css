@@ -1,0 +1,60 @@
+.pgn-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.pgn-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pgn-actions button,
+.pgn-import-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #25342b;
+  color: #eef4ef;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pgn-actions button:hover,
+.pgn-import-button:hover:not(:disabled) {
+  background: #304438;
+}
+
+.pgn-import-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.pgn-output,
+.pgn-input {
+  min-height: 86px;
+  resize: vertical;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  padding: 12px;
+  background: #121612;
+  color: #d7ddd9;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pgn-input {
+  min-height: 112px;
+}
+
+.pgn-message {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}

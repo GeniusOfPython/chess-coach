@@ -14,6 +14,7 @@ import MoveReviewPanel, {
   type MoveReview,
   type MoveReviewVerdict,
 } from "./components/MoveReviewPanel";
+import PgnPanel from "./components/PgnPanel";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import type { EngineAnalysis } from "./types/chess";
@@ -113,6 +114,8 @@ function App() {
     newGame,
     undoMove,
     makeEngineMove,
+    getPgn,
+    loadPgn,
   } = useChessGame({
     onPositionChanged: clearAnalysis,
   });
@@ -432,6 +435,25 @@ function App() {
     }
   }
 
+  function handleImportPgn(pgn: string) {
+    if (isBotThinking) {
+      return false;
+    }
+
+    const success = loadPgn(pgn);
+
+    if (!success) {
+      return false;
+    }
+
+    setGameMode("analysis");
+    setIsBotThinking(false);
+    setLastMoveReview(null);
+    clearAnalysis();
+
+    return true;
+  }
+
   return (
     <main className="app">
       <header className="header">
@@ -513,6 +535,11 @@ function App() {
             position={position}
             isAnalyzing={isAnalyzing}
             error={error}
+          />
+
+          <PgnPanel
+            pgn={getPgn()}
+            onImportPgn={handleImportPgn}
           />
 
           <MoveHistory history={history} />

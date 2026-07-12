@@ -82,6 +82,50 @@ export function useChessGame({
     syncPosition();
   }
 
+  function getPgn() {
+    try {
+      const gameWithPgn = game as unknown as {
+        pgn: (options?: {
+          maxWidth?: number;
+          newline?: string;
+        }) => string;
+      };
+
+      return gameWithPgn.pgn({
+        maxWidth: 80,
+        newline: "\n",
+      });
+    } catch {
+      return game.pgn();
+    }
+  }
+
+  function loadPgn(pgn: string) {
+    const preparedPgn = pgn.trim();
+
+    if (!preparedPgn) {
+      return false;
+    }
+
+    try {
+      const gameWithLoadPgn = game as unknown as {
+        loadPgn: (pgn: string) => void | boolean;
+      };
+
+      const result = gameWithLoadPgn.loadPgn(preparedPgn);
+
+      if (result === false) {
+        return false;
+      }
+
+      syncPosition();
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function undoMove() {
     const move = game.undo();
 
@@ -120,13 +164,15 @@ export function useChessGame({
   }
 }
   return {
-  game,
-  position,
-  history,
-  status,
-  onPieceDrop,
-  newGame,
-  undoMove,
-  makeEngineMove,
-};
+    game,
+    position,
+    history,
+    status,
+    onPieceDrop,
+    newGame,
+    undoMove,
+    makeEngineMove,
+    getPgn,
+    loadPgn,
+  };
 }
