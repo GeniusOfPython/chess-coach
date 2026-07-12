@@ -1,49 +1,49 @@
 .workspace-tabs-card {
   display: grid;
-  gap: 12px;
-  padding: 18px;
-  border: 1px solid #2a302c;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(143, 163, 125, 0.42);
   border-radius: 16px;
-  background: #151a17;
+  background: linear-gradient(180deg, #1b221c 0%, #141914 100%);
 }
 
 .workspace-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 7px;
 }
 
 .workspace-tab {
-  min-height: 44px;
-  padding: 10px 8px;
-  border: 1px solid #303733;
-  border-radius: 12px;
-  background: #101410;
+  min-height: 40px;
+  padding: 9px 8px;
+  border: 1px solid #354037;
+  border-radius: 11px;
+  background: #0f140f;
   color: #d7ddd9;
-  font-weight: 800;
+  font-weight: 850;
   cursor: pointer;
 }
 
 .workspace-tab:hover {
-  border-color: #556157;
+  border-color: #63705f;
 }
 
 .workspace-tab.active {
-  border-color: rgba(60, 200, 90, 0.75);
-  background: rgba(60, 200, 90, 0.13);
-  color: #f2f7f3;
+  border-color: rgba(143, 163, 125, 0.92);
+  background: rgba(143, 163, 125, 0.22);
+  color: #f5faf6;
 }
 
 .workspace-tabs-description {
   margin: 0;
   color: #aab3ad;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {
   .workspace-tabs-card {
-    padding: 14px;
+    padding: 12px;
   }
 
   .workspace-tabs {

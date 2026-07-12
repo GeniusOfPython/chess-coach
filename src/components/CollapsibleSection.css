@@ -1,16 +1,16 @@
 .collapsible-section {
   overflow: hidden;
-  border: 1px solid #303733;
-  border-radius: 16px;
-  background: rgba(19, 23, 20, 0.92);
+  border: 1px solid #374039;
+  border-radius: 14px;
+  background: rgba(18, 23, 19, 0.96);
 }
 
 .collapsible-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 16px 18px;
+  gap: 12px;
+  padding: 12px 14px;
   cursor: pointer;
   list-style: none;
   user-select: none;
@@ -22,29 +22,29 @@
 
 .collapsible-heading {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .collapsible-heading strong {
-  color: #f0f4ef;
-  font-size: 15px;
+  color: #eef4ef;
+  font-size: 14px;
 }
 
 .collapsible-heading span {
   color: #8f9a93;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
 .collapsible-chevron {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border: 1px solid #3c463f;
   border-radius: 999px;
   color: #c8d0cb;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1;
   transition: transform 0.2s ease;
 }
@@ -55,11 +55,12 @@
 
 .collapsible-content {
   display: grid;
-  gap: 14px;
-  padding: 0 14px 14px;
+  gap: 10px;
+  padding: 0 10px 10px;
 }
 
 .collapsible-content > * {
   background: #171c19;
   border: 1px solid #2b332f;
+  border-radius: 12px;
 }
