@@ -4,9 +4,94 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { Color } from "chess.js";
+import { Chess } from "chess.js";
+import type { Color, Square } from "chess.js";
 import { StockfishService } from "../engine/StockfishService";
 import type { EngineAnalysis } from "../types/chess";
+import type { BotLevel } from "../types/bot";
+
+function toUciMove(move: {
+  from: string;
+  to: string;
+  promotion?: string;
+}) {
+  return `${move.from}${move.to}${move.promotion ?? ""}`;
+}
+
+function getRandomLegalMove(fen: string) {
+  const game = new Chess(fen);
+  const moves = game.moves({ verbose: true });
+
+  if (moves.length === 0) {
+    return null;
+  }
+
+  const move = moves[Math.floor(Math.random() * moves.length)];
+
+  return toUciMove({
+    from: move.from,
+    to: move.to,
+    promotion: move.promotion,
+  });
+}
+
+function isLegalMove(fen: string, uciMove: string) {
+  const game = new Chess(fen);
+  const from = uciMove.slice(0, 2) as Square;
+  const to = uciMove.slice(2, 4) as Square;
+  const promotion = uciMove.slice(4) || "q";
+
+  try {
+    return Boolean(game.move({ from, to, promotion }));
+  } catch {
+    return false;
+  }
+}
+
+function chooseBotMoveFromAnalysis({
+  fen,
+  analysis,
+  botLevel,
+}: {
+  fen: string;
+  analysis: EngineAnalysis;
+  botLevel: BotLevel;
+}) {
+  const randomValue = Math.random();
+
+  if (randomValue < botLevel.randomLegalMoveChance) {
+    const randomMove = getRandomLegalMove(fen);
+
+    if (randomMove) {
+      return randomMove;
+    }
+  }
+
+  const legalLines = analysis.lines.filter((line) =>
+    isLegalMove(fen, line.bestMove),
+  );
+
+  if (legalLines.length === 0) {
+    return analysis.bestMove;
+  }
+
+  const secondThreshold =
+    botLevel.randomLegalMoveChance +
+    botLevel.secondLineChance;
+
+  const thirdThreshold =
+    secondThreshold + botLevel.thirdLineChance;
+
+  if (randomValue < secondThreshold && legalLines[1]) {
+    return legalLines[1].bestMove;
+  }
+
+  if (randomValue < thirdThreshold && legalLines[2]) {
+    return legalLines[2].bestMove;
+  }
+
+  return legalLines[0].bestMove;
+}
 
 export function useEngineAnalysis() {
   const analysisEngine = useMemo(
@@ -71,7 +156,7 @@ export function useEngineAnalysis() {
 
       try {
         const result = await analysisEngine.analyze(fen, {
-          movetime: 1500,
+          movetime: 1800,
           multiPv: 3,
         });
 
@@ -90,15 +175,15 @@ export function useEngineAnalysis() {
     [analysisEngine],
   );
 
-  const calculateBestMove = useCallback(
+  const calculateBotMove = useCallback(
     async ({
       fen,
       isGameOver,
-      movetime = 1000,
+      botLevel,
     }: {
       fen: string;
       isGameOver: boolean;
-      movetime?: number;
+      botLevel: BotLevel;
     }) => {
       if (isGameOver) {
         return null;
@@ -106,21 +191,25 @@ export function useEngineAnalysis() {
 
       try {
         const result = await botEngine.analyze(fen, {
-          movetime,
-          multiPv: 1,
+          movetime: botLevel.movetime,
+          multiPv: botLevel.multiPv,
+          timeoutMs: botLevel.movetime + 2500,
         });
 
-        if (
-          !result.bestMove ||
-          result.bestMove === "(none)"
-        ) {
-          return null;
+        const move = chooseBotMoveFromAnalysis({
+          fen,
+          analysis: result,
+          botLevel,
+        });
+
+        if (!move || move === "(none)") {
+          return getRandomLegalMove(fen);
         }
 
-        return result.bestMove;
+        return move;
       } catch (error) {
         console.error("Ошибка расчёта хода бота:", error);
-        return null;
+        return getRandomLegalMove(fen);
       }
     },
     [botEngine],
@@ -162,7 +251,7 @@ export function useEngineAnalysis() {
     isAnalyzing,
     error,
     analyzePosition,
-    calculateBestMove,
+    calculateBotMove,
     calculatePositionAnalysis,
     clearAnalysis,
   };

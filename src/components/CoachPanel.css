@@ -1,0 +1,48 @@
+.coach-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.coach-empty {
+  margin: 0;
+  color: #b6bdb8;
+  line-height: 1.45;
+}
+
+.coach-main-move {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.coach-main-move span,
+.coach-plan > span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.coach-main-move strong {
+  font-size: 18px;
+}
+
+.coach-plan {
+  display: grid;
+  gap: 8px;
+}
+
+.coach-plan ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.coach-plan li {
+  color: #d2d8d4;
+  line-height: 1.45;
+}

@@ -17,6 +17,7 @@ import MoveReviewPanel, {
 import PgnPanel from "./components/PgnPanel";
 import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
+import CoachPanel from "./components/CoachPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -27,6 +28,7 @@ import {
   getBotLevel,
   type BotLevelId,
 } from "./types/bot";
+import "./components/CoachPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -174,7 +176,7 @@ function App() {
     isAnalyzing,
     error,
     analyzePosition,
-    calculateBestMove,
+    calculateBotMove,
     calculatePositionAnalysis,
     clearAnalysis,
   } = useEngineAnalysis();
@@ -185,6 +187,7 @@ function App() {
     history,
     status,
     lastMove,
+    checkSquare,
     onPieceDrop,
     newGame,
     undoMove,
@@ -288,10 +291,10 @@ function App() {
 
       const botLevel = getBotLevel(botLevelId);
 
-      const bestMove = await calculateBestMove({
+      const bestMove = await calculateBotMove({
         fen: game.fen(),
         isGameOver: game.isGameOver(),
-        movetime: botLevel.movetime,
+        botLevel,
       });
 
       if (!bestMove) {
@@ -661,6 +664,7 @@ function App() {
             lastMove={lastMove}
             selectedSquare={selectedSquare}
             legalMoveSquares={legalMoveSquares}
+            checkSquare={checkSquare}
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
           />
@@ -731,6 +735,11 @@ function App() {
             <EvaluationBar
               analysis={analysis}
               analyzedTurn={analyzedTurn}
+            />
+
+            <CoachPanel
+              analysis={analysis}
+              position={position}
             />
 
             {featureAccess.canUseMoveReview ? (

@@ -6,6 +6,33 @@ type UseChessGameOptions = {
   onPositionChanged?: () => void;
 };
 
+function findKingSquare(game: Chess, color: "w" | "b") {
+  const board = game.board();
+
+  for (let row = 0; row < board.length; row += 1) {
+    for (let column = 0; column < board[row].length; column += 1) {
+      const piece = board[row][column];
+
+      if (piece?.type === "k" && piece.color === color) {
+        const file = String.fromCharCode(97 + column);
+        const rank = String(8 - row);
+
+        return `${file}${rank}`;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getCheckedKingSquare(game: Chess) {
+  if (!game.inCheck()) {
+    return null;
+  }
+
+  return findKingSquare(game, game.turn());
+}
+
 export function useChessGame({
   onPositionChanged,
 }: UseChessGameOptions = {}) {
@@ -16,6 +43,8 @@ export function useChessGame({
   const [status, setStatus] = useState("Ход белых");
   const [lastMove, setLastMove] =
     useState<LastMoveSquares | null>(null);
+  const [checkSquare, setCheckSquare] =
+    useState<string | null>(getCheckedKingSquare(game));
 
   function updateStatus() {
     if (game.isCheckmate()) {
@@ -46,6 +75,7 @@ export function useChessGame({
   function syncPosition() {
     setPosition(game.fen());
     setHistory(game.history());
+    setCheckSquare(getCheckedKingSquare(game));
     updateStatus();
     onPositionChanged?.();
   }
@@ -208,6 +238,7 @@ export function useChessGame({
     history,
     status,
     lastMove,
+    checkSquare,
     onPieceDrop,
     newGame,
     undoMove,

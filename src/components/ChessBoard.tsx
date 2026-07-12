@@ -16,6 +16,7 @@ type Props = {
   lastMove?: LastMoveSquares | null;
   selectedSquare?: string | null;
   legalMoveSquares?: string[];
+  checkSquare?: string | null;
   onSquareClick?: (square: string) => void;
   onPieceDrop: (args: {
     sourceSquare: string;
@@ -76,6 +77,21 @@ function createSelectionStyles({
   return styles;
 }
 
+function createCheckStyles(
+  checkSquare: string | null | undefined,
+): Record<string, CSSProperties> {
+  if (!checkSquare) {
+    return {};
+  }
+
+  return {
+    [checkSquare]: {
+      background:
+        "radial-gradient(circle, rgba(255, 82, 82, 0.9) 0%, rgba(255, 82, 82, 0.48) 58%, transparent 82%)",
+    },
+  };
+}
+
 function mergeSquareStyles(
   ...styleGroups: Record<string, CSSProperties>[]
 ) {
@@ -102,6 +118,7 @@ export default function ChessBoard({
   lastMove = null,
   selectedSquare = null,
   legalMoveSquares = [],
+  checkSquare = null,
   onSquareClick,
   onPieceDrop,
 }: Props) {
@@ -135,6 +152,7 @@ export default function ChessBoard({
       selectedSquare,
       legalMoveSquares,
     }),
+    createCheckStyles(checkSquare),
   );
 
   return (
