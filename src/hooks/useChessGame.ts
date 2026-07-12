@@ -92,13 +92,41 @@ export function useChessGame({
     syncPosition();
   }
 
+  function makeEngineMove(uciMove: string) {
+  if (!uciMove || uciMove === "(none)") {
+    return false;
+  }
+
+  const from = uciMove.slice(0, 2) as Square;
+  const to = uciMove.slice(2, 4) as Square;
+  const promotion = uciMove.slice(4) || "q";
+
+  try {
+    const move = game.move({
+      from,
+      to,
+      promotion,
+    });
+
+    if (!move) {
+      return false;
+    }
+
+    syncPosition();
+
+    return true;
+  } catch {
+    return false;
+  }
+}
   return {
-    game,
-    position,
-    history,
-    status,
-    onPieceDrop,
-    newGame,
-    undoMove,
-  };
+  game,
+  position,
+  history,
+  status,
+  onPieceDrop,
+  newGame,
+  undoMove,
+  makeEngineMove,
+};
 }

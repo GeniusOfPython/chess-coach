@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
@@ -7,12 +8,16 @@ import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import "./App.css";
 
 function App() {
+  const [isBotThinking, setIsBotThinking] =
+    useState(false);
+
   const {
     analysis,
     analyzedTurn,
     isAnalyzing,
     error,
     analyzePosition,
+    calculateBestMove,
     clearAnalysis,
   } = useEngineAnalysis();
 
@@ -24,6 +29,7 @@ function App() {
     onPieceDrop,
     newGame,
     undoMove,
+    makeEngineMove,
   } = useChessGame({
     onPositionChanged: clearAnalysis,
   });
@@ -36,6 +42,83 @@ function App() {
     });
   }
 
+  async function makeBotMove() {
+  if (game.isGameOver()) {
+    return;
+  }
+
+  if (game.turn() !== "b") {
+    return;
+  }
+
+  setIsBotThinking(true);
+
+  try {
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 500);
+    });
+
+    const fenForBot = game.fen();
+
+    const bestMove = await calculateBestMove({
+      fen: fenForBot,
+      isGameOver: game.isGameOver(),
+    });
+
+    if (!bestMove) {
+      return;
+    }
+
+    if (game.isGameOver()) {
+      return;
+    }
+
+    if (game.turn() !== "b") {
+      return;
+    }
+
+    makeEngineMove(bestMove);
+  } finally {
+    setIsBotThinking(false);
+  }
+}
+  function handlePieceDrop(args: {
+  sourceSquare: string;
+  targetSquare: string | null;
+}) {
+  if (isBotThinking) {
+    return false;
+  }
+
+  if (game.turn() !== "w") {
+    return false;
+  }
+
+  const moveWasMade = onPieceDrop(args);
+
+  if (moveWasMade) {
+    window.setTimeout(() => {
+      void makeBotMove();
+    }, 0);
+  }
+
+  return moveWasMade;
+}
+  function handleNewGame() {
+    newGame();
+    setIsBotThinking(false);
+  }
+
+  function handleUndoMove() {
+    undoMove();
+
+    if (game.turn() === "b") {
+      undoMove();
+    }
+
+    setIsBotThinking(false);
+  }
+
   return (
     <main className="app">
       <header className="header">
@@ -46,7 +129,7 @@ function App() {
         <h1>Шахматный помощник</h1>
 
         <p className="subtitle">
-          Доска и анализ позиции Stockfish 18
+          Игра против Stockfish и анализ позиции
         </p>
       </header>
 
@@ -55,7 +138,7 @@ function App() {
           <ChessBoard
             position={position}
             bestMove={analysis?.bestMove}
-            onPieceDrop={onPieceDrop}
+            onPieceDrop={handlePieceDrop}
           />
         </div>
 
@@ -65,15 +148,17 @@ function App() {
               Состояние партии
             </span>
 
-            <strong>{status}</strong>
+            <strong>
+              {isBotThinking ? "Бот думает…" : status}
+            </strong>
           </div>
 
           <GameControls
-            canUndo={history.length > 0}
-            isAnalyzing={isAnalyzing}
+            canUndo={history.length > 0 && !isBotThinking}
+            isAnalyzing={isAnalyzing || isBotThinking}
             isGameOver={game.isGameOver()}
-            onNewGame={newGame}
-            onUndoMove={undoMove}
+            onNewGame={handleNewGame}
+            onUndoMove={handleUndoMove}
             onAnalyze={handleAnalyzePosition}
           />
 

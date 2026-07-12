@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -30,53 +31,87 @@ export function useEngineAnalysis() {
     };
   }, [engine]);
 
-  function clearAnalysis() {
+  const clearAnalysis = useCallback(() => {
     engine.stop();
     setAnalysis(null);
     setError("");
     setIsAnalyzing(false);
-  }
+  }, [engine]);
 
-  async function analyzePosition({
+  const analyzePosition = useCallback(
+    async ({
+      fen,
+      turn,
+      isGameOver,
+    }: {
+      fen: string;
+      turn: Color;
+      isGameOver: boolean;
+    }) => {
+      if (isGameOver) {
+        setError("Партия уже завершена");
+        return;
+      }
+
+      setIsAnalyzing(true);
+      setAnalysis(null);
+      setError("");
+
+      try {
+        const result = await engine.analyze(fen);
+
+        setAnalyzedTurn(turn);
+        setAnalysis(result);
+      } catch (analysisError) {
+        setError(
+          analysisError instanceof Error
+            ? analysisError.message
+            : "Ошибка анализа",
+        );
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [engine],
+  );
+
+  const calculateBestMove = useCallback(
+  async ({
     fen,
-    turn,
     isGameOver,
   }: {
     fen: string;
-    turn: Color;
     isGameOver: boolean;
-  }) {
+  }) => {
     if (isGameOver) {
-      setError("Партия уже завершена");
-      return;
+      return null;
     }
-
-    setIsAnalyzing(true);
-    setAnalysis(null);
-    setError("");
 
     try {
       const result = await engine.analyze(fen);
 
-      setAnalyzedTurn(turn);
-      setAnalysis(result);
-    } catch (analysisError) {
-      setError(
-        analysisError instanceof Error
-          ? analysisError.message
-          : "Ошибка анализа",
-      );
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }
+      if (
+        !result.bestMove ||
+        result.bestMove === "(none)"
+      ) {
+        return null;
+      }
 
+      return result.bestMove;
+    } catch (error) {
+      console.error("Ошибка расчёта хода бота:", error);
+      return null;
+    }
+  },
+  [engine],
+);
   return {
     analysis,
     analyzedTurn,
     isAnalyzing,
     error,
     analyzePosition,
+    calculateBestMove,
     clearAnalysis,
   };
 }
