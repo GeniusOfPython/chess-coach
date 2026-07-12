@@ -1,0 +1,149 @@
+import { explainEngineMove } from "../utils/explainMove";
+
+export type BestMoveTrainingStatus =
+  | "idle"
+  | "preparing"
+  | "ready"
+  | "success"
+  | "fail";
+
+export type BestMoveTrainingTask = {
+  status: BestMoveTrainingStatus;
+  positionFen: string | null;
+  bestMove: string | null;
+  playedMove: string | null;
+  error: string | null;
+};
+
+type Props = {
+  task: BestMoveTrainingTask;
+  canStart: boolean;
+  onStart: () => void;
+  onReset: () => void;
+};
+
+function formatMove(move: string | null) {
+  if (!move || move === "(none)") {
+    return "Нет хода";
+  }
+
+  const from = move.slice(0, 2);
+  const to = move.slice(2, 4);
+  const promotion = move.slice(4);
+
+  if (promotion) {
+    return `${from} → ${to}, превращение в ${promotion.toUpperCase()}`;
+  }
+
+  return `${from} → ${to}`;
+}
+
+function getStatusText(task: BestMoveTrainingTask) {
+  if (task.status === "preparing") {
+    return "Stockfish готовит задачу…";
+  }
+
+  if (task.status === "ready") {
+    return "Найди лучший ход в текущей позиции. Подсказки и стрелки скрыты.";
+  }
+
+  if (task.status === "success") {
+    return "Верно. Это лучший ход по расчёту Stockfish.";
+  }
+
+  if (task.status === "fail") {
+    return "Ход не совпал с лучшей рекомендацией Stockfish.";
+  }
+
+  return "Запусти тренировку, чтобы попробовать самому найти лучший ход без подсказки.";
+}
+
+export default function BestMoveTrainingPanel({
+  task,
+  canStart,
+  onStart,
+  onReset,
+}: Props) {
+  const explanations =
+    task.positionFen && task.bestMove
+      ? explainEngineMove(task.positionFen, task.bestMove)
+      : [];
+
+  return (
+    <div className="best-move-training-card">
+      <span className="status-label">Тренировка лучшего хода</span>
+
+      <div className={`best-move-training ${task.status}`}>
+        <strong>{getStatusText(task)}</strong>
+
+        {task.error && (
+          <p className="best-move-training-error">
+            {task.error}
+          </p>
+        )}
+
+        {task.status === "ready" && (
+          <p>
+            Сделай ход на доске. После хода приложение
+            скажет, совпал ли он с лучшим ходом Stockfish.
+          </p>
+        )}
+
+        {task.status === "success" && (
+          <div className="best-move-training-result">
+            <span>Твой ход</span>
+            <b>{formatMove(task.playedMove)}</b>
+          </div>
+        )}
+
+        {task.status === "fail" && (
+          <>
+            <div className="best-move-training-result">
+              <span>Твой ход</span>
+              <b>{formatMove(task.playedMove)}</b>
+
+              <span>Лучший ход</span>
+              <b>{formatMove(task.bestMove)}</b>
+            </div>
+
+            {explanations.length > 0 && (
+              <div className="best-move-training-explanation">
+                <span>Почему этот ход был сильнее</span>
+
+                <ul>
+                  {explanations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="best-move-training-actions">
+          <button
+            type="button"
+            className="secondary"
+            disabled={!canStart || task.status === "preparing"}
+            onClick={onStart}
+          >
+            {task.status === "idle"
+              ? "Начать тренировку"
+              : "Новая задача из позиции"}
+          </button>
+
+          {task.status !== "idle" && (
+            <button
+              type="button"
+              className="secondary ghost"
+              disabled={task.status === "preparing"}
+              onClick={onReset}
+            >
+              Сбросить
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

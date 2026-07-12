@@ -20,6 +20,9 @@ import MaterialPanel from "./components/MaterialPanel";
 import CoachPanel from "./components/CoachPanel";
 import GameResultPanel from "./components/GameResultPanel";
 import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
+import BestMoveTrainingPanel, {
+  type BestMoveTrainingTask,
+} from "./components/BestMoveTrainingPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -33,6 +36,7 @@ import {
 import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
 import "./components/MoveNavigatorPanel.css";
+import "./components/BestMoveTrainingPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -131,6 +135,14 @@ function readStoredBotLevelId(): BotLevelId {
   return "casual";
 }
 
+const initialTrainingTask: BestMoveTrainingTask = {
+  status: "idle",
+  positionFen: null,
+  bestMove: null,
+  playedMove: null,
+  error: null,
+};
+
 function App() {
   const [isBotThinking, setIsBotThinking] =
     useState(false);
@@ -152,6 +164,9 @@ function App() {
 
   const [selectedSquare, setSelectedSquare] =
     useState<string | null>(null);
+
+  const [bestMoveTrainingTask, setBestMoveTrainingTask] =
+    useState<BestMoveTrainingTask>(initialTrainingTask);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -273,6 +288,8 @@ function App() {
   }
 
   function handleAnalyzePosition() {
+    resetBestMoveTraining();
+
     void analyzePosition({
       fen: displayedPosition,
       turn: getTurnFromFen(displayedPosition),
@@ -417,6 +434,71 @@ function App() {
     });
   }
 
+  function resetBestMoveTraining() {
+    setBestMoveTrainingTask(initialTrainingTask);
+  }
+
+  function isMoveMatchingBestMove({
+    playedMove,
+    bestMove,
+  }: {
+    playedMove: string;
+    bestMove: string | null;
+  }) {
+    if (!bestMove) {
+      return false;
+    }
+
+    return bestMove.startsWith(playedMove);
+  }
+
+  async function handleStartBestMoveTraining() {
+    if (
+      isBotThinking ||
+      !isViewingCurrentPosition ||
+      game.isGameOver()
+    ) {
+      return;
+    }
+
+    const trainingFen = position;
+
+    setSelectedSquare(null);
+    clearAnalysis();
+    setBestMoveTrainingTask({
+      status: "preparing",
+      positionFen: trainingFen,
+      bestMove: null,
+      playedMove: null,
+      error: null,
+    });
+
+    const trainingAnalysis = await calculatePositionAnalysis({
+      fen: trainingFen,
+      isGameOver: game.isGameOver(),
+      movetime: 1400,
+    });
+
+    if (!trainingAnalysis?.bestMove) {
+      setBestMoveTrainingTask({
+        status: "idle",
+        positionFen: null,
+        bestMove: null,
+        playedMove: null,
+        error: "Не удалось подготовить задачу из текущей позиции.",
+      });
+      return;
+    }
+
+    setBestMoveTrainingTask({
+      status: "ready",
+      positionFen: trainingFen,
+      bestMove: trainingAnalysis.bestMove,
+      playedMove: null,
+      error: null,
+    });
+  }
+
   function handlePieceDrop(args: {
     sourceSquare: string;
     targetSquare: string | null;
@@ -470,6 +552,24 @@ function App() {
       };
 
       setLastMoveReview(initialReview);
+
+      if (
+        bestMoveTrainingTask.status === "ready" &&
+        bestMoveTrainingTask.positionFen === positionBeforeMove
+      ) {
+        setBestMoveTrainingTask({
+          ...bestMoveTrainingTask,
+          status: isMoveMatchingBestMove({
+            playedMove,
+            bestMove: bestMoveTrainingTask.bestMove,
+          })
+            ? "success"
+            : "fail",
+          playedMove,
+        });
+      } else if (bestMoveTrainingTask.status === "ready") {
+        resetBestMoveTraining();
+      }
 
       if (
         suggestedBestMove !== null &&
@@ -531,6 +631,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
   }
 
@@ -544,6 +645,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(true);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
 
     if (playerSide === "b") {
@@ -566,6 +668,7 @@ function App() {
       undoMove();
       setIsBotThinking(false);
       setLastMoveReview(null);
+      resetBestMoveTraining();
       clearAnalysis();
       return;
     }
@@ -578,6 +681,7 @@ function App() {
 
     setIsBotThinking(false);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
   }
 
@@ -591,6 +695,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
   }
 
@@ -604,6 +709,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
     newGame();
   }
@@ -626,6 +732,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
 
     return true;
@@ -648,6 +755,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    resetBestMoveTraining();
     clearAnalysis();
 
     return true;
@@ -671,10 +779,18 @@ function App() {
         <div className="board-panel">
           <ChessBoard
             position={displayedPosition}
-            bestMove={analysis?.bestMove}
-            candidateMoves={analysis?.lines
-              .slice(1, 3)
-              .map((line) => line.bestMove)}
+            bestMove={
+              bestMoveTrainingTask.status === "ready"
+                ? undefined
+                : analysis?.bestMove
+            }
+            candidateMoves={
+              bestMoveTrainingTask.status === "ready"
+                ? []
+                : analysis?.lines
+                    .slice(1, 3)
+                    .map((line) => line.bestMove)
+            }
             boardOrientation={boardOrientation}
             lastMove={displayedLastMove}
             selectedSquare={selectedSquare}
@@ -757,6 +873,17 @@ function App() {
               game={game}
               historyLength={history.length}
               onNewGame={handleNewGame}
+            />
+
+            <BestMoveTrainingPanel
+              task={bestMoveTrainingTask}
+              canStart={
+                !isBotThinking &&
+                isViewingCurrentPosition &&
+                !game.isGameOver()
+              }
+              onStart={handleStartBestMoveTraining}
+              onReset={resetBestMoveTraining}
             />
 
             <EvaluationBar

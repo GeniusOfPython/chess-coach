@@ -1,0 +1,84 @@
+.best-move-training-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.best-move-training {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.best-move-training.ready {
+  border-color: rgba(70, 140, 255, 0.7);
+}
+
+.best-move-training.success {
+  border-color: rgba(60, 200, 90, 0.75);
+}
+
+.best-move-training.fail {
+  border-color: rgba(255, 170, 40, 0.75);
+}
+
+.best-move-training p {
+  margin: 0;
+  color: #b6bdb8;
+  line-height: 1.45;
+}
+
+.best-move-training-error {
+  color: #ffb0a4 !important;
+}
+
+.best-move-training-result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 14px;
+}
+
+.best-move-training-result span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.best-move-training-result b {
+  text-align: right;
+}
+
+.best-move-training-explanation {
+  display: grid;
+  gap: 8px;
+}
+
+.best-move-training-explanation > span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.best-move-training-explanation ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.best-move-training-explanation li {
+  color: #d2d8d4;
+  line-height: 1.45;
+}
+
+.best-move-training-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.secondary.ghost {
+  opacity: 0.8;
+}
