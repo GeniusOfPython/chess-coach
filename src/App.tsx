@@ -15,6 +15,7 @@ import MoveReviewPanel, {
   type MoveReviewVerdict,
 } from "./components/MoveReviewPanel";
 import PgnPanel from "./components/PgnPanel";
+import CollapsibleSection from "./components/CollapsibleSection";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import type { EngineAnalysis } from "./types/chess";
@@ -522,27 +523,42 @@ function App() {
             onAnalyze={handleAnalyzePosition}
           />
 
-          <EvaluationBar
-            analysis={analysis}
-            analyzedTurn={analyzedTurn}
-          />
+          <CollapsibleSection
+            title="Анализ и разбор"
+            description="Баланс позиции, качество последнего хода и варианты Stockfish"
+          >
+            <EvaluationBar
+              analysis={analysis}
+              analyzedTurn={analyzedTurn}
+            />
 
-          <MoveReviewPanel review={lastMoveReview} />
+            <MoveReviewPanel review={lastMoveReview} />
 
-          <AnalysisPanel
-            analysis={analysis}
-            analyzedTurn={analyzedTurn}
-            position={position}
-            isAnalyzing={isAnalyzing}
-            error={error}
-          />
+            <AnalysisPanel
+              analysis={analysis}
+              analyzedTurn={analyzedTurn}
+              position={position}
+              isAnalyzing={isAnalyzing}
+              error={error}
+            />
+          </CollapsibleSection>
 
-          <PgnPanel
-            pgn={getPgn()}
-            onImportPgn={handleImportPgn}
-          />
+          <CollapsibleSection
+            title="PGN"
+            description="Импорт, копирование и скачивание партии"
+          >
+            <PgnPanel
+              pgn={getPgn()}
+              onImportPgn={handleImportPgn}
+            />
+          </CollapsibleSection>
 
-          <MoveHistory history={history} />
+          <CollapsibleSection
+            title="История ходов"
+            description="Список ходов текущей партии"
+          >
+            <MoveHistory history={history} />
+          </CollapsibleSection>
         </aside>
       </section>
     </main>
