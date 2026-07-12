@@ -16,9 +16,11 @@ import MoveReviewPanel, {
 } from "./components/MoveReviewPanel";
 import PgnPanel from "./components/PgnPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
+import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import type { EngineAnalysis } from "./types/chess";
+import { featureAccess } from "./features/featureAccess";
 import {
   getBotLevel,
   type BotLevelId,
@@ -597,7 +599,19 @@ function App() {
               analyzedTurn={analyzedTurn}
             />
 
-            <MoveReviewPanel review={lastMoveReview} />
+            {featureAccess.canUseMoveReview ? (
+              <MoveReviewPanel
+                review={lastMoveReview}
+                canShowExplanations={
+                  featureAccess.canUseMoveExplanations
+                }
+              />
+            ) : (
+              <PremiumFeatureNotice
+                featureKey="moveReview"
+                description="Разбор последнего хода подготовлен как премиальная функция для будущей мобильной версии."
+              />
+            )}
 
             <AnalysisPanel
               analysis={analysis}
@@ -605,6 +619,9 @@ function App() {
               position={position}
               isAnalyzing={isAnalyzing}
               error={error}
+              canShowExplanations={
+                featureAccess.canUseMoveExplanations
+              }
             />
           </CollapsibleSection>
 
@@ -613,10 +630,17 @@ function App() {
             description="Импорт, копирование и скачивание партии"
             storageKey="chess-coach.section.pgn"
           >
-            <PgnPanel
-              pgn={getPgn()}
-              onImportPgn={handleImportPgn}
-            />
+            {featureAccess.canUsePgnTools ? (
+              <PgnPanel
+                pgn={getPgn()}
+                onImportPgn={handleImportPgn}
+              />
+            ) : (
+              <PremiumFeatureNotice
+                featureKey="pgnTools"
+                description="PGN-инструменты временно отключены через featureAccess."
+              />
+            )}
           </CollapsibleSection>
 
           <CollapsibleSection

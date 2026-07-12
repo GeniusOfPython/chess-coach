@@ -1,4 +1,5 @@
 import { explainEngineMove } from "../utils/explainMove";
+import PremiumFeatureNotice from "./PremiumFeatureNotice";
 import "./MoveReviewPanel.css";
 
 export type MoveReviewVerdict =
@@ -23,6 +24,7 @@ export type MoveReview = {
 
 type Props = {
   review: MoveReview | null;
+  canShowExplanations?: boolean;
 };
 
 function formatMove(move: string | null) {
@@ -125,6 +127,7 @@ function getReviewClassName(verdict: MoveReviewVerdict) {
 
 export default function MoveReviewPanel({
   review,
+  canShowExplanations = true,
 }: Props) {
   if (!review) {
     return (
@@ -205,7 +208,7 @@ export default function MoveReviewPanel({
           <b>{formatLoss(review.evaluationLoss)}</b>
         </div>
 
-        {!review.matchedBestMove && (
+        {!review.matchedBestMove && canShowExplanations && (
           <div className="move-review-explanation">
             <span>
               Почему Stockfish предпочитал другой ход
@@ -217,6 +220,13 @@ export default function MoveReviewPanel({
               ))}
             </ul>
           </div>
+        )}
+
+        {!review.matchedBestMove && !canShowExplanations && (
+          <PremiumFeatureNotice
+            featureKey="moveExplanations"
+            description="Подробные пояснения к альтернативному ходу будут доступны в премиум-версии."
+          />
         )}
       </div>
     </div>

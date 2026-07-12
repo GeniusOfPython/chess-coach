@@ -4,6 +4,7 @@ import type {
   EngineLine,
 } from "../types/chess";
 import { explainEngineMove } from "../utils/explainMove";
+import PremiumFeatureNotice from "./PremiumFeatureNotice";
 
 type Props = {
   analysis: EngineAnalysis | null;
@@ -11,6 +12,7 @@ type Props = {
   position: string;
   isAnalyzing: boolean;
   error: string;
+  canShowExplanations?: boolean;
 };
 
 const lineColors = [
@@ -78,6 +80,7 @@ export default function AnalysisPanel({
   position,
   isAnalyzing,
   error,
+  canShowExplanations = true,
 }: Props) {
   return (
     <div className="analysis-card">
@@ -175,20 +178,27 @@ export default function AnalysisPanel({
             </div>
           </div>
 
-          <div className="explanation">
-            <span>Почему этот ход</span>
+          {canShowExplanations ? (
+            <div className="explanation">
+              <span>Почему этот ход</span>
 
-            <ul>
-              {explainEngineMove(
-                position,
-                analysis.bestMove,
-              ).map((explanation) => (
-                <li key={explanation}>
-                  {explanation}
-                </li>
-              ))}
-            </ul>
-          </div>
+              <ul>
+                {explainEngineMove(
+                  position,
+                  analysis.bestMove,
+                ).map((explanation) => (
+                  <li key={explanation}>
+                    {explanation}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <PremiumFeatureNotice
+              featureKey="moveExplanations"
+              description="Пояснения к ходам будут доступны в премиум-версии. Технически ограничение уже вынесено в featureAccess."
+            />
+          )}
         </div>
       )}
     </div>
