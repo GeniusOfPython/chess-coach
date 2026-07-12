@@ -32,6 +32,9 @@ import AppSettingsPanel from "./components/AppSettingsPanel";
 import AdSlot from "./components/AdSlot";
 import ConsentBanner from "./components/ConsentBanner";
 import CollapsibleSection from "./components/CollapsibleSection";
+import WorkspaceTabs, {
+  type WorkspaceId,
+} from "./components/WorkspaceTabs";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
@@ -61,6 +64,7 @@ import "./components/OpeningPrinciplesPanel.css";
 import "./components/AppSettingsPanel.css";
 import "./components/AdSlot.css";
 import "./components/ConsentBanner.css";
+import "./components/WorkspaceTabs.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -139,6 +143,7 @@ const settingsStorageKeys = {
   showAnalysisArrows: "chess-coach.show-analysis-arrows",
   subscriptionTier: "chess-coach.subscription-tier",
   privacyConsent: "chess-coach.privacy-consent",
+  activeWorkspace: "chess-coach.active-workspace",
 };
 
 function readStoredBoolean({
@@ -213,6 +218,18 @@ function readStoredPrivacyConsent(): PrivacyConsentState {
   );
 }
 
+function readStoredWorkspace(): WorkspaceId {
+  const value = window.localStorage.getItem(
+    settingsStorageKeys.activeWorkspace,
+  );
+
+  if (value === "game" || value === "tools") {
+    return value;
+  }
+
+  return "coach";
+}
+
 const initialTrainingTask: BestMoveTrainingTask = {
   status: "idle",
   positionFen: null,
@@ -249,6 +266,9 @@ function App() {
 
   const [learningJournalItems, setLearningJournalItems] =
     useState<LearningJournalItem[]>([]);
+
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<WorkspaceId>(() => readStoredWorkspace());
 
   const [compactUi, setCompactUi] = useState(() =>
     readStoredBoolean({
@@ -305,6 +325,13 @@ function App() {
       String(compactUi),
     );
   }, [compactUi]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.activeWorkspace,
+      activeWorkspace,
+    );
+  }, [activeWorkspace]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -1071,165 +1098,177 @@ function App() {
             />
           )}
 
-          <CollapsibleSection
-            title="Анализ и разбор"
-            description="Баланс позиции, качество последнего хода и варианты Stockfish"
-            storageKey="chess-coach.section.analysis"
-          >
-            <CoachPanel
-              analysis={analysis}
-              position={displayedPosition}
-            />
+          <WorkspaceTabs
+            active={activeWorkspace}
+            onChange={setActiveWorkspace}
+          />
 
-            <AnalysisPanel
-              analysis={analysis}
-              analyzedTurn={analyzedTurn}
-              position={displayedPosition}
-              isAnalyzing={isAnalyzing}
-              error={error}
-              canShowExplanations={
-                access.canUseMoveExplanations
-              }
-            />
-
-            <OpeningPrinciplesPanel fen={displayedPosition} />
-
-            <BestMoveTrainingPanel
-              task={bestMoveTrainingTask}
-              canStart={
-                !isBotThinking &&
-                isViewingCurrentPosition &&
-                !game.isGameOver()
-              }
-              onStart={handleStartBestMoveTraining}
-              onRevealHint={handleRevealBestMoveHint}
-              onReset={resetBestMoveTraining}
-            />
-
-            {showAdvertisingUi && (
-              <AdSlot
-                tier={subscriptionTier}
-                placement="analysis"
-                consent={privacyConsent}
+          {activeWorkspace === "coach" && (
+            <section className="workspace-panel">
+              <CoachPanel
+                analysis={analysis}
+                position={displayedPosition}
               />
-            )}
 
-            {access.canUseMoveReview ? (
-              <MoveReviewPanel
-                review={lastMoveReview}
+              <AnalysisPanel
+                analysis={analysis}
+                analyzedTurn={analyzedTurn}
+                position={displayedPosition}
+                isAnalyzing={isAnalyzing}
+                error={error}
                 canShowExplanations={
                   access.canUseMoveExplanations
                 }
               />
-            ) : (
-              <PremiumFeatureNotice
-                featureKey="moveReview"
-                description="Разбор последнего хода подготовлен как премиальная функция для будущей мобильной версии."
+
+              <BestMoveTrainingPanel
+                task={bestMoveTrainingTask}
+                canStart={
+                  !isBotThinking &&
+                  isViewingCurrentPosition &&
+                  !game.isGameOver()
+                }
+                onStart={handleStartBestMoveTraining}
+                onRevealHint={handleRevealBestMoveHint}
+                onReset={resetBestMoveTraining}
               />
-            )}
+            </section>
+          )}
 
-            <TrainingSummaryPanel
-              historyLength={history.length}
-              items={learningJournalItems}
-            />
+          {activeWorkspace === "game" && (
+            <section className="workspace-panel">
+              {access.canUseMoveReview ? (
+                <MoveReviewPanel
+                  review={lastMoveReview}
+                  canShowExplanations={
+                    access.canUseMoveExplanations
+                  }
+                />
+              ) : (
+                <PremiumFeatureNotice
+                  featureKey="moveReview"
+                  description="Разбор последнего хода подготовлен как премиальная функция для будущей мобильной версии."
+                />
+              )}
 
-            <LearningJournalPanel
-              items={learningJournalItems}
-              onClear={() => setLearningJournalItems([])}
-            />
-
-            <EvaluationBar
-              analysis={analysis}
-              analyzedTurn={analyzedTurn}
-            />
-
-            <GameResultPanel
-              game={game}
-              historyLength={history.length}
-              onNewGame={handleNewGame}
-            />
-          </CollapsibleSection>
-
-
-          <CollapsibleSection
-            title="Настройки"
-            description="Компактный режим и поведение подсказок"
-            storageKey="chess-coach.section.settings"
-          >
-            <AppSettingsPanel
-              compactUi={compactUi}
-              showAnalysisArrows={showAnalysisArrows}
-              subscriptionTier={subscriptionTier}
-              privacyConsent={privacyConsent}
-              showMonetizationSettings={showAdvertisingUi}
-              onCompactUiChange={setCompactUi}
-              onShowAnalysisArrowsChange={setShowAnalysisArrows}
-              onSubscriptionTierChange={setSubscriptionTier}
-              onPrivacyConsentChange={handlePrivacyConsentChange}
-              onPrivacyConsentReset={handleResetPrivacyConsent}
-            />
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Материал"
-            description="Материальный баланс и взятые фигуры"
-            storageKey="chess-coach.section.material"
-          >
-            <MaterialPanel fen={getFen()} />
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="FEN"
-            description="Копирование и загрузка отдельной позиции"
-            storageKey="chess-coach.section.fen"
-          >
-            {access.canUseFenTools ? (
-              <FenPanel
-                fen={getFen()}
-                onImportFen={handleImportFen}
+              <GameResultPanel
+                game={game}
+                historyLength={history.length}
+                onNewGame={handleNewGame}
               />
-            ) : (
-              <PremiumFeatureNotice
-                featureKey="fenTools"
-                description="FEN-инструменты временно отключены через featureAccess."
-              />
-            )}
-          </CollapsibleSection>
 
-          <CollapsibleSection
-            title="PGN"
-            description="Импорт, копирование и скачивание партии"
-            storageKey="chess-coach.section.pgn"
-          >
-            {access.canUsePgnTools ? (
-              <PgnPanel
-                pgn={getPgn()}
-                onImportPgn={handleImportPgn}
+              <EvaluationBar
+                analysis={analysis}
+                analyzedTurn={analyzedTurn}
               />
-            ) : (
-              <PremiumFeatureNotice
-                featureKey="pgnTools"
-                description="PGN-инструменты временно отключены через featureAccess."
-              />
-            )}
-          </CollapsibleSection>
 
-          <CollapsibleSection
-            title="История ходов"
-            description="Список ходов и просмотр прошлых позиций"
-            storageKey="chess-coach.section.history"
-          >
-            <MoveNavigatorPanel
-              currentIndex={viewedMoveIndex}
-              totalPositions={fenHistory.length}
-              isViewingCurrentPosition={isViewingCurrentPosition}
-              onPrevious={viewPreviousMove}
-              onNext={viewNextMove}
-              onCurrent={viewCurrentMove}
-            />
+              <MaterialPanel fen={getFen()} />
+            </section>
+          )}
 
-            <MoveHistory history={history} />
-          </CollapsibleSection>
+          {activeWorkspace === "tools" && (
+            <section className="workspace-panel">
+              <CollapsibleSection
+                title="Дебютные принципы"
+                description="Центр, развитие фигур и безопасность короля"
+                storageKey="chess-coach.section.opening"
+              >
+                <OpeningPrinciplesPanel fen={displayedPosition} />
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Журнал и сводка"
+                description="Ошибки, точность и учебная статистика"
+                storageKey="chess-coach.section.learning-journal"
+              >
+                <TrainingSummaryPanel
+                  historyLength={history.length}
+                  items={learningJournalItems}
+                />
+
+                <LearningJournalPanel
+                  items={learningJournalItems}
+                  onClear={() => setLearningJournalItems([])}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="История ходов"
+                description="Список ходов и просмотр прошлых позиций"
+                storageKey="chess-coach.section.history"
+              >
+                <MoveNavigatorPanel
+                  currentIndex={viewedMoveIndex}
+                  totalPositions={fenHistory.length}
+                  isViewingCurrentPosition={
+                    isViewingCurrentPosition
+                  }
+                  onPrevious={viewPreviousMove}
+                  onNext={viewNextMove}
+                  onCurrent={viewCurrentMove}
+                />
+
+                <MoveHistory history={history} />
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="PGN и FEN"
+                description="Импорт, экспорт партии и загрузка позиции"
+                storageKey="chess-coach.section.position-tools"
+              >
+                {access.canUsePgnTools ? (
+                  <PgnPanel
+                    pgn={getPgn()}
+                    onImportPgn={handleImportPgn}
+                  />
+                ) : (
+                  <PremiumFeatureNotice
+                    featureKey="pgnTools"
+                    description="PGN-инструменты временно отключены через featureAccess."
+                  />
+                )}
+
+                {access.canUseFenTools ? (
+                  <FenPanel
+                    fen={getFen()}
+                    onImportFen={handleImportFen}
+                  />
+                ) : (
+                  <PremiumFeatureNotice
+                    featureKey="fenTools"
+                    description="FEN-инструменты временно отключены через featureAccess."
+                  />
+                )}
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Настройки"
+                description="Компактный режим и поведение подсказок"
+                storageKey="chess-coach.section.settings"
+              >
+                <AppSettingsPanel
+                  compactUi={compactUi}
+                  showAnalysisArrows={showAnalysisArrows}
+                  subscriptionTier={subscriptionTier}
+                  privacyConsent={privacyConsent}
+                  showMonetizationSettings={showAdvertisingUi}
+                  onCompactUiChange={setCompactUi}
+                  onShowAnalysisArrowsChange={
+                    setShowAnalysisArrows
+                  }
+                  onSubscriptionTierChange={
+                    setSubscriptionTier
+                  }
+                  onPrivacyConsentChange={
+                    handlePrivacyConsentChange
+                  }
+                  onPrivacyConsentReset={
+                    handleResetPrivacyConsent
+                  }
+                />
+              </CollapsibleSection>
+            </section>
+          )}
         </aside>
       </section>
     </main>

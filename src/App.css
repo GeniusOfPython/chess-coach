@@ -477,3 +477,12 @@ button:disabled {
     font-size: 14px;
   }
 }
+
+.workspace-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.workspace-panel .collapsible-section {
+  margin: 0;
+}
