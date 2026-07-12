@@ -19,6 +19,7 @@ import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
 import CoachPanel from "./components/CoachPanel";
 import GameResultPanel from "./components/GameResultPanel";
+import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -31,6 +32,7 @@ import {
 } from "./types/bot";
 import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
+import "./components/MoveNavigatorPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -186,10 +188,14 @@ function App() {
   const {
     game,
     position,
+    displayedPosition,
     history,
     status,
-    lastMove,
-    checkSquare,
+    displayedLastMove,
+    displayedCheckSquare,
+    fenHistory,
+    viewedMoveIndex,
+    isViewingCurrentPosition,
     onPieceDrop,
     newGame,
     undoMove,
@@ -198,6 +204,9 @@ function App() {
     loadFen,
     getPgn,
     loadPgn,
+    viewPreviousMove,
+    viewNextMove,
+    viewCurrentMove,
   } = useChessGame({
     onPositionChanged: clearAnalysis,
   });
@@ -207,7 +216,7 @@ function App() {
       ? "black"
       : "white";
 
-  const legalMoveSquares = selectedSquare
+  const legalMoveSquares = isViewingCurrentPosition && selectedSquare
     ? game
         .moves({
           square: selectedSquare as Square,
@@ -265,9 +274,9 @@ function App() {
 
   function handleAnalyzePosition() {
     void analyzePosition({
-      fen: game.fen(),
-      turn: game.turn(),
-      isGameOver: game.isGameOver(),
+      fen: displayedPosition,
+      turn: getTurnFromFen(displayedPosition),
+      isGameOver: isViewingCurrentPosition && game.isGameOver(),
     });
   }
 
@@ -412,7 +421,7 @@ function App() {
     sourceSquare: string;
     targetSquare: string | null;
   }) {
-    if (isBotThinking) {
+    if (isBotThinking || !isViewingCurrentPosition) {
       return false;
     }
 
@@ -487,7 +496,11 @@ function App() {
 
 
   function handleSquareClick(square: string) {
-    if (isBotThinking || !isPlayerTurn()) {
+    if (
+      isBotThinking ||
+      !isViewingCurrentPosition ||
+      !isPlayerTurn()
+    ) {
       setSelectedSquare(null);
       return;
     }
@@ -657,16 +670,16 @@ function App() {
       <section className="game-layout">
         <div className="board-panel">
           <ChessBoard
-            position={position}
+            position={displayedPosition}
             bestMove={analysis?.bestMove}
             candidateMoves={analysis?.lines
               .slice(1, 3)
               .map((line) => line.bestMove)}
             boardOrientation={boardOrientation}
-            lastMove={lastMove}
+            lastMove={displayedLastMove}
             selectedSquare={selectedSquare}
             legalMoveSquares={legalMoveSquares}
-            checkSquare={checkSquare}
+            checkSquare={displayedCheckSquare}
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
           />
@@ -681,9 +694,11 @@ function App() {
             <strong>
               {isBotThinking
                 ? "Бот думает…"
-                : gameMode === "bot" && !isBotGameStarted
-                  ? "Выбери сторону и нажми «Старт партии»"
-                  : status}
+                : !isViewingCurrentPosition
+                  ? "Просмотр позиции из истории"
+                  : gameMode === "bot" && !isBotGameStarted
+                    ? "Выбери сторону и нажми «Старт партии»"
+                    : status}
             </strong>
           </div>
 
@@ -721,7 +736,11 @@ function App() {
           )}
 
           <GameControls
-            canUndo={history.length > 0 && !isBotThinking}
+            canUndo={
+              history.length > 0 &&
+              !isBotThinking &&
+              isViewingCurrentPosition
+            }
             isAnalyzing={isAnalyzing || isBotThinking}
             isGameOver={game.isGameOver()}
             onNewGame={handleNewGame}
@@ -747,7 +766,7 @@ function App() {
 
             <CoachPanel
               analysis={analysis}
-              position={position}
+              position={displayedPosition}
             />
 
             {featureAccess.canUseMoveReview ? (
@@ -767,7 +786,7 @@ function App() {
             <AnalysisPanel
               analysis={analysis}
               analyzedTurn={analyzedTurn}
-              position={position}
+              position={displayedPosition}
               isAnalyzing={isAnalyzing}
               error={error}
               canShowExplanations={
@@ -823,9 +842,18 @@ function App() {
 
           <CollapsibleSection
             title="История ходов"
-            description="Список ходов текущей партии"
+            description="Список ходов и просмотр прошлых позиций"
             storageKey="chess-coach.section.history"
           >
+            <MoveNavigatorPanel
+              currentIndex={viewedMoveIndex}
+              totalPositions={fenHistory.length}
+              isViewingCurrentPosition={isViewingCurrentPosition}
+              onPrevious={viewPreviousMove}
+              onNext={viewNextMove}
+              onCurrent={viewCurrentMove}
+            />
+
             <MoveHistory history={history} />
           </CollapsibleSection>
         </aside>

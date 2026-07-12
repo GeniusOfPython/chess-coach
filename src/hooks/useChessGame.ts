@@ -33,6 +33,73 @@ function getCheckedKingSquare(game: Chess) {
   return findKingSquare(game, game.turn());
 }
 
+function getCheckedKingSquareFromFen(fen: string) {
+  try {
+    const previewGame = new Chess(fen);
+    return getCheckedKingSquare(previewGame);
+  } catch {
+    return null;
+  }
+}
+
+function getLastMoveFromVerboseHistory(
+  verboseHistory: ReturnType<Chess["history"]>,
+) {
+  const latestMove = verboseHistory.at(-1);
+
+  if (!latestMove || typeof latestMove === "string") {
+    return null;
+  }
+
+  return {
+    from: latestMove.from,
+    to: latestMove.to,
+  };
+}
+
+function buildTimelineFromGame(game: Chess) {
+  const pgn = game.pgn();
+  const replayGame = new Chess();
+  const fenHistory = [replayGame.fen()];
+  const lastMoveHistory: LastMoveSquares[] = [];
+
+  if (!pgn.trim()) {
+    return { fenHistory, lastMoveHistory };
+  }
+
+  try {
+    replayGame.loadPgn(pgn);
+    const verboseHistory = replayGame.history({ verbose: true });
+
+    const secondReplayGame = new Chess();
+
+    for (const move of verboseHistory) {
+      const appliedMove = secondReplayGame.move({
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion,
+      });
+
+      if (!appliedMove) {
+        break;
+      }
+
+      fenHistory.push(secondReplayGame.fen());
+      lastMoveHistory.push({
+        from: appliedMove.from,
+        to: appliedMove.to,
+      });
+    }
+  } catch {
+    return {
+      fenHistory: [game.fen()],
+      lastMoveHistory: [],
+    };
+  }
+
+  return { fenHistory, lastMoveHistory };
+}
+
 export function useChessGame({
   onPositionChanged,
 }: UseChessGameOptions = {}) {
@@ -45,6 +112,13 @@ export function useChessGame({
     useState<LastMoveSquares | null>(null);
   const [checkSquare, setCheckSquare] =
     useState<string | null>(getCheckedKingSquare(game));
+  const [fenHistory, setFenHistory] = useState<string[]>([
+    game.fen(),
+  ]);
+  const [lastMoveHistory, setLastMoveHistory] = useState<
+    LastMoveSquares[]
+  >([]);
+  const [viewedMoveIndex, setViewedMoveIndex] = useState(0);
 
   function updateStatus() {
     if (game.isCheckmate()) {
@@ -73,26 +147,52 @@ export function useChessGame({
   }
 
   function syncPosition() {
-    setPosition(game.fen());
-    setHistory(game.history());
-    setCheckSquare(getCheckedKingSquare(game));
-    updateStatus();
-    onPositionChanged?.();
-  }
-
-  function updateLastMoveFromHistory() {
+    const currentFen = game.fen();
     const verboseHistory = game.history({ verbose: true });
-    const latestMove = verboseHistory.at(-1);
+    const currentHistory = game.history();
+    const currentLastMove = getLastMoveFromVerboseHistory(
+      verboseHistory,
+    );
+    const nextFenHistory = [game.header().FEN ?? new Chess().fen()];
+    const replayGame = new Chess(nextFenHistory[0]);
+    const nextLastMoveHistory: LastMoveSquares[] = [];
 
-    if (!latestMove) {
-      setLastMove(null);
-      return;
+    try {
+      for (const move of verboseHistory) {
+        if (typeof move === "string") {
+          continue;
+        }
+
+        const appliedMove = replayGame.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion,
+        });
+
+        if (!appliedMove) {
+          break;
+        }
+
+        nextFenHistory.push(replayGame.fen());
+        nextLastMoveHistory.push({
+          from: appliedMove.from,
+          to: appliedMove.to,
+        });
+      }
+    } catch {
+      nextFenHistory.splice(0, nextFenHistory.length, currentFen);
+      nextLastMoveHistory.splice(0);
     }
 
-    setLastMove({
-      from: latestMove.from,
-      to: latestMove.to,
-    });
+    setPosition(currentFen);
+    setHistory(currentHistory);
+    setLastMove(currentLastMove);
+    setCheckSquare(getCheckedKingSquare(game));
+    setFenHistory(nextFenHistory);
+    setLastMoveHistory(nextLastMoveHistory);
+    setViewedMoveIndex(nextFenHistory.length - 1);
+    updateStatus();
+    onPositionChanged?.();
   }
 
   function onPieceDrop({
@@ -116,11 +216,6 @@ export function useChessGame({
       if (!move) {
         return false;
       }
-
-      setLastMove({
-        from: move.from,
-        to: move.to,
-      });
 
       syncPosition();
 
@@ -178,9 +273,17 @@ export function useChessGame({
 
     try {
       game.loadPgn(preparedPgn);
+      const timeline = buildTimelineFromGame(game);
 
-      updateLastMoveFromHistory();
-      syncPosition();
+      setPosition(game.fen());
+      setHistory(game.history());
+      setLastMove(timeline.lastMoveHistory.at(-1) ?? null);
+      setCheckSquare(getCheckedKingSquare(game));
+      setFenHistory(timeline.fenHistory);
+      setLastMoveHistory(timeline.lastMoveHistory);
+      setViewedMoveIndex(timeline.fenHistory.length - 1);
+      updateStatus();
+      onPositionChanged?.();
 
       return true;
     } catch {
@@ -195,7 +298,6 @@ export function useChessGame({
       return;
     }
 
-    updateLastMoveFromHistory();
     syncPosition();
   }
 
@@ -219,11 +321,6 @@ export function useChessGame({
         return false;
       }
 
-      setLastMove({
-        from: move.from,
-        to: move.to,
-      });
-
       syncPosition();
 
       return true;
@@ -232,13 +329,52 @@ export function useChessGame({
     }
   }
 
+  function viewMove(index: number) {
+    const clampedIndex = Math.max(
+      0,
+      Math.min(index, fenHistory.length - 1),
+    );
+
+    setViewedMoveIndex(clampedIndex);
+  }
+
+  function viewPreviousMove() {
+    viewMove(viewedMoveIndex - 1);
+  }
+
+  function viewNextMove() {
+    viewMove(viewedMoveIndex + 1);
+  }
+
+  function viewCurrentMove() {
+    viewMove(fenHistory.length - 1);
+  }
+
+  const displayedPosition =
+    fenHistory[viewedMoveIndex] ?? position;
+  const displayedLastMove =
+    viewedMoveIndex > 0
+      ? lastMoveHistory[viewedMoveIndex - 1] ?? null
+      : null;
+  const displayedCheckSquare = getCheckedKingSquareFromFen(
+    displayedPosition,
+  );
+  const isViewingCurrentPosition =
+    viewedMoveIndex === fenHistory.length - 1;
+
   return {
     game,
     position,
+    displayedPosition,
     history,
     status,
     lastMove,
+    displayedLastMove,
     checkSquare,
+    displayedCheckSquare,
+    fenHistory,
+    viewedMoveIndex,
+    isViewingCurrentPosition,
     onPieceDrop,
     newGame,
     undoMove,
@@ -247,5 +383,9 @@ export function useChessGame({
     loadFen,
     getPgn,
     loadPgn,
+    viewMove,
+    viewPreviousMove,
+    viewNextMove,
+    viewCurrentMove,
   };
 }

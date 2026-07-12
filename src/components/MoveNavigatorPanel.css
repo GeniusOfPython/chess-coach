@@ -1,0 +1,38 @@
+.move-navigator-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.move-navigator-status {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.move-navigator-status p {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.move-navigator-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.move-navigator-buttons button {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .move-navigator-buttons {
+    grid-template-columns: 1fr;
+  }
+}
