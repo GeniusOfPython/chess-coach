@@ -9,10 +9,15 @@ import { StockfishService } from "../engine/StockfishService";
 import type { EngineAnalysis } from "../types/chess";
 
 export function useEngineAnalysis() {
-  const engine = useMemo(
-    () => new StockfishService(),
-    [],
-  );
+  const analysisEngine = useMemo(
+  () => new StockfishService(),
+  [],
+);
+
+const botEngine = useMemo(
+  () => new StockfishService(),
+  [],
+);
 
   const [analysis, setAnalysis] =
     useState<EngineAnalysis | null>(null);
@@ -26,17 +31,18 @@ export function useEngineAnalysis() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    return () => {
-      engine.destroy();
-    };
-  }, [engine]);
+  return () => {
+    analysisEngine.destroy();
+    botEngine.destroy();
+  };
+}, [analysisEngine, botEngine]);
 
   const clearAnalysis = useCallback(() => {
-    engine.stop();
+    analysisEngine.stop();
     setAnalysis(null);
     setError("");
     setIsAnalyzing(false);
-  }, [engine]);
+  }, [analysisEngine]);
 
   const analyzePosition = useCallback(
     async ({
@@ -58,7 +64,7 @@ export function useEngineAnalysis() {
       setError("");
 
       try {
-        const result = await engine.analyze(fen);
+        const result = await analysisEngine.analyze(fen);
 
         setAnalyzedTurn(turn);
         setAnalysis(result);
@@ -72,7 +78,7 @@ export function useEngineAnalysis() {
         setIsAnalyzing(false);
       }
     },
-    [engine],
+    [analysisEngine],
   );
 
   const calculateBestMove = useCallback(
@@ -88,7 +94,7 @@ export function useEngineAnalysis() {
     }
 
     try {
-      const result = await engine.analyze(fen);
+      const result = await botEngine.analyze(fen);
 
       if (
         !result.bestMove ||
@@ -103,7 +109,7 @@ export function useEngineAnalysis() {
       return null;
     }
   },
-  [engine],
+  [botEngine],
 );
   return {
     analysis,
