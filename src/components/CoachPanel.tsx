@@ -1,7 +1,8 @@
 import type { EngineAnalysis } from "../types/chess";
 import { buildCoachPlan } from "../analysis/coachPlan";
+import { detectTacticalMotifs } from "../analysis/tacticalMotifs";
 
-type Props = {
+ type Props = {
   analysis: EngineAnalysis | null;
   position: string;
 };
@@ -36,6 +37,10 @@ export default function CoachPanel({
   }
 
   const plan = buildCoachPlan(analysis, position);
+  const tacticalMotifs = detectTacticalMotifs(
+    position,
+    analysis.bestMove,
+  );
 
   return (
     <div className={`coach-card coach-priority-${plan.priority}`}>
@@ -54,6 +59,24 @@ export default function CoachPanel({
         <span>Главный ход</span>
         <strong>{plan.mainMove}</strong>
       </div>
+
+      {tacticalMotifs.length > 0 && (
+        <div className="coach-tactics">
+          <span>Тактический мотив</span>
+
+          <div className="coach-tactics-list">
+            {tacticalMotifs.map((motif) => (
+              <article
+                className={`coach-tactic coach-tactic-${motif.severity}`}
+                key={motif.id}
+              >
+                <strong>{motif.title}</strong>
+                <p>{motif.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="coach-grid">
         <div className="coach-plan-block">

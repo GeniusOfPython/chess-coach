@@ -154,3 +154,56 @@
     white-space: normal;
   }
 }
+
+.coach-tactics {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 190, 70, 0.28);
+  border-radius: 14px;
+  background: rgba(40, 28, 12, 0.32);
+}
+
+.coach-tactics > span {
+  color: #f2c46f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.coach-tactics-list {
+  display: grid;
+  gap: 8px;
+}
+
+.coach-tactic {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(10, 14, 12, 0.34);
+}
+
+.coach-tactic strong {
+  color: #fff5dc;
+  font-size: 14px;
+}
+
+.coach-tactic p {
+  margin: 0;
+  color: #d8d0bd;
+  font-size: 14px;
+  line-height: 1.42;
+}
+
+.coach-tactic-forcing {
+  border-color: rgba(255, 170, 40, 0.42);
+}
+
+.coach-tactic-gain {
+  border-color: rgba(90, 170, 255, 0.34);
+}
+
+.coach-tactic-positional {
+  border-color: rgba(120, 210, 145, 0.3);
+}
