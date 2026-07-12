@@ -1,0 +1,83 @@
+.app-settings-card {
+  display: grid;
+  gap: 14px;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.setting-row strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.setting-row p {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.setting-switch {
+  position: relative;
+  display: inline-flex;
+  width: 54px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.setting-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.setting-switch span {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #49534d;
+  border-radius: 999px;
+  background: #101410;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.setting-switch span::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #b6bdb8;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+.setting-switch input:checked + span {
+  border-color: #839376;
+  background: #839376;
+}
+
+.setting-switch input:checked + span::after {
+  transform: translateX(22px);
+  background: #101410;
+}
+
+@media (max-width: 520px) {
+  .setting-row {
+    grid-template-columns: 1fr;
+  }
+}

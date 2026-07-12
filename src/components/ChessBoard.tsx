@@ -17,6 +17,7 @@ type Props = {
   selectedSquare?: string | null;
   legalMoveSquares?: string[];
   checkSquare?: string | null;
+  showAnalysisArrows?: boolean;
   onSquareClick?: (square: string) => void;
   onPieceDrop: (args: {
     sourceSquare: string;
@@ -119,6 +120,7 @@ export default function ChessBoard({
   selectedSquare = null,
   legalMoveSquares = [],
   checkSquare = null,
+  showAnalysisArrows = true,
   onSquareClick,
   onPieceDrop,
 }: Props) {
@@ -135,7 +137,8 @@ export default function ChessBoard({
     "rgba(255, 170, 40, 0.78)",
   ];
 
-  const arrows = [
+  const arrows = showAnalysisArrows
+    ? [
     ...(bestMove
       ? [createArrow(bestMove, arrowColors[0])]
       : []),
@@ -144,7 +147,8 @@ export default function ChessBoard({
       .map((move, index) =>
         createArrow(move, arrowColors[index + 1]),
       ),
-  ];
+  ]
+    : [];
 
   const squareStyles = mergeSquareStyles(
     createLastMoveStyles(lastMove),

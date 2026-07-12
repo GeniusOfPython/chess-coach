@@ -416,3 +416,64 @@ button:disabled {
   line-height: 1.45;
 }
 
+
+.app.compact-ui {
+  padding-top: 24px;
+  padding-bottom: 36px;
+}
+
+.app.compact-ui .header {
+  margin-bottom: 18px;
+}
+
+.app.compact-ui .subtitle {
+  margin-top: 8px;
+}
+
+.app.compact-ui .game-layout {
+  gap: 18px;
+}
+
+.app.compact-ui .side-panel {
+  gap: 10px;
+}
+
+.app.compact-ui .board-panel {
+  padding: 10px;
+}
+
+.app.compact-ui .status-card,
+.app.compact-ui .analysis-card,
+.app.compact-ui .history-card,
+.app.compact-ui .hint-card,
+.app.compact-ui .collapsible-section,
+.app.compact-ui .collapsible-content {
+  padding: 14px;
+}
+
+.app.compact-ui button {
+  min-height: 42px;
+}
+
+.app.compact-ui .analyze-button {
+  min-height: 46px;
+}
+
+.app.compact-ui .moves {
+  max-height: 240px;
+}
+
+@media (max-width: 520px) {
+  .app.compact-ui {
+    width: min(100% - 12px, 1180px);
+    padding-top: max(14px, env(safe-area-inset-top));
+  }
+
+  .app.compact-ui .header h1 {
+    font-size: 28px;
+  }
+
+  .app.compact-ui .subtitle {
+    font-size: 14px;
+  }
+}

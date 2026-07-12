@@ -27,6 +27,7 @@ import LearningJournalPanel, {
   type LearningJournalItem,
 } from "./components/LearningJournalPanel";
 import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
+import AppSettingsPanel from "./components/AppSettingsPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -43,6 +44,7 @@ import "./components/MoveNavigatorPanel.css";
 import "./components/BestMoveTrainingPanel.css";
 import "./components/LearningJournalPanel.css";
 import "./components/TrainingSummaryPanel.css";
+import "./components/AppSettingsPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -117,7 +119,29 @@ const settingsStorageKeys = {
   gameMode: "chess-coach.game-mode",
   playerSide: "chess-coach.player-side",
   botLevelId: "chess-coach.bot-level-id",
+  compactUi: "chess-coach.compact-ui",
+  showAnalysisArrows: "chess-coach.show-analysis-arrows",
 };
+
+function readStoredBoolean({
+  key,
+  fallback,
+}: {
+  key: string;
+  fallback: boolean;
+}) {
+  const value = window.localStorage.getItem(key);
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return fallback;
+}
 
 function readStoredGameMode(): GameMode {
   const value = window.localStorage.getItem(
@@ -191,6 +215,21 @@ function App() {
   const [learningJournalItems, setLearningJournalItems] =
     useState<LearningJournalItem[]>([]);
 
+  const [compactUi, setCompactUi] = useState(() =>
+    readStoredBoolean({
+      key: settingsStorageKeys.compactUi,
+      fallback: false,
+    }),
+  );
+
+  const [showAnalysisArrows, setShowAnalysisArrows] =
+    useState(() =>
+      readStoredBoolean({
+        key: settingsStorageKeys.showAnalysisArrows,
+        fallback: true,
+      }),
+    );
+
   useEffect(() => {
     window.localStorage.setItem(
       settingsStorageKeys.gameMode,
@@ -211,6 +250,20 @@ function App() {
       botLevelId,
     );
   }, [botLevelId]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.compactUi,
+      String(compactUi),
+    );
+  }, [compactUi]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.showAnalysisArrows,
+      String(showAnalysisArrows),
+    );
+  }, [showAnalysisArrows]);
 
   const {
     analysis,
@@ -813,7 +866,7 @@ function App() {
   }
 
   return (
-    <main className="app">
+    <main className={compactUi ? "app compact-ui" : "app"}>
       <header className="header">
         <p className="eyebrow">
           Интерактивный тренер
@@ -847,6 +900,7 @@ function App() {
             selectedSquare={selectedSquare}
             legalMoveSquares={legalMoveSquares}
             checkSquare={displayedCheckSquare}
+            showAnalysisArrows={showAnalysisArrows}
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
           />
@@ -983,6 +1037,19 @@ function App() {
             />
           </CollapsibleSection>
 
+
+          <CollapsibleSection
+            title="Настройки"
+            description="Компактный режим и поведение подсказок"
+            storageKey="chess-coach.section.settings"
+          >
+            <AppSettingsPanel
+              compactUi={compactUi}
+              showAnalysisArrows={showAnalysisArrows}
+              onCompactUiChange={setCompactUi}
+              onShowAnalysisArrowsChange={setShowAnalysisArrows}
+            />
+          </CollapsibleSection>
 
           <CollapsibleSection
             title="Материал"
