@@ -1,4 +1,6 @@
 import { useState } from "react";
+import type { Color } from "chess.js";
+import PlayerSideSelector from "./components/PlayerSideSelector";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
@@ -15,6 +17,9 @@ function App() {
 
   const [gameMode, setGameMode] =
     useState<GameMode>("analysis");
+
+    const [playerSide, setPlayerSide] =
+  useState<Color>("w");
 
   const {
     analysis,
@@ -194,6 +199,14 @@ function App() {
             disabled={isBotThinking}
             onChange={handleModeChange}
           />
+
+          {gameMode === "bot" && (
+  <PlayerSideSelector
+    side={playerSide}
+    disabled={isBotThinking}
+    onChange={setPlayerSide}
+  />
+)}
 
           <GameControls
             canUndo={history.length > 0 && !isBotThinking}
