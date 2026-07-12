@@ -1,15 +1,21 @@
+import type { SubscriptionTier } from "../features/featureAccess";
+
 type Props = {
   compactUi: boolean;
   showAnalysisArrows: boolean;
+  subscriptionTier: SubscriptionTier;
   onCompactUiChange: (enabled: boolean) => void;
   onShowAnalysisArrowsChange: (enabled: boolean) => void;
+  onSubscriptionTierChange: (tier: SubscriptionTier) => void;
 };
 
 export default function AppSettingsPanel({
   compactUi,
   showAnalysisArrows,
+  subscriptionTier,
   onCompactUiChange,
   onShowAnalysisArrowsChange,
+  onSubscriptionTierChange,
 }: Props) {
   return (
     <div className="app-settings-card">
@@ -53,6 +59,44 @@ export default function AppSettingsPanel({
           />
           <span />
         </label>
+      </div>
+
+      <div className="setting-row subscription-row">
+        <div>
+          <strong>Режим монетизации</strong>
+          <p>
+            Тестовый переключатель для будущих Android/iOS версий:
+            в бесплатном режиме показываются рекламные места, в
+            премиум-режиме реклама скрыта и доступны учебные
+            премиум-функции.
+          </p>
+        </div>
+
+        <div className="subscription-toggle">
+          <button
+            type="button"
+            className={
+              subscriptionTier === "free"
+                ? "subscription-option active"
+                : "subscription-option"
+            }
+            onClick={() => onSubscriptionTierChange("free")}
+          >
+            Free
+          </button>
+
+          <button
+            type="button"
+            className={
+              subscriptionTier === "premium"
+                ? "subscription-option active"
+                : "subscription-option"
+            }
+            onClick={() => onSubscriptionTierChange("premium")}
+          >
+            Premium
+          </button>
+        </div>
       </div>
     </div>
   );

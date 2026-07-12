@@ -1,0 +1,38 @@
+.ad-slot {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px dashed rgba(131, 147, 118, 0.7);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(131, 147, 118, 0.12),
+      rgba(28, 33, 30, 0.9)
+    );
+}
+
+.ad-slot-label {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 3px 8px;
+  border: 1px solid rgba(131, 147, 118, 0.55);
+  border-radius: 999px;
+  color: #bfcbb2;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ad-slot strong {
+  display: block;
+  color: #e9eeea;
+}
+
+.ad-slot p {
+  margin: 8px 0 0;
+  color: #b6bdb8;
+  font-size: 13px;
+  line-height: 1.45;
+}

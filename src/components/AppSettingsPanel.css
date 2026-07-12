@@ -81,3 +81,37 @@
     grid-template-columns: 1fr;
   }
 }
+
+.subscription-row {
+  align-items: start;
+}
+
+.subscription-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #101410;
+}
+
+.subscription-option {
+  min-height: 38px;
+  border-color: transparent;
+  background: transparent;
+  color: #d2d8d4;
+}
+
+.subscription-option.active {
+  border-color: #839376;
+  background: #839376;
+  color: #101410;
+}
+
+@media (max-width: 520px) {
+  .subscription-toggle {
+    width: 100%;
+  }
+}

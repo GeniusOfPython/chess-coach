@@ -28,12 +28,16 @@ import LearningJournalPanel, {
 } from "./components/LearningJournalPanel";
 import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
 import AppSettingsPanel from "./components/AppSettingsPanel";
+import AdSlot from "./components/AdSlot";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import type { EngineAnalysis } from "./types/chess";
-import { featureAccess } from "./features/featureAccess";
+import {
+  getFeatureAccess,
+  type SubscriptionTier,
+} from "./features/featureAccess";
 import {
   getBotLevel,
   type BotLevelId,
@@ -45,6 +49,7 @@ import "./components/BestMoveTrainingPanel.css";
 import "./components/LearningJournalPanel.css";
 import "./components/TrainingSummaryPanel.css";
 import "./components/AppSettingsPanel.css";
+import "./components/AdSlot.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -121,6 +126,7 @@ const settingsStorageKeys = {
   botLevelId: "chess-coach.bot-level-id",
   compactUi: "chess-coach.compact-ui",
   showAnalysisArrows: "chess-coach.show-analysis-arrows",
+  subscriptionTier: "chess-coach.subscription-tier",
 };
 
 function readStoredBoolean({
@@ -179,6 +185,14 @@ function readStoredBotLevelId(): BotLevelId {
   return "casual";
 }
 
+function readStoredSubscriptionTier(): SubscriptionTier {
+  const value = window.localStorage.getItem(
+    settingsStorageKeys.subscriptionTier,
+  );
+
+  return value === "free" ? "free" : "premium";
+}
+
 const initialTrainingTask: BestMoveTrainingTask = {
   status: "idle",
   positionFen: null,
@@ -230,6 +244,13 @@ function App() {
       }),
     );
 
+  const [subscriptionTier, setSubscriptionTier] =
+    useState<SubscriptionTier>(() =>
+      readStoredSubscriptionTier(),
+    );
+
+  const access = getFeatureAccess(subscriptionTier);
+
   useEffect(() => {
     window.localStorage.setItem(
       settingsStorageKeys.gameMode,
@@ -264,6 +285,13 @@ function App() {
       String(showAnalysisArrows),
     );
   }, [showAnalysisArrows]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.subscriptionTier,
+      subscriptionTier,
+    );
+  }, [subscriptionTier]);
 
   const {
     analysis,
@@ -969,6 +997,11 @@ function App() {
             onAnalyze={handleAnalyzePosition}
           />
 
+          <AdSlot
+            tier={subscriptionTier}
+            placement="sidePanel"
+          />
+
           <CollapsibleSection
             title="Анализ и разбор"
             description="Баланс позиции, качество последнего хода и варианты Stockfish"
@@ -986,7 +1019,7 @@ function App() {
               isAnalyzing={isAnalyzing}
               error={error}
               canShowExplanations={
-                featureAccess.canUseMoveExplanations
+                access.canUseMoveExplanations
               }
             />
 
@@ -1001,11 +1034,16 @@ function App() {
               onReset={resetBestMoveTraining}
             />
 
-            {featureAccess.canUseMoveReview ? (
+            <AdSlot
+              tier={subscriptionTier}
+              placement="analysis"
+            />
+
+            {access.canUseMoveReview ? (
               <MoveReviewPanel
                 review={lastMoveReview}
                 canShowExplanations={
-                  featureAccess.canUseMoveExplanations
+                  access.canUseMoveExplanations
                 }
               />
             ) : (
@@ -1046,8 +1084,10 @@ function App() {
             <AppSettingsPanel
               compactUi={compactUi}
               showAnalysisArrows={showAnalysisArrows}
+              subscriptionTier={subscriptionTier}
               onCompactUiChange={setCompactUi}
               onShowAnalysisArrowsChange={setShowAnalysisArrows}
+              onSubscriptionTierChange={setSubscriptionTier}
             />
           </CollapsibleSection>
 
@@ -1064,7 +1104,7 @@ function App() {
             description="Копирование и загрузка отдельной позиции"
             storageKey="chess-coach.section.fen"
           >
-            {featureAccess.canUseFenTools ? (
+            {access.canUseFenTools ? (
               <FenPanel
                 fen={getFen()}
                 onImportFen={handleImportFen}
@@ -1082,7 +1122,7 @@ function App() {
             description="Импорт, копирование и скачивание партии"
             storageKey="chess-coach.section.pgn"
           >
-            {featureAccess.canUsePgnTools ? (
+            {access.canUsePgnTools ? (
               <PgnPanel
                 pgn={getPgn()}
                 onImportPgn={handleImportPgn}

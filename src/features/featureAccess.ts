@@ -6,15 +6,31 @@ export type PremiumFeatureKey =
   | "pgnTools"
   | "fenTools";
 
-const DEVELOPMENT_TIER: SubscriptionTier = "premium";
+export type FeatureAccess = {
+  tier: SubscriptionTier;
+  canShowAds: boolean;
+  canUseMoveReview: boolean;
+  canUseMoveExplanations: boolean;
+  canUsePgnTools: boolean;
+  canUseFenTools: boolean;
+};
 
-export const featureAccess = {
-  tier: DEVELOPMENT_TIER,
-  canUseMoveReview: DEVELOPMENT_TIER === "premium",
-  canUseMoveExplanations: DEVELOPMENT_TIER === "premium",
-  canUsePgnTools: true,
-  canUseFenTools: true,
-} as const;
+export function getFeatureAccess(
+  tier: SubscriptionTier,
+): FeatureAccess {
+  const isPremium = tier === "premium";
+
+  return {
+    tier,
+    canShowAds: !isPremium,
+    canUseMoveReview: isPremium,
+    canUseMoveExplanations: isPremium,
+    canUsePgnTools: true,
+    canUseFenTools: true,
+  };
+}
+
+export const featureAccess = getFeatureAccess("premium");
 
 export function isPremiumFeature(
   featureKey: PremiumFeatureKey,
