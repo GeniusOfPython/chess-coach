@@ -3,13 +3,18 @@ import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
 import GameControls from "./components/GameControls";
+import GameModeSelector, {
+  type GameMode,
+} from "./components/GameModeSelector";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import "./App.css";
 
 function App() {
-  const [isBotThinking, setIsBotThinking] =
-    useState(false);
+  const [isBotThinking, setIsBotThinking] = useState(false);
+
+  const [gameMode, setGameMode] =
+    useState<GameMode>("analysis");
 
   const {
     analysis,
@@ -43,29 +48,7 @@ function App() {
   }
 
   async function makeBotMove() {
-  if (game.isGameOver()) {
-    return;
-  }
-
-  if (game.turn() !== "b") {
-    return;
-  }
-
-  setIsBotThinking(true);
-
-  try {
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 500);
-    });
-
-    const fenForBot = game.fen();
-
-    const bestMove = await calculateBestMove({
-      fen: fenForBot,
-      isGameOver: game.isGameOver(),
-    });
-
-    if (!bestMove) {
+    if (gameMode !== "bot") {
       return;
     }
 
@@ -77,39 +60,81 @@ function App() {
       return;
     }
 
-    makeEngineMove(bestMove);
-  } finally {
-    setIsBotThinking(false);
+    setIsBotThinking(true);
+
+    try {
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 500);
+      });
+
+      const bestMove = await calculateBestMove({
+        fen: game.fen(),
+        isGameOver: game.isGameOver(),
+      });
+
+      if (!bestMove) {
+        return;
+      }
+
+      if (game.isGameOver()) {
+        return;
+      }
+
+      if (game.turn() !== "b") {
+        return;
+      }
+
+      makeEngineMove(bestMove);
+    } finally {
+      setIsBotThinking(false);
+    }
   }
-}
+
   function handlePieceDrop(args: {
-  sourceSquare: string;
-  targetSquare: string | null;
-}) {
-  if (isBotThinking) {
-    return false;
+    sourceSquare: string;
+    targetSquare: string | null;
+  }) {
+    if (isBotThinking) {
+      return false;
+    }
+
+    if (gameMode === "bot" && game.turn() !== "w") {
+      return false;
+    }
+
+    const moveWasMade = onPieceDrop(args);
+
+    if (
+      moveWasMade &&
+      gameMode === "bot" &&
+      game.turn() === "b"
+    ) {
+      window.setTimeout(() => {
+        void makeBotMove();
+      }, 0);
+    }
+
+    return moveWasMade;
   }
 
-  if (game.turn() !== "w") {
-    return false;
-  }
-
-  const moveWasMade = onPieceDrop(args);
-
-  if (moveWasMade) {
-    window.setTimeout(() => {
-      void makeBotMove();
-    }, 0);
-  }
-
-  return moveWasMade;
-}
   function handleNewGame() {
     newGame();
     setIsBotThinking(false);
+    clearAnalysis();
   }
 
   function handleUndoMove() {
+    if (isBotThinking) {
+      return;
+    }
+
+    if (gameMode === "analysis") {
+      undoMove();
+      setIsBotThinking(false);
+      clearAnalysis();
+      return;
+    }
+
     undoMove();
 
     if (game.turn() === "b") {
@@ -117,6 +142,17 @@ function App() {
     }
 
     setIsBotThinking(false);
+    clearAnalysis();
+  }
+
+  function handleModeChange(mode: GameMode) {
+    if (isBotThinking) {
+      return;
+    }
+
+    setGameMode(mode);
+    setIsBotThinking(false);
+    clearAnalysis();
   }
 
   return (
@@ -152,6 +188,12 @@ function App() {
               {isBotThinking ? "Бот думает…" : status}
             </strong>
           </div>
+
+          <GameModeSelector
+            mode={gameMode}
+            disabled={isBotThinking}
+            onChange={handleModeChange}
+          />
 
           <GameControls
             canUndo={history.length > 0 && !isBotThinking}
