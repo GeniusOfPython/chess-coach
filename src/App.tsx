@@ -1,41 +1,20 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import type { Color } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
 import GameControls from "./components/GameControls";
-import { StockfishService } from "./engine/StockfishService";
-import type { EngineAnalysis } from "./types/chess";
 import { useChessGame } from "./hooks/useChessGame";
+import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import "./App.css";
 
 function App() {
-  const engine = useMemo(
-    () => new StockfishService(),
-    [],
-  );
-
-  const [analysis, setAnalysis] =
-    useState<EngineAnalysis | null>(null);
-
-  const [analyzedTurn, setAnalyzedTurn] =
-    useState<Color>("w");
-
-  const [isAnalyzing, setIsAnalyzing] =
-    useState(false);
-
-  const [error, setError] = useState("");
-
-  function clearAnalysis() {
-    engine.stop();
-    setAnalysis(null);
-    setError("");
-    setIsAnalyzing(false);
-  }
+  const {
+    analysis,
+    analyzedTurn,
+    isAnalyzing,
+    error,
+    analyzePosition,
+    clearAnalysis,
+  } = useEngineAnalysis();
 
   const {
     game,
@@ -49,40 +28,12 @@ function App() {
     onPositionChanged: clearAnalysis,
   });
 
-  useEffect(() => {
-    return () => {
-      engine.destroy();
-    };
-  }, [engine]);
-
-  async function analyzePosition() {
-    if (game.isGameOver()) {
-      setError("Партия уже завершена");
-      return;
-    }
-
-    setIsAnalyzing(true);
-    setAnalysis(null);
-    setError("");
-
-    try {
-      const currentTurn = game.turn();
-
-      const result = await engine.analyze(
-        game.fen(),
-      );
-
-      setAnalyzedTurn(currentTurn);
-      setAnalysis(result);
-    } catch (analysisError) {
-      setError(
-        analysisError instanceof Error
-          ? analysisError.message
-          : "Ошибка анализа",
-      );
-    } finally {
-      setIsAnalyzing(false);
-    }
+  function handleAnalyzePosition() {
+    void analyzePosition({
+      fen: game.fen(),
+      turn: game.turn(),
+      isGameOver: game.isGameOver(),
+    });
   }
 
   return (
@@ -123,7 +74,7 @@ function App() {
             isGameOver={game.isGameOver()}
             onNewGame={newGame}
             onUndoMove={undoMove}
-            onAnalyze={analyzePosition}
+            onAnalyze={handleAnalyzePosition}
           />
 
           <AnalysisPanel
