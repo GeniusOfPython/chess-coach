@@ -1,0 +1,66 @@
+.material-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.material-balance {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.material-balance strong {
+  font-size: 16px;
+}
+
+.material-balance span {
+  color: #b6bdb8;
+  font-size: 13px;
+}
+
+.material-captured-list {
+  display: grid;
+  gap: 10px;
+}
+
+.material-captured-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #111411;
+}
+
+.material-captured-row > span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.material-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 24px;
+  align-items: center;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.material-pieces.white {
+  color: #e8eee7;
+}
+
+.material-pieces.black {
+  color: #7f8a82;
+}
+
+.material-empty {
+  color: #909b94;
+  font-size: 13px;
+}

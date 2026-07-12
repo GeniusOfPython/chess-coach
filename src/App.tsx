@@ -16,6 +16,7 @@ import MoveReviewPanel, {
 } from "./components/MoveReviewPanel";
 import PgnPanel from "./components/PgnPanel";
 import FenPanel from "./components/FenPanel";
+import MaterialPanel from "./components/MaterialPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -758,6 +759,14 @@ function App() {
             />
           </CollapsibleSection>
 
+
+          <CollapsibleSection
+            title="Материал"
+            description="Материальный баланс и взятые фигуры"
+            storageKey="chess-coach.section.material"
+          >
+            <MaterialPanel fen={getFen()} />
+          </CollapsibleSection>
 
           <CollapsibleSection
             title="FEN"
