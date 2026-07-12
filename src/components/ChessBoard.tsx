@@ -1,9 +1,12 @@
 import { Chessboard } from "react-chessboard";
 
+type BoardOrientation = "white" | "black";
+
 type Props = {
   position: string;
   bestMove?: string;
   candidateMoves?: string[];
+  boardOrientation?: BoardOrientation;
   onPieceDrop: (args: {
     sourceSquare: string;
     targetSquare: string | null;
@@ -22,6 +25,7 @@ export default function ChessBoard({
   position,
   bestMove,
   candidateMoves = [],
+  boardOrientation = "white",
   onPieceDrop,
 }: Props) {
   const uniqueCandidates = candidateMoves.filter(
@@ -32,9 +36,9 @@ export default function ChessBoard({
   );
 
   const arrowColors = [
-    "rgba(60, 200, 90, 0.90)",   // лучший ход — зелёный
-    "rgba(70, 140, 255, 0.82)",  // 2 вариант — синий
-    "rgba(255, 170, 40, 0.78)",  // 3 вариант — оранжевый
+    "rgba(60, 200, 90, 0.90)",
+    "rgba(70, 140, 255, 0.82)",
+    "rgba(255, 170, 40, 0.78)",
   ];
 
   const arrows = [
@@ -52,6 +56,7 @@ export default function ChessBoard({
     <Chessboard
       options={{
         position,
+        boardOrientation,
         onPieceDrop,
         arrows,
         boardStyle: {

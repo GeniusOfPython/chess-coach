@@ -81,7 +81,6 @@ function getVerdict({
   return "blunder";
 }
 
-
 const settingsStorageKeys = {
   gameMode: "chess-coach.game-mode",
   playerSide: "chess-coach.player-side",
@@ -137,6 +136,9 @@ function App() {
   const [botLevelId, setBotLevelId] =
     useState<BotLevelId>(() => readStoredBotLevelId());
 
+  const [isBotGameStarted, setIsBotGameStarted] =
+    useState(false);
+
   const [lastMoveReview, setLastMoveReview] =
     useState<MoveReview | null>(null);
 
@@ -187,15 +189,23 @@ function App() {
     onPositionChanged: clearAnalysis,
   });
 
+  const boardOrientation =
+    gameMode === "bot" && playerSide === "b"
+      ? "black"
+      : "white";
+
   function isBotTurnFor({
     mode = gameMode,
     side = playerSide,
+    started = isBotGameStarted,
   }: {
     mode?: GameMode;
     side?: Color;
+    started?: boolean;
   } = {}) {
     return (
       mode === "bot" &&
+      started &&
       !game.isGameOver() &&
       game.turn() !== side
     );
@@ -206,7 +216,7 @@ function App() {
       return true;
     }
 
-    return game.turn() === playerSide;
+    return isBotGameStarted && game.turn() === playerSide;
   }
 
   function handleAnalyzePosition() {
@@ -220,11 +230,13 @@ function App() {
   async function makeBotMove({
     mode = gameMode,
     side = playerSide,
+    started = isBotGameStarted,
   }: {
     mode?: GameMode;
     side?: Color;
+    started?: boolean;
   } = {}) {
-    if (!isBotTurnFor({ mode, side })) {
+    if (!isBotTurnFor({ mode, side, started })) {
       return;
     }
 
@@ -247,7 +259,7 @@ function App() {
         return;
       }
 
-      if (!isBotTurnFor({ mode, side })) {
+      if (!isBotTurnFor({ mode, side, started })) {
         return;
       }
 
@@ -260,18 +272,19 @@ function App() {
   function requestBotMove({
     mode = gameMode,
     side = playerSide,
+    started = isBotGameStarted,
   }: {
     mode?: GameMode;
     side?: Color;
+    started?: boolean;
   } = {}) {
     window.setTimeout(() => {
-      void makeBotMove({ mode, side });
+      void makeBotMove({ mode, side, started });
     }, 0);
   }
 
   function reviewMoveAfterEngineEvaluation({
     playedMove,
-    bestMove,
     matchedBestMove,
     positionBeforeMove,
     positionAfterMove,
@@ -279,7 +292,6 @@ function App() {
     movingSide,
   }: {
     playedMove: string;
-    bestMove: string;
     matchedBestMove: boolean;
     positionBeforeMove: string;
     positionAfterMove: string;
@@ -332,7 +344,8 @@ function App() {
         if (
           !currentReview ||
           currentReview.playedMove !== playedMove ||
-          currentReview.positionBeforeMove !== positionBeforeMove
+          currentReview.positionBeforeMove !==
+            positionBeforeMove
         ) {
           return currentReview;
         }
@@ -410,7 +423,6 @@ function App() {
       ) {
         reviewMoveAfterEngineEvaluation({
           playedMove,
-          bestMove: suggestedBestMove,
           matchedBestMove,
           positionBeforeMove,
           positionAfterMove: game.fen(),
@@ -430,13 +442,27 @@ function App() {
   function handleNewGame() {
     newGame();
     setIsBotThinking(false);
+    setIsBotGameStarted(false);
+    setLastMoveReview(null);
+    clearAnalysis();
+  }
+
+  function handleStartBotGame() {
+    if (isBotThinking || gameMode !== "bot") {
+      return;
+    }
+
+    newGame();
+    setIsBotThinking(false);
+    setIsBotGameStarted(true);
     setLastMoveReview(null);
     clearAnalysis();
 
-    if (gameMode === "bot" && playerSide === "b") {
+    if (playerSide === "b") {
       requestBotMove({
-        mode: gameMode,
+        mode: "bot",
         side: playerSide,
+        started: true,
       });
     }
   }
@@ -472,15 +498,9 @@ function App() {
 
     setGameMode(mode);
     setIsBotThinking(false);
+    setIsBotGameStarted(false);
     setLastMoveReview(null);
     clearAnalysis();
-
-    if (mode === "bot" && playerSide === "b") {
-      requestBotMove({
-        mode,
-        side: playerSide,
-      });
-    }
   }
 
   function handlePlayerSideChange(side: Color) {
@@ -490,16 +510,10 @@ function App() {
 
     setPlayerSide(side);
     setIsBotThinking(false);
+    setIsBotGameStarted(false);
     setLastMoveReview(null);
     clearAnalysis();
     newGame();
-
-    if (gameMode === "bot" && side === "b") {
-      requestBotMove({
-        mode: gameMode,
-        side,
-      });
-    }
   }
 
   function handleImportPgn(pgn: string) {
@@ -515,6 +529,7 @@ function App() {
 
     setGameMode("analysis");
     setIsBotThinking(false);
+    setIsBotGameStarted(false);
     setLastMoveReview(null);
     clearAnalysis();
 
@@ -543,6 +558,7 @@ function App() {
             candidateMoves={analysis?.lines
               .slice(1, 3)
               .map((line) => line.bestMove)}
+            boardOrientation={boardOrientation}
             onPieceDrop={handlePieceDrop}
           />
         </div>
@@ -554,7 +570,11 @@ function App() {
             </span>
 
             <strong>
-              {isBotThinking ? "Бот думает…" : status}
+              {isBotThinking
+                ? "Бот думает…"
+                : gameMode === "bot" && !isBotGameStarted
+                  ? "Выбери сторону и нажми «Старт партии»"
+                  : status}
             </strong>
           </div>
 
@@ -578,6 +598,17 @@ function App() {
               disabled={isBotThinking}
               onChange={setBotLevelId}
             />
+          )}
+
+          {gameMode === "bot" && !isBotGameStarted && (
+            <button
+              type="button"
+              className="analyze-button"
+              disabled={isBotThinking}
+              onClick={handleStartBotGame}
+            >
+              Старт партии
+            </button>
           )}
 
           <GameControls
