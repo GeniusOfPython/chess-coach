@@ -9,6 +9,7 @@ import GameModeSelector, {
 } from "./components/GameModeSelector";
 import PlayerSideSelector from "./components/PlayerSideSelector";
 import BotLevelSelector from "./components/BotLevelSelector";
+import EvaluationBar from "./components/EvaluationBar";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import {
@@ -292,6 +293,11 @@ function App() {
             onNewGame={handleNewGame}
             onUndoMove={handleUndoMove}
             onAnalyze={handleAnalyzePosition}
+          />
+
+          <EvaluationBar
+            analysis={analysis}
+            analyzedTurn={analyzedTurn}
           />
 
           <AnalysisPanel

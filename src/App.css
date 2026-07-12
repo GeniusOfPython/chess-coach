@@ -374,3 +374,68 @@ button:disabled {
   font-size: 13px;
   white-space: nowrap;
 }
+.evaluation-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.evaluation-horizontal {
+  display: grid;
+  gap: 10px;
+}
+
+.evaluation-scale {
+  position: relative;
+  display: flex;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid #303733;
+  border-radius: 999px;
+  background: #111411;
+}
+
+.evaluation-black-part {
+  height: 100%;
+  background: #101410;
+  transition: width 0.25s ease;
+}
+
+.evaluation-white-part {
+  height: 100%;
+  background: #e8eee7;
+  transition: width 0.25s ease;
+}
+
+.evaluation-center-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(120, 130, 120, 0.55);
+}
+
+.evaluation-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  min-width: 50px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(20, 24, 21, 0.82);
+  color: #f0f4ef;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.evaluation-description {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}
