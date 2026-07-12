@@ -95,3 +95,108 @@
 .best-move-training-hints p {
   color: #d7e2ff;
 }
+
+.best-move-training-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.best-move-training-reset-stats {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #303733;
+  border-radius: 999px;
+  background: #151a17;
+  color: #9fa9a3;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.best-move-training-reset-stats:hover {
+  border-color: rgba(255, 170, 40, 0.65);
+  color: #f0f4ef;
+}
+
+.best-move-training-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.best-move-training-stats div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #151a17;
+}
+
+.best-move-training-stats span {
+  color: #8f9a94;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.best-move-training-stats strong {
+  color: #f0f4ef;
+  font-size: 18px;
+}
+
+.best-move-training-streak-note {
+  padding: 10px 12px;
+  border: 1px solid rgba(60, 200, 90, 0.45);
+  border-radius: 12px;
+  background: rgba(60, 200, 90, 0.08);
+  color: #d7f6df !important;
+}
+
+@media (max-width: 720px) {
+  .best-move-training-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.best-move-training-daily {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(80, 94, 86, 0.75);
+  border-radius: 12px;
+  background: rgba(16, 22, 18, 0.76);
+}
+
+.best-move-training-daily-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.best-move-training-daily-header span {
+  color: #aeb8b1;
+  font-size: 13px;
+}
+
+.best-move-training-daily-header strong {
+  color: #f0f5f1;
+  font-size: 14px;
+}
+
+.best-move-training-daily-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(35, 42, 37, 0.95);
+}
+
+.best-move-training-daily-bar > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #46a3ff, #3cc85a);
+  transition: width 0.25s ease;
+}

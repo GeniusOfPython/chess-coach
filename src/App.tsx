@@ -161,6 +161,11 @@ const settingsStorageKeys = {
   privacyConsent: "chess-coach.privacy-consent",
   activeWorkspace: "chess-coach.active-workspace",
   currentPgn: "chess-coach.current-pgn",
+  trainingBestStreak: "chess-coach.training-best-streak",
+  trainingTotalAttempts: "chess-coach.training-total-attempts",
+  trainingTotalSuccesses: "chess-coach.training-total-successes",
+  trainingDailyDate: "chess-coach.training-daily-date",
+  trainingDailySuccesses: "chess-coach.training-daily-successes",
 };
 
 function readStoredBoolean({
@@ -181,6 +186,20 @@ function readStoredBoolean({
   }
 
   return fallback;
+}
+
+function readStoredNumber({
+  key,
+  fallback,
+}: {
+  key: string;
+  fallback: number;
+}) {
+  const value = Number(readStorageValue(key));
+
+  return Number.isFinite(value) && value >= 0
+    ? value
+    : fallback;
 }
 
 function readStoredGameMode(): GameMode {
@@ -247,6 +266,27 @@ function readStoredWorkspace(): WorkspaceId {
   return "coach";
 }
 
+const dailyTrainingGoal = 5;
+
+function getTodayStorageKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readStoredDailySuccesses() {
+  const storedDate = readStorageValue(
+    settingsStorageKeys.trainingDailyDate,
+  );
+
+  if (storedDate !== getTodayStorageKey()) {
+    return 0;
+  }
+
+  return readStoredNumber({
+    key: settingsStorageKeys.trainingDailySuccesses,
+    fallback: 0,
+  });
+}
+
 const initialTrainingTask: BestMoveTrainingTask = {
   status: "idle",
   positionFen: null,
@@ -280,6 +320,36 @@ function App() {
 
   const [bestMoveTrainingTask, setBestMoveTrainingTask] =
     useState<BestMoveTrainingTask>(initialTrainingTask);
+
+  const [trainingCurrentStreak, setTrainingCurrentStreak] =
+    useState(0);
+
+  const [trainingBestStreak, setTrainingBestStreak] =
+    useState(() =>
+      readStoredNumber({
+        key: settingsStorageKeys.trainingBestStreak,
+        fallback: 0,
+      }),
+    );
+
+  const [trainingTotalAttempts, setTrainingTotalAttempts] =
+    useState(() =>
+      readStoredNumber({
+        key: settingsStorageKeys.trainingTotalAttempts,
+        fallback: 0,
+      }),
+    );
+
+  const [trainingTotalSuccesses, setTrainingTotalSuccesses] =
+    useState(() =>
+      readStoredNumber({
+        key: settingsStorageKeys.trainingTotalSuccesses,
+        fallback: 0,
+      }),
+    );
+
+  const [trainingDailySuccesses, setTrainingDailySuccesses] =
+    useState(() => readStoredDailySuccesses());
 
   const [learningJournalItems, setLearningJournalItems] =
     useState<LearningJournalItem[]>([]);
@@ -342,6 +412,38 @@ function App() {
 
   useEffect(() => {
     writeStorageValue(
+      settingsStorageKeys.trainingBestStreak,
+      String(trainingBestStreak),
+    );
+  }, [trainingBestStreak]);
+
+  useEffect(() => {
+    writeStorageValue(
+      settingsStorageKeys.trainingTotalAttempts,
+      String(trainingTotalAttempts),
+    );
+  }, [trainingTotalAttempts]);
+
+  useEffect(() => {
+    writeStorageValue(
+      settingsStorageKeys.trainingTotalSuccesses,
+      String(trainingTotalSuccesses),
+    );
+  }, [trainingTotalSuccesses]);
+
+  useEffect(() => {
+    writeStorageValue(
+      settingsStorageKeys.trainingDailyDate,
+      getTodayStorageKey(),
+    );
+    writeStorageValue(
+      settingsStorageKeys.trainingDailySuccesses,
+      String(trainingDailySuccesses),
+    );
+  }, [trainingDailySuccesses]);
+
+  useEffect(() => {
+    writeStorageValue(
       settingsStorageKeys.showAnalysisArrows,
       String(showAnalysisArrows),
     );
@@ -384,7 +486,7 @@ function App() {
     rewardToastTimerRef.current = window.setTimeout(() => {
       setRewardToast(null);
       rewardToastTimerRef.current = null;
-    }, 2400);
+    }, 4200);
   }
 
   const {
@@ -678,6 +780,52 @@ function App() {
     return bestMove.startsWith(playedMove);
   }
 
+  function recordTrainingAttempt(solved: boolean) {
+    setTrainingTotalAttempts((value) => value + 1);
+
+    if (!solved) {
+      setTrainingCurrentStreak(0);
+      return;
+    }
+
+    setTrainingTotalSuccesses((value) => value + 1);
+
+    setTrainingDailySuccesses((currentDailySuccesses) => {
+      const nextDailySuccesses = currentDailySuccesses + 1;
+
+      if (
+        currentDailySuccesses < dailyTrainingGoal &&
+        nextDailySuccesses >= dailyTrainingGoal
+      ) {
+        showRewardToast({
+          kind: "success",
+          title: "Цель дня выполнена",
+          text: "Пять лучших ходов найдены. Можно закончить на хорошем результате или продолжить серию.",
+        });
+      }
+
+      return nextDailySuccesses;
+    });
+
+    setTrainingCurrentStreak((currentStreak) => {
+      const nextStreak = currentStreak + 1;
+
+      setTrainingBestStreak((bestStreak) =>
+        Math.max(bestStreak, nextStreak),
+      );
+
+      return nextStreak;
+    });
+  }
+
+  function handleResetTrainingStats() {
+    setTrainingCurrentStreak(0);
+    setTrainingBestStreak(0);
+    setTrainingTotalAttempts(0);
+    setTrainingTotalSuccesses(0);
+    setTrainingDailySuccesses(0);
+  }
+
   async function handleStartBestMoveTraining() {
     if (
       isBotThinking ||
@@ -805,6 +953,8 @@ function App() {
           playedMove,
           bestMove: bestMoveTrainingTask.bestMove,
         });
+
+        recordTrainingAttempt(trainingSolved);
 
         setBestMoveTrainingTask({
           ...bestMoveTrainingTask,
@@ -1199,6 +1349,14 @@ function App() {
 
               <BestMoveTrainingPanel
                 task={bestMoveTrainingTask}
+                stats={{
+                  currentStreak: trainingCurrentStreak,
+                  bestStreak: trainingBestStreak,
+                  totalAttempts: trainingTotalAttempts,
+                  totalSuccesses: trainingTotalSuccesses,
+                  dailyGoal: dailyTrainingGoal,
+                  dailySuccesses: trainingDailySuccesses,
+                }}
                 canStart={
                   !isBotThinking &&
                   isViewingCurrentPosition &&
@@ -1207,6 +1365,7 @@ function App() {
                 onStart={handleStartBestMoveTraining}
                 onRevealHint={handleRevealBestMoveHint}
                 onReset={resetBestMoveTraining}
+                onResetStats={handleResetTrainingStats}
               />
             </section>
           )}

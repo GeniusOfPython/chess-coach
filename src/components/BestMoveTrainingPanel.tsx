@@ -16,12 +16,23 @@ export type BestMoveTrainingTask = {
   hintLevel: number;
 };
 
+export type BestMoveTrainingStats = {
+  currentStreak: number;
+  bestStreak: number;
+  totalAttempts: number;
+  totalSuccesses: number;
+  dailyGoal: number;
+  dailySuccesses: number;
+};
+
 type Props = {
   task: BestMoveTrainingTask;
+  stats: BestMoveTrainingStats;
   canStart: boolean;
   onStart: () => void;
   onRevealHint: () => void;
   onReset: () => void;
+  onResetStats: () => void;
 };
 
 function formatMove(move: string | null) {
@@ -98,12 +109,30 @@ function getVisibleHints(task: BestMoveTrainingTask) {
   return hints;
 }
 
+function getAccuracy(stats: BestMoveTrainingStats) {
+  if (stats.totalAttempts === 0) {
+    return "—";
+  }
+
+  return `${Math.round((stats.totalSuccesses / stats.totalAttempts) * 100)}%`;
+}
+
+function getDailyProgress(stats: BestMoveTrainingStats) {
+  if (stats.dailyGoal <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((stats.dailySuccesses / stats.dailyGoal) * 100));
+}
+
 export default function BestMoveTrainingPanel({
   task,
+  stats,
   canStart,
   onStart,
   onRevealHint,
   onReset,
+  onResetStats,
 }: Props) {
   const explanations =
     task.positionFen && task.bestMove
@@ -114,10 +143,60 @@ export default function BestMoveTrainingPanel({
 
   return (
     <div className="best-move-training-card">
-      <span className="status-label">Тренировка лучшего хода</span>
+      <div className="best-move-training-heading">
+        <span className="status-label">Тренировка лучшего хода</span>
+
+        {stats.totalAttempts > 0 && (
+          <button
+            type="button"
+            className="best-move-training-reset-stats"
+            onClick={onResetStats}
+          >
+            Сбросить серию
+          </button>
+        )}
+      </div>
+
+      <div className="best-move-training-stats" aria-label="Статистика тренировки">
+        <div>
+          <span>Серия</span>
+          <strong>{stats.currentStreak}</strong>
+        </div>
+
+        <div>
+          <span>Рекорд</span>
+          <strong>{stats.bestStreak}</strong>
+        </div>
+
+        <div>
+          <span>Точность</span>
+          <strong>{getAccuracy(stats)}</strong>
+        </div>
+      </div>
+
+      <div className="best-move-training-daily">
+        <div className="best-move-training-daily-header">
+          <span>Цель дня</span>
+          <strong>{Math.min(stats.dailySuccesses, stats.dailyGoal)} / {stats.dailyGoal}</strong>
+        </div>
+
+        <div className="best-move-training-daily-bar" aria-hidden="true">
+          <div
+            style={{
+              width: `${getDailyProgress(stats)}%`,
+            }}
+          />
+        </div>
+      </div>
 
       <div className={`best-move-training ${task.status}`}>
         <strong>{getStatusText(task)}</strong>
+
+        {stats.currentStreak >= 3 && task.status !== "fail" && (
+          <p className="best-move-training-streak-note">
+            Хорошая серия: {stats.currentStreak} лучших ходов подряд. Продолжай без подсказок, чтобы закрепить навык.
+          </p>
+        )}
 
         {task.error && (
           <p className="best-move-training-error">
@@ -205,7 +284,7 @@ export default function BestMoveTrainingPanel({
               disabled={task.status === "preparing"}
               onClick={onReset}
             >
-              Сбросить
+              Сбросить задачу
             </button>
           )}
         </div>

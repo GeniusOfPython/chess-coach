@@ -38,6 +38,8 @@ export default function RewardToast({ message }: Props) {
         <strong>{message.title}</strong>
         <span>{message.text}</span>
       </div>
+
+      <div className="reward-toast-progress" aria-hidden="true" />
     </div>
   );
 }
