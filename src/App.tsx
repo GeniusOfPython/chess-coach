@@ -13,6 +13,7 @@ import { StockfishService } from "./engine/StockfishService";
 import type { EngineAnalysis } from "./types/chess";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
+import GameControls from "./components/GameControls";
 import "./App.css";
 
 function App() {
@@ -198,34 +199,14 @@ function App() {
             <strong>{status}</strong>
           </div>
 
-          <div className="controls">
-            <button type="button" onClick={newGame}>
-              Новая партия
-            </button>
-
-            <button
-              type="button"
-              className="secondary"
-              onClick={undoMove}
-              disabled={history.length === 0}
-            >
-              Отменить ход
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="analyze-button"
-            onClick={analyzePosition}
-            disabled={
-              isAnalyzing || game.isGameOver()
-            }
-          >
-            {isAnalyzing
-              ? "Stockfish анализирует…"
-              : "Показать лучший ход"}
-          </button>
-
+          <GameControls
+  canUndo={history.length > 0}
+  isAnalyzing={isAnalyzing}
+  isGameOver={game.isGameOver()}
+  onNewGame={newGame}
+  onUndoMove={undoMove}
+  onAnalyze={analyzePosition}
+/>
           <AnalysisPanel
   analysis={analysis}
   analyzedTurn={analyzedTurn}
