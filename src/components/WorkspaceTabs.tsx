@@ -3,6 +3,8 @@ export type WorkspaceId = "coach" | "game" | "tools";
 type WorkspaceTab = {
   id: WorkspaceId;
   title: string;
+  shortTitle: string;
+  icon: string;
   description: string;
 };
 
@@ -10,17 +12,23 @@ const tabs: WorkspaceTab[] = [
   {
     id: "coach",
     title: "Учёба",
-    description: "Главный экран: план, лучший ход и тренировка.",
+    shortTitle: "Учёба",
+    icon: "♟",
+    description: "План, лучший ход и тренировка.",
   },
   {
     id: "game",
     title: "Партия",
-    description: "Итог, материал, оценка и разбор последнего хода.",
+    shortTitle: "Партия",
+    icon: "◷",
+    description: "Итог, материал, оценка и разбор хода.",
   },
   {
     id: "tools",
     title: "Ещё",
-    description: "История, PGN/FEN, настройки и журнал ошибок.",
+    shortTitle: "Ещё",
+    icon: "☰",
+    description: "История, PGN/FEN, настройки и журнал.",
   },
 ];
 
@@ -37,8 +45,10 @@ export default function WorkspaceTabs({
     tabs.find((tab) => tab.id === active) ?? tabs[0];
 
   return (
-    <div className="workspace-tabs-card">
-      <span className="status-label">Рабочая область</span>
+    <nav className="workspace-tabs-card" aria-label="Рабочая область">
+      <span className="status-label workspace-tabs-label">
+        Рабочая область
+      </span>
 
       <div className="workspace-tabs" role="tablist">
         {tabs.map((tab) => (
@@ -54,7 +64,11 @@ export default function WorkspaceTabs({
             }
             onClick={() => onChange(tab.id)}
           >
-            {tab.title}
+            <span className="workspace-tab-icon" aria-hidden="true">
+              {tab.icon}
+            </span>
+            <span className="workspace-tab-title">{tab.title}</span>
+            <span className="workspace-tab-short">{tab.shortTitle}</span>
           </button>
         ))}
       </div>
@@ -62,6 +76,6 @@ export default function WorkspaceTabs({
       <p className="workspace-tabs-description">
         {activeTab.description}
       </p>
-    </div>
+    </nav>
   );
 }

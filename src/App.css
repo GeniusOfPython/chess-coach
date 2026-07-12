@@ -630,3 +630,9 @@ button:disabled {
     padding-top: max(12px, env(safe-area-inset-top));
   }
 }
+
+@media (max-width: 760px) {
+  .app {
+    padding-bottom: calc(106px + env(safe-area-inset-bottom));
+  }
+}
