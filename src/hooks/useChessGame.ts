@@ -57,6 +57,33 @@ function getLastMoveFromVerboseHistory(
   };
 }
 
+const sessionStorageKey = "chess-coach.current-pgn";
+
+function readSavedPgn() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.localStorage.getItem(sessionStorageKey) ?? "";
+}
+
+function createInitialGame() {
+  const initialGame = new Chess();
+  const savedPgn = readSavedPgn().trim();
+
+  if (!savedPgn) {
+    return initialGame;
+  }
+
+  try {
+    initialGame.loadPgn(savedPgn);
+  } catch {
+    return new Chess();
+  }
+
+  return initialGame;
+}
+
 function buildTimelineFromGame(game: Chess) {
   const pgn = game.pgn();
   const replayGame = new Chess();
@@ -103,22 +130,51 @@ function buildTimelineFromGame(game: Chess) {
 export function useChessGame({
   onPositionChanged,
 }: UseChessGameOptions = {}) {
-  const game = useMemo(() => new Chess(), []);
+  const game = useMemo(() => createInitialGame(), []);
+  const initialTimeline = useMemo(
+    () => buildTimelineFromGame(game),
+    [game],
+  );
 
   const [position, setPosition] = useState(game.fen());
-  const [history, setHistory] = useState<string[]>([]);
-  const [status, setStatus] = useState("Ход белых");
+  const [history, setHistory] = useState<string[]>(
+    game.history(),
+  );
+  const [status, setStatus] = useState(() => {
+    if (game.isCheckmate()) {
+      return game.turn() === "w"
+        ? "Мат. Победили чёрные"
+        : "Мат. Победили белые";
+    }
+
+    if (game.isStalemate()) {
+      return "Пат. Ничья";
+    }
+
+    if (game.isDraw()) {
+      return "Ничья";
+    }
+
+    const side = game.turn() === "w" ? "белых" : "чёрных";
+    const check = game.inCheck() ? ". Шах" : "";
+
+    return `Ход ${side}${check}`;
+  });
   const [lastMove, setLastMove] =
-    useState<LastMoveSquares | null>(null);
+    useState<LastMoveSquares | null>(
+      initialTimeline.lastMoveHistory.at(-1) ?? null,
+    );
   const [checkSquare, setCheckSquare] =
     useState<string | null>(getCheckedKingSquare(game));
-  const [fenHistory, setFenHistory] = useState<string[]>([
-    game.fen(),
-  ]);
+  const [fenHistory, setFenHistory] = useState<string[]>(
+    initialTimeline.fenHistory,
+  );
   const [lastMoveHistory, setLastMoveHistory] = useState<
     LastMoveSquares[]
-  >([]);
-  const [viewedMoveIndex, setViewedMoveIndex] = useState(0);
+  >(initialTimeline.lastMoveHistory);
+  const [viewedMoveIndex, setViewedMoveIndex] = useState(
+    Math.max(0, initialTimeline.fenHistory.length - 1),
+  );
 
   function updateStatus() {
     if (game.isCheckmate()) {

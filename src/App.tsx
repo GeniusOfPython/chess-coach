@@ -144,6 +144,7 @@ const settingsStorageKeys = {
   subscriptionTier: "chess-coach.subscription-tier",
   privacyConsent: "chess-coach.privacy-consent",
   activeWorkspace: "chess-coach.active-workspace",
+  currentPgn: "chess-coach.current-pgn",
 };
 
 function readStoredBoolean({
@@ -390,6 +391,14 @@ function App() {
   } = useChessGame({
     onPositionChanged: clearAnalysis,
   });
+
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.currentPgn,
+      getPgn(),
+    );
+  }, [position, history.length]);
 
   const boardOrientation =
     gameMode === "bot" && playerSide === "b"
