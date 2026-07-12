@@ -10,13 +10,72 @@ import GameModeSelector, {
 import PlayerSideSelector from "./components/PlayerSideSelector";
 import BotLevelSelector from "./components/BotLevelSelector";
 import EvaluationBar from "./components/EvaluationBar";
+import MoveReviewPanel, {
+  type MoveReview,
+  type MoveReviewVerdict,
+} from "./components/MoveReviewPanel";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
+import type { EngineAnalysis } from "./types/chess";
 import {
   getBotLevel,
   type BotLevelId,
 } from "./types/bot";
 import "./App.css";
+
+function getTurnFromFen(fen: string): Color {
+  return fen.split(" ")[1] === "b" ? "b" : "w";
+}
+
+function getWhiteEvaluation(
+  analysis: EngineAnalysis,
+  turn: Color,
+) {
+  if (analysis.mate !== null) {
+    const mateForWhite =
+      turn === "w" ? analysis.mate : -analysis.mate;
+
+    return mateForWhite > 0 ? 99 : -99;
+  }
+
+  if (analysis.evaluation === null) {
+    return 0;
+  }
+
+  return turn === "w"
+    ? analysis.evaluation
+    : -analysis.evaluation;
+}
+
+function getVerdict({
+  matchedBestMove,
+  evaluationLoss,
+}: {
+  matchedBestMove: boolean | null;
+  evaluationLoss: number | null;
+}): MoveReviewVerdict {
+  if (matchedBestMove) {
+    return "best";
+  }
+
+  if (evaluationLoss === null) {
+    return "unknown";
+  }
+
+  if (evaluationLoss <= 0.2) {
+    return "good";
+  }
+
+  if (evaluationLoss <= 0.6) {
+    return "inaccuracy";
+  }
+
+  if (evaluationLoss <= 1.5) {
+    return "mistake";
+  }
+
+  return "blunder";
+}
 
 function App() {
   const [isBotThinking, setIsBotThinking] =
@@ -31,6 +90,9 @@ function App() {
   const [botLevelId, setBotLevelId] =
     useState<BotLevelId>("casual");
 
+  const [lastMoveReview, setLastMoveReview] =
+    useState<MoveReview | null>(null);
+
   const {
     analysis,
     analyzedTurn,
@@ -38,6 +100,7 @@ function App() {
     error,
     analyzePosition,
     calculateBestMove,
+    calculatePositionAnalysis,
     clearAnalysis,
   } = useEngineAnalysis();
 
@@ -136,6 +199,88 @@ function App() {
     }, 0);
   }
 
+  function reviewMoveAfterEngineEvaluation({
+    playedMove,
+    bestMove,
+    matchedBestMove,
+    positionBeforeMove,
+    positionAfterMove,
+    evaluationBeforeWhite,
+    movingSide,
+  }: {
+    playedMove: string;
+    bestMove: string;
+    matchedBestMove: boolean;
+    positionBeforeMove: string;
+    positionAfterMove: string;
+    evaluationBeforeWhite: number;
+    movingSide: Color;
+  }) {
+    void calculatePositionAnalysis({
+      fen: positionAfterMove,
+      isGameOver: false,
+      movetime: 900,
+    }).then((afterAnalysis) => {
+      if (!afterAnalysis) {
+        setLastMoveReview((currentReview) => {
+          if (
+            !currentReview ||
+            currentReview.playedMove !== playedMove ||
+            currentReview.positionBeforeMove !==
+              positionBeforeMove
+          ) {
+            return currentReview;
+          }
+
+          return {
+            ...currentReview,
+            isEvaluating: false,
+            verdict: getVerdict({
+              matchedBestMove,
+              evaluationLoss: null,
+            }),
+          };
+        });
+
+        return;
+      }
+
+      const turnAfterMove = getTurnFromFen(positionAfterMove);
+      const evaluationAfterWhite = getWhiteEvaluation(
+        afterAnalysis,
+        turnAfterMove,
+      );
+
+      const rawLoss =
+        movingSide === "w"
+          ? evaluationBeforeWhite - evaluationAfterWhite
+          : evaluationAfterWhite - evaluationBeforeWhite;
+
+      const evaluationLoss = Math.max(0, rawLoss);
+
+      setLastMoveReview((currentReview) => {
+        if (
+          !currentReview ||
+          currentReview.playedMove !== playedMove ||
+          currentReview.positionBeforeMove !== positionBeforeMove
+        ) {
+          return currentReview;
+        }
+
+        return {
+          ...currentReview,
+          isEvaluating: false,
+          evaluationAfterWhite,
+          evaluationLoss,
+          verdict: getVerdict({
+            matchedBestMove,
+            evaluationLoss,
+          }),
+        };
+      });
+    });
+  }
+
   function handlePieceDrop(args: {
     sourceSquare: string;
     targetSquare: string | null;
@@ -148,7 +293,62 @@ function App() {
       return false;
     }
 
+    const positionBeforeMove = position;
+    const movingSide = getTurnFromFen(positionBeforeMove);
+    const suggestedBestMove = analysis?.bestMove ?? null;
+    const evaluationBeforeWhite = analysis
+      ? getWhiteEvaluation(analysis, analyzedTurn)
+      : null;
+
+    const playedMove =
+      args.sourceSquare && args.targetSquare
+        ? `${args.sourceSquare}${args.targetSquare}`
+        : "";
+
     const moveWasMade = onPieceDrop(args);
+
+    if (moveWasMade) {
+      const matchedBestMove =
+        suggestedBestMove === null
+          ? null
+          : suggestedBestMove.startsWith(playedMove);
+
+      const initialReview: MoveReview = {
+        playedMove,
+        bestMove: suggestedBestMove,
+        matchedBestMove,
+        positionBeforeMove,
+        isEvaluating:
+          suggestedBestMove !== null &&
+          evaluationBeforeWhite !== null &&
+          !matchedBestMove,
+        evaluationBeforeWhite,
+        evaluationAfterWhite: null,
+        evaluationLoss: matchedBestMove ? 0 : null,
+        verdict: getVerdict({
+          matchedBestMove,
+          evaluationLoss: matchedBestMove ? 0 : null,
+        }),
+      };
+
+      setLastMoveReview(initialReview);
+
+      if (
+        suggestedBestMove !== null &&
+        evaluationBeforeWhite !== null &&
+        !matchedBestMove
+      ) {
+        reviewMoveAfterEngineEvaluation({
+          playedMove,
+          bestMove: suggestedBestMove,
+          matchedBestMove,
+          positionBeforeMove,
+          positionAfterMove: game.fen(),
+          evaluationBeforeWhite,
+          movingSide,
+        });
+      }
+    }
 
     if (moveWasMade && isBotTurnFor()) {
       requestBotMove();
@@ -160,6 +360,7 @@ function App() {
   function handleNewGame() {
     newGame();
     setIsBotThinking(false);
+    setLastMoveReview(null);
     clearAnalysis();
 
     if (gameMode === "bot" && playerSide === "b") {
@@ -178,6 +379,7 @@ function App() {
     if (gameMode === "analysis") {
       undoMove();
       setIsBotThinking(false);
+      setLastMoveReview(null);
       clearAnalysis();
       return;
     }
@@ -189,6 +391,7 @@ function App() {
     }
 
     setIsBotThinking(false);
+    setLastMoveReview(null);
     clearAnalysis();
   }
 
@@ -199,6 +402,7 @@ function App() {
 
     setGameMode(mode);
     setIsBotThinking(false);
+    setLastMoveReview(null);
     clearAnalysis();
 
     if (mode === "bot" && playerSide === "b") {
@@ -216,6 +420,7 @@ function App() {
 
     setPlayerSide(side);
     setIsBotThinking(false);
+    setLastMoveReview(null);
     clearAnalysis();
     newGame();
 
@@ -299,6 +504,8 @@ function App() {
             analysis={analysis}
             analyzedTurn={analyzedTurn}
           />
+
+          <MoveReviewPanel review={lastMoveReview} />
 
           <AnalysisPanel
             analysis={analysis}
