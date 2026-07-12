@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Color, Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
@@ -35,6 +35,9 @@ import CollapsibleSection from "./components/CollapsibleSection";
 import WorkspaceTabs, {
   type WorkspaceId,
 } from "./components/WorkspaceTabs";
+import RewardToast, {
+  type RewardToastMessage,
+} from "./components/RewardToast";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
@@ -77,6 +80,7 @@ import "./components/AppSettingsPanel.css";
 import "./components/AdSlot.css";
 import "./components/ConsentBanner.css";
 import "./components/WorkspaceTabs.css";
+import "./components/RewardToast.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -308,6 +312,11 @@ function App() {
       readStoredPrivacyConsent(),
     );
 
+  const [rewardToast, setRewardToast] =
+    useState<RewardToastMessage | null>(null);
+
+  const rewardToastTimerRef = useRef<number | null>(null);
+
   const access = getFeatureAccess(subscriptionTier);
   const showAdvertisingUi = isNativeMobileShell();
 
@@ -351,6 +360,32 @@ function App() {
       privacyConsent,
     );
   }, [privacyConsent]);
+
+  useEffect(() => {
+    return () => {
+      if (rewardToastTimerRef.current !== null) {
+        window.clearTimeout(rewardToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  function showRewardToast(
+    message: Omit<RewardToastMessage, "id">,
+  ) {
+    if (rewardToastTimerRef.current !== null) {
+      window.clearTimeout(rewardToastTimerRef.current);
+    }
+
+    setRewardToast({
+      ...message,
+      id: Date.now(),
+    });
+
+    rewardToastTimerRef.current = window.setTimeout(() => {
+      setRewardToast(null);
+      rewardToastTimerRef.current = null;
+    }, 2400);
+  }
 
   const {
     analysis,
@@ -777,11 +812,36 @@ function App() {
           playedMove,
         });
 
+        if (trainingSolved) {
+          showRewardToast({
+            kind: "success",
+            title: "Лучший ход найден",
+            text: "Отлично: ты увидел идею Stockfish сам.",
+          });
+        } else {
+          showRewardToast({
+            kind: "warning",
+            title: "Почти",
+            text: "Сравни свой ход с лучшим и попробуй понять мотив.",
+          });
+        }
+
         void (trainingSolved
           ? triggerSuccessHaptic()
           : triggerWarningHaptic());
       } else if (bestMoveTrainingTask.status === "ready") {
         resetBestMoveTraining();
+      }
+
+      if (
+        matchedBestMove &&
+        bestMoveTrainingTask.status !== "ready"
+      ) {
+        showRewardToast({
+          kind: "success",
+          title: "Сильный ход",
+          text: "Ты сыграл вариант, который рекомендовал движок.",
+        });
       }
 
       if (
@@ -1013,6 +1073,8 @@ function App() {
           onChange={handlePrivacyConsentChange}
         />
       )}
+
+      <RewardToast message={rewardToast} />
 
       <section className="game-layout">
         <div className="board-panel">
