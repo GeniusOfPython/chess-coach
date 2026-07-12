@@ -236,3 +236,25 @@ button:disabled {
   margin: 14px 0 0;
   color: #ff9d9d;
 }
+.explanation {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.explanation > span {
+  color: #909b94;
+  font-size: 13px;
+}
+
+.explanation ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.explanation li {
+  color: #d2d8d4;
+  line-height: 1.45;
+}
