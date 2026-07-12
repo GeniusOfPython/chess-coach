@@ -1,0 +1,16 @@
+{
+  "appId": "com.artem409.chesscoach",
+  "appName": "Chess Coach",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "backgroundColor": "#0f1411",
+      "showSpinner": false
+    }
+  }
+}
