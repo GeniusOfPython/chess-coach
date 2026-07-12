@@ -1,0 +1,86 @@
+.opening-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.opening-focus {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(90, 140, 255, 0.45);
+  border-radius: 12px;
+  background: rgba(70, 120, 255, 0.08);
+}
+
+.opening-focus p {
+  margin: 0;
+  color: #d2d8d4;
+  line-height: 1.45;
+}
+
+.opening-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.opening-item {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #171c19;
+}
+
+.opening-item.good {
+  border-color: rgba(60, 200, 90, 0.45);
+}
+
+.opening-item.warning {
+  border-color: rgba(255, 170, 40, 0.55);
+}
+
+.opening-item.neutral {
+  border-color: rgba(120, 150, 255, 0.45);
+}
+
+.opening-marker {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: #222923;
+  color: #f0f4ef;
+  font-weight: 900;
+}
+
+.opening-item.good .opening-marker {
+  background: rgba(60, 200, 90, 0.22);
+  color: #7df59b;
+}
+
+.opening-item.warning .opening-marker {
+  background: rgba(255, 170, 40, 0.2);
+  color: #ffca73;
+}
+
+.opening-item.neutral .opening-marker {
+  background: rgba(120, 150, 255, 0.18);
+  color: #9fb6ff;
+}
+
+.opening-item strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.opening-item p {
+  margin: 0;
+  color: #b6bdb8;
+  font-size: 14px;
+  line-height: 1.45;
+}

@@ -27,6 +27,7 @@ import LearningJournalPanel, {
   type LearningJournalItem,
 } from "./components/LearningJournalPanel";
 import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
+import OpeningPrinciplesPanel from "./components/OpeningPrinciplesPanel";
 import AppSettingsPanel from "./components/AppSettingsPanel";
 import AdSlot from "./components/AdSlot";
 import ConsentBanner from "./components/ConsentBanner";
@@ -56,6 +57,7 @@ import "./components/MoveNavigatorPanel.css";
 import "./components/BestMoveTrainingPanel.css";
 import "./components/LearningJournalPanel.css";
 import "./components/TrainingSummaryPanel.css";
+import "./components/OpeningPrinciplesPanel.css";
 import "./components/AppSettingsPanel.css";
 import "./components/AdSlot.css";
 import "./components/ConsentBanner.css";
@@ -1089,6 +1091,8 @@ function App() {
                 access.canUseMoveExplanations
               }
             />
+
+            <OpeningPrinciplesPanel fen={displayedPosition} />
 
             <BestMoveTrainingPanel
               task={bestMoveTrainingTask}
