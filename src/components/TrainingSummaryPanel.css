@@ -1,0 +1,58 @@
+.training-summary-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #303733;
+  border-radius: 14px;
+  background: #171c19;
+}
+
+.training-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.training-summary-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #303733;
+  border-radius: 12px;
+  background: #121613;
+}
+
+.training-summary-grid strong {
+  font-size: 22px;
+}
+
+.training-summary-grid span,
+.training-summary-errors,
+.training-summary-card p {
+  color: #b6bdb8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.training-summary-errors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.training-summary-errors span {
+  padding: 6px 9px;
+  border: 1px solid #303733;
+  border-radius: 999px;
+  background: #121613;
+}
+
+.training-summary-card p {
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .training-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

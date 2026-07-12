@@ -1,0 +1,92 @@
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+button,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+textarea,
+input {
+  max-width: 100%;
+}
+
+.app {
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+  padding-bottom: max(48px, env(safe-area-inset-bottom));
+}
+
+.board-panel {
+  touch-action: manipulation;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button {
+    min-height: 50px;
+  }
+
+  .mode-button,
+  .collapsible-header {
+    min-height: 52px;
+  }
+
+  .moves {
+    max-height: 260px;
+  }
+}
+
+@media (max-width: 850px) {
+  .app {
+    width: min(100% - 18px, 1180px);
+    padding-top: max(18px, env(safe-area-inset-top));
+  }
+
+  .header {
+    margin-bottom: 18px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .game-layout {
+    gap: 16px;
+  }
+
+  .side-panel {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  h1 {
+    font-size: 30px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-row,
+  .move-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-row {
+    align-items: flex-start;
+  }
+}

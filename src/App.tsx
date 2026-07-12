@@ -26,6 +26,7 @@ import BestMoveTrainingPanel, {
 import LearningJournalPanel, {
   type LearningJournalItem,
 } from "./components/LearningJournalPanel";
+import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -41,6 +42,7 @@ import "./components/GameResultPanel.css";
 import "./components/MoveNavigatorPanel.css";
 import "./components/BestMoveTrainingPanel.css";
 import "./components/LearningJournalPanel.css";
+import "./components/TrainingSummaryPanel.css";
 import "./App.css";
 
 function getTurnFromFen(fen: string): Color {
@@ -958,6 +960,11 @@ function App() {
                 description="Разбор последнего хода подготовлен как премиальная функция для будущей мобильной версии."
               />
             )}
+
+            <TrainingSummaryPanel
+              historyLength={history.length}
+              items={learningJournalItems}
+            />
 
             <LearningJournalPanel
               items={learningJournalItems}
