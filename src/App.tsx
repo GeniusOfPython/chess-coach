@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Color } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
@@ -79,21 +79,85 @@ function getVerdict({
   return "blunder";
 }
 
+
+const settingsStorageKeys = {
+  gameMode: "chess-coach.game-mode",
+  playerSide: "chess-coach.player-side",
+  botLevelId: "chess-coach.bot-level-id",
+};
+
+function readStoredGameMode(): GameMode {
+  const value = window.localStorage.getItem(
+    settingsStorageKeys.gameMode,
+  );
+
+  return value === "bot" || value === "analysis"
+    ? value
+    : "analysis";
+}
+
+function readStoredPlayerSide(): Color {
+  const value = window.localStorage.getItem(
+    settingsStorageKeys.playerSide,
+  );
+
+  return value === "b" ? "b" : "w";
+}
+
+function readStoredBotLevelId(): BotLevelId {
+  const value = window.localStorage.getItem(
+    settingsStorageKeys.botLevelId,
+  );
+
+  if (
+    value === "beginner" ||
+    value === "casual" ||
+    value === "club" ||
+    value === "strong" ||
+    value === "max"
+  ) {
+    return value;
+  }
+
+  return "casual";
+}
+
 function App() {
   const [isBotThinking, setIsBotThinking] =
     useState(false);
 
   const [gameMode, setGameMode] =
-    useState<GameMode>("analysis");
+    useState<GameMode>(() => readStoredGameMode());
 
   const [playerSide, setPlayerSide] =
-    useState<Color>("w");
+    useState<Color>(() => readStoredPlayerSide());
 
   const [botLevelId, setBotLevelId] =
-    useState<BotLevelId>("casual");
+    useState<BotLevelId>(() => readStoredBotLevelId());
 
   const [lastMoveReview, setLastMoveReview] =
     useState<MoveReview | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.gameMode,
+      gameMode,
+    );
+  }, [gameMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.playerSide,
+      playerSide,
+    );
+  }, [playerSide]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      settingsStorageKeys.botLevelId,
+      botLevelId,
+    );
+  }, [botLevelId]);
 
   const {
     analysis,
@@ -526,6 +590,7 @@ function App() {
           <CollapsibleSection
             title="Анализ и разбор"
             description="Баланс позиции, качество последнего хода и варианты Stockfish"
+            storageKey="chess-coach.section.analysis"
           >
             <EvaluationBar
               analysis={analysis}
@@ -546,6 +611,7 @@ function App() {
           <CollapsibleSection
             title="PGN"
             description="Импорт, копирование и скачивание партии"
+            storageKey="chess-coach.section.pgn"
           >
             <PgnPanel
               pgn={getPgn()}
@@ -556,6 +622,7 @@ function App() {
           <CollapsibleSection
             title="История ходов"
             description="Список ходов текущей партии"
+            storageKey="chess-coach.section.history"
           >
             <MoveHistory history={history} />
           </CollapsibleSection>
