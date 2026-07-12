@@ -8,21 +8,84 @@ export type NativeBridgeState = {
   supportsHaptics: boolean;
 };
 
-function readCapacitorPlatform(): NativePlatform {
-  const capacitor = (window as unknown as {
-    Capacitor?: {
-      getPlatform?: () => string;
-      isNativePlatform?: () => boolean;
-    };
-  }).Capacitor;
+type CapacitorLike = {
+  getPlatform?: () => string;
+  isNativePlatform?: () => boolean;
+};
 
-  const platform = capacitor?.getPlatform?.();
+type NativeHapticsLike = {
+  impact?: (options: { style: "LIGHT" | "MEDIUM" }) => Promise<void>;
+  notification?: (options: { type: "SUCCESS" | "WARNING" | "ERROR" }) => Promise<void>;
+};
+
+function getCapacitor() {
+  return (window as unknown as {
+    Capacitor?: CapacitorLike;
+  }).Capacitor;
+}
+
+function getNativeHaptics() {
+  return (window as unknown as {
+    Haptics?: NativeHapticsLike;
+  }).Haptics;
+}
+
+function readCapacitorPlatform(): NativePlatform {
+  const platform = getCapacitor()?.getPlatform?.();
 
   if (platform === "android" || platform === "ios") {
     return platform;
   }
 
   return "web";
+}
+
+function canUseBrowserVibration() {
+  return typeof window.navigator.vibrate === "function";
+}
+
+function vibrate(pattern: number | number[]) {
+  if (!canUseBrowserVibration()) {
+    return;
+  }
+
+  window.navigator.vibrate(pattern);
+}
+
+async function triggerNativeImpact(style: "LIGHT" | "MEDIUM") {
+  const capacitor = getCapacitor();
+
+  if (!capacitor?.isNativePlatform?.()) {
+    return false;
+  }
+
+  const haptics = getNativeHaptics();
+
+  if (!haptics?.impact) {
+    return false;
+  }
+
+  await haptics.impact({ style });
+  return true;
+}
+
+async function triggerNativeNotification(
+  type: "SUCCESS" | "WARNING" | "ERROR",
+) {
+  const capacitor = getCapacitor();
+
+  if (!capacitor?.isNativePlatform?.()) {
+    return false;
+  }
+
+  const haptics = getNativeHaptics();
+
+  if (!haptics?.notification) {
+    return false;
+  }
+
+  await haptics.notification({ type });
+  return true;
 }
 
 export function getNativeBridgeState(): NativeBridgeState {
@@ -34,26 +97,46 @@ export function getNativeBridgeState(): NativeBridgeState {
     isNative,
     supportsAds: isNative,
     supportsPurchases: isNative,
-    supportsHaptics: isNative,
+    supportsHaptics: isNative || canUseBrowserVibration(),
   };
 }
 
 export async function triggerLightHaptic() {
-  const capacitor = (window as unknown as {
-    Capacitor?: {
-      isNativePlatform?: () => boolean;
-    };
-  }).Capacitor;
-
-  if (!capacitor?.isNativePlatform?.()) {
+  if (await triggerNativeImpact("LIGHT")) {
     return;
   }
 
-  const haptics = (window as unknown as {
-    Haptics?: {
-      impact?: (options: { style: "LIGHT" }) => Promise<void>;
-    };
-  }).Haptics;
+  vibrate(8);
+}
 
-  await haptics?.impact?.({ style: "LIGHT" });
+export async function triggerMoveHaptic() {
+  if (await triggerNativeImpact("MEDIUM")) {
+    return;
+  }
+
+  vibrate(14);
+}
+
+export async function triggerSuccessHaptic() {
+  if (await triggerNativeNotification("SUCCESS")) {
+    return;
+  }
+
+  vibrate([12, 24, 12]);
+}
+
+export async function triggerWarningHaptic() {
+  if (await triggerNativeNotification("WARNING")) {
+    return;
+  }
+
+  vibrate([16, 28, 16]);
+}
+
+export async function triggerErrorHaptic() {
+  if (await triggerNativeNotification("ERROR")) {
+    return;
+  }
+
+  vibrate([24, 32, 24]);
 }

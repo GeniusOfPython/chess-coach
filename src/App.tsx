@@ -54,6 +54,13 @@ import {
   type BotLevelId,
 } from "./types/bot";
 import { isNativeMobileShell } from "./platform/mobile";
+import {
+  triggerErrorHaptic,
+  triggerLightHaptic,
+  triggerMoveHaptic,
+  triggerSuccessHaptic,
+  triggerWarningHaptic,
+} from "./platform/nativeBridge";
 import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
 import "./components/MoveNavigatorPanel.css";
@@ -741,6 +748,8 @@ function App() {
     const moveWasMade = onPieceDrop(args);
 
     if (moveWasMade) {
+      void triggerMoveHaptic();
+
       const matchedBestMove =
         suggestedBestMove === null
           ? null
@@ -770,16 +779,20 @@ function App() {
         bestMoveTrainingTask.status === "ready" &&
         bestMoveTrainingTask.positionFen === positionBeforeMove
       ) {
+        const trainingSolved = isMoveMatchingBestMove({
+          playedMove,
+          bestMove: bestMoveTrainingTask.bestMove,
+        });
+
         setBestMoveTrainingTask({
           ...bestMoveTrainingTask,
-          status: isMoveMatchingBestMove({
-            playedMove,
-            bestMove: bestMoveTrainingTask.bestMove,
-          })
-            ? "success"
-            : "fail",
+          status: trainingSolved ? "success" : "fail",
           playedMove,
         });
+
+        void (trainingSolved
+          ? triggerSuccessHaptic()
+          : triggerWarningHaptic());
       } else if (bestMoveTrainingTask.status === "ready") {
         resetBestMoveTraining();
       }
@@ -833,7 +846,12 @@ function App() {
 
     if (canSelectPiece(square)) {
       setSelectedSquare(square);
+      void triggerLightHaptic();
       return;
+    }
+
+    if (selectedSquare) {
+      void triggerErrorHaptic();
     }
 
     setSelectedSquare(null);
