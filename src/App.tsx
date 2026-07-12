@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Color } from "chess.js";
+import type { Color, Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
@@ -15,6 +15,7 @@ import MoveReviewPanel, {
   type MoveReviewVerdict,
 } from "./components/MoveReviewPanel";
 import PgnPanel from "./components/PgnPanel";
+import FenPanel from "./components/FenPanel";
 import CollapsibleSection from "./components/CollapsibleSection";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
@@ -142,6 +143,9 @@ function App() {
   const [lastMoveReview, setLastMoveReview] =
     useState<MoveReview | null>(null);
 
+  const [selectedSquare, setSelectedSquare] =
+    useState<string | null>(null);
+
   useEffect(() => {
     window.localStorage.setItem(
       settingsStorageKeys.gameMode,
@@ -184,6 +188,8 @@ function App() {
     newGame,
     undoMove,
     makeEngineMove,
+    getFen,
+    loadFen,
     getPgn,
     loadPgn,
   } = useChessGame({
@@ -194,6 +200,15 @@ function App() {
     gameMode === "bot" && playerSide === "b"
       ? "black"
       : "white";
+
+  const legalMoveSquares = selectedSquare
+    ? game
+        .moves({
+          square: selectedSquare as Square,
+          verbose: true,
+        })
+        .map((move) => move.to)
+    : [];
 
   function isBotTurnFor({
     mode = gameMode,
@@ -218,6 +233,28 @@ function App() {
     }
 
     return isBotGameStarted && game.turn() === playerSide;
+  }
+
+  function canSelectPiece(square: string) {
+    if (!isPlayerTurn()) {
+      return false;
+    }
+
+    const piece = game.get(square as Square);
+
+    if (!piece) {
+      return false;
+    }
+
+    if (piece.color !== game.turn()) {
+      return false;
+    }
+
+    if (gameMode === "bot" && piece.color !== playerSide) {
+      return false;
+    }
+
+    return true;
   }
 
   function handleAnalyzePosition() {
@@ -377,6 +414,8 @@ function App() {
       return false;
     }
 
+    setSelectedSquare(null);
+
     const positionBeforeMove = position;
     const movingSide = getTurnFromFen(positionBeforeMove);
     const suggestedBestMove = analysis?.bestMove ?? null;
@@ -424,7 +463,7 @@ function App() {
       ) {
         reviewMoveAfterEngineEvaluation({
           playedMove,
-          matchedBestMove,
+          matchedBestMove: false,
           positionBeforeMove,
           positionAfterMove: game.fen(),
           evaluationBeforeWhite,
@@ -440,8 +479,36 @@ function App() {
     return moveWasMade;
   }
 
+
+  function handleSquareClick(square: string) {
+    if (isBotThinking || !isPlayerTurn()) {
+      setSelectedSquare(null);
+      return;
+    }
+
+    if (selectedSquare && selectedSquare !== square) {
+      const moveWasMade = handlePieceDrop({
+        sourceSquare: selectedSquare,
+        targetSquare: square,
+      });
+
+      if (moveWasMade) {
+        setSelectedSquare(null);
+        return;
+      }
+    }
+
+    if (canSelectPiece(square)) {
+      setSelectedSquare(square);
+      return;
+    }
+
+    setSelectedSquare(null);
+  }
+
   function handleNewGame() {
     newGame();
+    setSelectedSquare(null);
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
@@ -454,6 +521,7 @@ function App() {
     }
 
     newGame();
+    setSelectedSquare(null);
     setIsBotThinking(false);
     setIsBotGameStarted(true);
     setLastMoveReview(null);
@@ -472,6 +540,8 @@ function App() {
     if (isBotThinking) {
       return;
     }
+
+    setSelectedSquare(null);
 
     if (gameMode === "analysis") {
       undoMove();
@@ -497,6 +567,7 @@ function App() {
       return;
     }
 
+    setSelectedSquare(null);
     setGameMode(mode);
     setIsBotThinking(false);
     setIsBotGameStarted(false);
@@ -509,6 +580,7 @@ function App() {
       return;
     }
 
+    setSelectedSquare(null);
     setPlayerSide(side);
     setIsBotThinking(false);
     setIsBotGameStarted(false);
@@ -517,10 +589,35 @@ function App() {
     newGame();
   }
 
+
+  function handleImportFen(fen: string) {
+    if (isBotThinking) {
+      return false;
+    }
+
+    setSelectedSquare(null);
+
+    const success = loadFen(fen);
+
+    if (!success) {
+      return false;
+    }
+
+    setGameMode("analysis");
+    setIsBotThinking(false);
+    setIsBotGameStarted(false);
+    setLastMoveReview(null);
+    clearAnalysis();
+
+    return true;
+  }
+
   function handleImportPgn(pgn: string) {
     if (isBotThinking) {
       return false;
     }
+
+    setSelectedSquare(null);
 
     const success = loadPgn(pgn);
 
@@ -561,6 +658,9 @@ function App() {
               .map((line) => line.bestMove)}
             boardOrientation={boardOrientation}
             lastMove={lastMove}
+            selectedSquare={selectedSquare}
+            legalMoveSquares={legalMoveSquares}
+            onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
           />
         </div>
@@ -656,6 +756,25 @@ function App() {
                 featureAccess.canUseMoveExplanations
               }
             />
+          </CollapsibleSection>
+
+
+          <CollapsibleSection
+            title="FEN"
+            description="Копирование и загрузка отдельной позиции"
+            storageKey="chess-coach.section.fen"
+          >
+            {featureAccess.canUseFenTools ? (
+              <FenPanel
+                fen={getFen()}
+                onImportFen={handleImportFen}
+              />
+            ) : (
+              <PremiumFeatureNotice
+                featureKey="fenTools"
+                description="FEN-инструменты временно отключены через featureAccess."
+              />
+            )}
           </CollapsibleSection>
 
           <CollapsibleSection

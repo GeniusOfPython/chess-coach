@@ -106,16 +106,31 @@ export function useChessGame({
     syncPosition();
   }
 
+  function getFen() {
+    return game.fen();
+  }
+
+  function loadFen(fen: string) {
+    const preparedFen = fen.trim();
+
+    if (!preparedFen) {
+      return false;
+    }
+
+    try {
+      game.load(preparedFen);
+      setLastMove(null);
+      syncPosition();
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function getPgn() {
     try {
-      const gameWithPgn = game as unknown as {
-        pgn: (options?: {
-          maxWidth?: number;
-          newline?: string;
-        }) => string;
-      };
-
-      return gameWithPgn.pgn({
+      return game.pgn({
         maxWidth: 80,
         newline: "\n",
       });
@@ -132,15 +147,7 @@ export function useChessGame({
     }
 
     try {
-      const gameWithLoadPgn = game as unknown as {
-        loadPgn: (pgn: string) => void | boolean;
-      };
-
-      const result = gameWithLoadPgn.loadPgn(preparedPgn);
-
-      if (result === false) {
-        return false;
-      }
+      game.loadPgn(preparedPgn);
 
       updateLastMoveFromHistory();
       syncPosition();
@@ -205,6 +212,8 @@ export function useChessGame({
     newGame,
     undoMove,
     makeEngineMove,
+    getFen,
+    loadFen,
     getPgn,
     loadPgn,
   };

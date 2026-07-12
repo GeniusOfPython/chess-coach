@@ -3,7 +3,8 @@ export type SubscriptionTier = "free" | "premium";
 export type PremiumFeatureKey =
   | "moveReview"
   | "moveExplanations"
-  | "pgnTools";
+  | "pgnTools"
+  | "fenTools";
 
 const DEVELOPMENT_TIER: SubscriptionTier = "premium";
 
@@ -12,6 +13,7 @@ export const featureAccess = {
   canUseMoveReview: DEVELOPMENT_TIER === "premium",
   canUseMoveExplanations: DEVELOPMENT_TIER === "premium",
   canUsePgnTools: true,
+  canUseFenTools: true,
 } as const;
 
 export function isPremiumFeature(
@@ -32,6 +34,10 @@ export function getPremiumFeatureTitle(
 
   if (featureKey === "moveExplanations") {
     return "Пояснения к ходам";
+  }
+
+  if (featureKey === "fenTools") {
+    return "FEN-инструменты";
   }
 
   return "PGN-инструменты";
