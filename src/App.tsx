@@ -19,6 +19,10 @@ import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
 import CoachPanel from "./components/CoachPanel";
 import GameResultPanel from "./components/GameResultPanel";
+import GameReviewPanel, {
+  type GameReviewItem,
+  type GameReviewStatus,
+} from "./components/GameReviewPanel";
 import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
 import BestMoveTrainingPanel, {
   type BestMoveTrainingTask,
@@ -71,6 +75,7 @@ import {
 } from "./platform/nativeBridge";
 import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
+import "./components/GameReviewPanel.css";
 import "./components/MoveNavigatorPanel.css";
 import "./components/BestMoveTrainingPanel.css";
 import "./components/LearningJournalPanel.css";
@@ -354,6 +359,18 @@ function App() {
   const [learningJournalItems, setLearningJournalItems] =
     useState<LearningJournalItem[]>([]);
 
+  const [gameReviewStatus, setGameReviewStatus] =
+    useState<GameReviewStatus>("idle");
+
+  const [gameReviewItems, setGameReviewItems] =
+    useState<GameReviewItem[]>([]);
+
+  const [gameReviewProgress, setGameReviewProgress] =
+    useState(0);
+
+  const [gameReviewError, setGameReviewError] =
+    useState("");
+
   const [activeWorkspace, setActiveWorkspace] =
     useState<WorkspaceId>(() => readStoredWorkspace());
 
@@ -509,6 +526,7 @@ function App() {
     displayedLastMove,
     displayedCheckSquare,
     fenHistory,
+    lastMoveHistory,
     viewedMoveIndex,
     isViewingCurrentPosition,
     onPieceDrop,
@@ -766,6 +784,120 @@ function App() {
     setBestMoveTrainingTask(initialTrainingTask);
   }
 
+  function clearGameReview() {
+    setGameReviewStatus("idle");
+    setGameReviewItems([]);
+    setGameReviewProgress(0);
+    setGameReviewError("");
+  }
+
+  async function handleRunGameReview() {
+    if (isBotThinking || gameReviewStatus === "running") {
+      return;
+    }
+
+    const totalMoves = Math.min(
+      lastMoveHistory.length,
+      Math.max(0, fenHistory.length - 1),
+      24,
+    );
+
+    if (totalMoves === 0) {
+      return;
+    }
+
+    setGameReviewStatus("running");
+    setGameReviewItems([]);
+    setGameReviewProgress(0);
+    setGameReviewError("");
+
+    const reviewedItems: GameReviewItem[] = [];
+
+    try {
+      for (let index = 0; index < totalMoves; index += 1) {
+        const positionBeforeMove = fenHistory[index];
+        const positionAfterMove = fenHistory[index + 1];
+        const move = lastMoveHistory[index];
+
+        if (!positionBeforeMove || !positionAfterMove || !move) {
+          setGameReviewProgress(index + 1);
+          continue;
+        }
+
+        const movingSide = getTurnFromFen(positionBeforeMove);
+        const playedMove = `${move.from}${move.to}`;
+
+        const beforeAnalysis = await calculatePositionAnalysis({
+          fen: positionBeforeMove,
+          isGameOver: false,
+          movetime: 650,
+        });
+
+        if (!beforeAnalysis?.bestMove) {
+          setGameReviewProgress(index + 1);
+          continue;
+        }
+
+        const afterAnalysis = await calculatePositionAnalysis({
+          fen: positionAfterMove,
+          isGameOver: false,
+          movetime: 450,
+        });
+
+        const matchedBestMove = isMoveMatchingBestMove({
+          playedMove,
+          bestMove: beforeAnalysis.bestMove,
+        });
+
+        const evaluationBeforeWhite = getWhiteEvaluation(
+          beforeAnalysis,
+          movingSide,
+        );
+
+        const evaluationAfterWhite = afterAnalysis
+          ? getWhiteEvaluation(
+              afterAnalysis,
+              getTurnFromFen(positionAfterMove),
+            )
+          : null;
+
+        const evaluationLoss = evaluationAfterWhite === null
+          ? null
+          : Math.max(
+              0,
+              movingSide === "w"
+                ? evaluationBeforeWhite - evaluationAfterWhite
+                : evaluationAfterWhite - evaluationBeforeWhite,
+            );
+
+        reviewedItems.push({
+          id: `${index}-${positionBeforeMove}-${playedMove}`,
+          moveNumber: getFullMoveNumber(positionBeforeMove),
+          side: movingSide,
+          playedMove,
+          bestMove: beforeAnalysis.bestMove,
+          verdict: getVerdict({
+            matchedBestMove,
+            evaluationLoss: matchedBestMove ? 0 : evaluationLoss,
+          }),
+          evaluationLoss: matchedBestMove ? 0 : evaluationLoss,
+        });
+
+        setGameReviewItems([...reviewedItems]);
+        setGameReviewProgress(index + 1);
+      }
+
+      setGameReviewStatus("done");
+    } catch (reviewError) {
+      setGameReviewStatus("error");
+      setGameReviewError(
+        reviewError instanceof Error
+          ? reviewError.message
+          : "Не удалось разобрать партию.",
+      );
+    }
+  }
+
   function isMoveMatchingBestMove({
     playedMove,
     bestMove,
@@ -944,6 +1076,7 @@ function App() {
       };
 
       setLastMoveReview(initialReview);
+      clearGameReview();
 
       if (
         bestMoveTrainingTask.status === "ready" &&
@@ -1061,6 +1194,7 @@ function App() {
     setIsBotGameStarted(false);
     setLastMoveReview(null);
     setLearningJournalItems([]);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
   }
@@ -1076,6 +1210,7 @@ function App() {
     setIsBotGameStarted(true);
     setLastMoveReview(null);
     setLearningJournalItems([]);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
 
@@ -1112,6 +1247,7 @@ function App() {
 
     setIsBotThinking(false);
     setLastMoveReview(null);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
   }
@@ -1126,6 +1262,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
   }
@@ -1140,6 +1277,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
     newGame();
@@ -1164,6 +1302,7 @@ function App() {
     setIsBotGameStarted(false);
     setLastMoveReview(null);
     setLearningJournalItems([]);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
 
@@ -1196,6 +1335,7 @@ function App() {
     setIsBotGameStarted(false);
     setLastMoveReview(null);
     setLearningJournalItems([]);
+    clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
 
@@ -1372,6 +1512,21 @@ function App() {
 
           {activeWorkspace === "game" && (
             <section className="workspace-panel">
+              <GameReviewPanel
+                status={gameReviewStatus}
+                progress={gameReviewProgress}
+                total={Math.min(
+                  lastMoveHistory.length,
+                  Math.max(0, fenHistory.length - 1),
+                  24,
+                )}
+                items={gameReviewItems}
+                error={gameReviewError}
+                disabled={isBotThinking}
+                onRun={handleRunGameReview}
+                onClear={clearGameReview}
+              />
+
               {access.canUseMoveReview ? (
                 <MoveReviewPanel
                   review={lastMoveReview}

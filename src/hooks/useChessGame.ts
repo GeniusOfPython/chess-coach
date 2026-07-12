@@ -426,6 +426,7 @@ export function useChessGame({
     checkSquare,
     displayedCheckSquare,
     fenHistory,
+    lastMoveHistory,
     viewedMoveIndex,
     isViewingCurrentPosition,
     onPieceDrop,
