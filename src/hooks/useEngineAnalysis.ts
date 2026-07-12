@@ -1,7 +1,7 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
+  useRef,
   useState,
 } from "react";
 import { Chess } from "chess.js";
@@ -94,20 +94,32 @@ function chooseBotMoveFromAnalysis({
 }
 
 export function useEngineAnalysis() {
-  const analysisEngine = useMemo(
-    () => new StockfishService(),
-    [],
-  );
+  const analysisEngineRef =
+    useRef<StockfishService | null>(null);
 
-  const botEngine = useMemo(
-    () => new StockfishService(),
-    [],
-  );
+  const botEngineRef =
+    useRef<StockfishService | null>(null);
 
-  const reviewEngine = useMemo(
-    () => new StockfishService(),
-    [],
-  );
+  const reviewEngineRef =
+    useRef<StockfishService | null>(null);
+
+  function getAnalysisEngine() {
+    analysisEngineRef.current ??= new StockfishService();
+
+    return analysisEngineRef.current;
+  }
+
+  function getBotEngine() {
+    botEngineRef.current ??= new StockfishService();
+
+    return botEngineRef.current;
+  }
+
+  function getReviewEngine() {
+    reviewEngineRef.current ??= new StockfishService();
+
+    return reviewEngineRef.current;
+  }
 
   const [analysis, setAnalysis] =
     useState<EngineAnalysis | null>(null);
@@ -122,18 +134,18 @@ export function useEngineAnalysis() {
 
   useEffect(() => {
     return () => {
-      analysisEngine.destroy();
-      botEngine.destroy();
-      reviewEngine.destroy();
+      analysisEngineRef.current?.destroy();
+      botEngineRef.current?.destroy();
+      reviewEngineRef.current?.destroy();
     };
-  }, [analysisEngine, botEngine, reviewEngine]);
+  }, []);
 
   const clearAnalysis = useCallback(() => {
-    analysisEngine.stop();
+    analysisEngineRef.current?.stop();
     setAnalysis(null);
     setError("");
     setIsAnalyzing(false);
-  }, [analysisEngine]);
+  }, []);
 
   const analyzePosition = useCallback(
     async ({
@@ -155,7 +167,7 @@ export function useEngineAnalysis() {
       setError("");
 
       try {
-        const result = await analysisEngine.analyze(fen, {
+        const result = await getAnalysisEngine().analyze(fen, {
           movetime: 1800,
           multiPv: 3,
         });
@@ -172,7 +184,7 @@ export function useEngineAnalysis() {
         setIsAnalyzing(false);
       }
     },
-    [analysisEngine],
+    [],
   );
 
   const calculateBotMove = useCallback(
@@ -190,7 +202,7 @@ export function useEngineAnalysis() {
       }
 
       try {
-        const result = await botEngine.analyze(fen, {
+        const result = await getBotEngine().analyze(fen, {
           movetime: botLevel.movetime,
           multiPv: botLevel.multiPv,
           timeoutMs: botLevel.movetime + 2500,
@@ -212,7 +224,7 @@ export function useEngineAnalysis() {
         return getRandomLegalMove(fen);
       }
     },
-    [botEngine],
+    [],
   );
 
   const calculatePositionAnalysis = useCallback(
@@ -230,7 +242,7 @@ export function useEngineAnalysis() {
       }
 
       try {
-        return await reviewEngine.analyze(fen, {
+        return await getReviewEngine().analyze(fen, {
           movetime,
           multiPv: 1,
         });
@@ -242,7 +254,7 @@ export function useEngineAnalysis() {
         return null;
       }
     },
-    [reviewEngine],
+    [],
   );
 
   return {
