@@ -120,6 +120,48 @@ export function useEngineAnalysis() {
     [botEngine],
   );
 
+  const calculateBotMove = useCallback(
+    async ({
+      fen,
+      isGameOver,
+      botLevel,
+    }: {
+      fen: string;
+      isGameOver: boolean;
+      botLevel: { movetime: number };
+    }) => calculateBestMove({
+      fen,
+      isGameOver,
+      movetime: botLevel.movetime,
+    }),
+    [calculateBestMove],
+  );
+
+  const calculatePositionAnalysis = useCallback(
+    async ({
+      fen,
+      isGameOver,
+      movetime = 900,
+    }: {
+      fen: string;
+      isGameOver: boolean;
+      movetime?: number;
+    }) => {
+      if (isGameOver) return null;
+
+      try {
+        return await botEngine.analyze(fen, {
+          movetime,
+          multiPv: 1,
+        });
+      } catch (error) {
+        console.error("Ошибка оценки позиции после хода:", error);
+        return null;
+      }
+    },
+    [botEngine],
+  );
+
   return {
     analysis,
     analyzedTurn,
@@ -127,6 +169,8 @@ export function useEngineAnalysis() {
     error,
     analyzePosition,
     calculateBestMove,
+    calculateBotMove,
+    calculatePositionAnalysis,
     clearAnalysis,
   };
 }

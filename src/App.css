@@ -89,6 +89,36 @@ h1 {
   text-transform: uppercase;
 }
 
+.active-game-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: #b9e3a5;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.active-game-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #8fca70;
+  box-shadow: 0 0 0 4px rgb(143 202 112 / 14%);
+  animation: active-game-pulse 1.8s ease-out infinite;
+}
+
+@keyframes active-game-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgb(143 202 112 / 14%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px rgb(143 202 112 / 0%);
+  }
+}
+
 .controls {
   display: grid;
   grid-template-columns: 1fr 1fr;

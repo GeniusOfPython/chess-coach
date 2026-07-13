@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Color, Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
@@ -35,9 +35,7 @@ import AdSlot from "./components/AdSlot";
 import ConsentBanner from "./components/ConsentBanner";
 import CollapsibleSection from "./components/CollapsibleSection";
 import WorkspaceTabs from "./components/WorkspaceTabs";
-import RewardToast, {
-  type RewardToastMessage,
-} from "./components/RewardToast";
+import RewardToast from "./components/RewardToast";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
@@ -60,6 +58,8 @@ import { writeStorageValue } from "./platform/appStorage";
 import { settingsStorageKeys } from "./platform/storageKeys";
 import { useTrainingProgress } from "./hooks/useTrainingProgress";
 import { useGameReview } from "./hooks/useGameReview";
+import { useRewardToast } from "./hooks/useRewardToast";
+import { useGameSession } from "./hooks/useGameSession";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -112,17 +112,16 @@ function App() {
     resetPrivacyConsent,
   } = useAppPreferences();
 
-  const [isBotThinking, setIsBotThinking] =
-    useState(false);
-
-  const [isBotGameStarted, setIsBotGameStarted] =
-    useState(false);
-
-  const [lastMoveReview, setLastMoveReview] =
-    useState<MoveReview | null>(null);
-
-  const [selectedSquare, setSelectedSquare] =
-    useState<string | null>(null);
+  const {
+    isBotThinking,
+    setIsBotThinking,
+    isBotGameStarted,
+    setIsBotGameStarted,
+    lastMoveReview,
+    setLastMoveReview,
+    selectedSquare,
+    setSelectedSquare,
+  } = useGameSession();
 
   const [bestMoveTrainingTask, setBestMoveTrainingTask] =
     useState<BestMoveTrainingTask>(initialTrainingTask);
@@ -159,39 +158,10 @@ function App() {
   } = useGameReview();
 
 
-  const [rewardToast, setRewardToast] =
-    useState<RewardToastMessage | null>(null);
-
-  const rewardToastTimerRef = useRef<number | null>(null);
+  const { message: rewardToast, showRewardToast } = useRewardToast();
 
   const access = getFeatureAccess(subscriptionTier);
   const showAdvertisingUi = isNativeMobileShell();
-
-  useEffect(() => {
-    return () => {
-      if (rewardToastTimerRef.current !== null) {
-        window.clearTimeout(rewardToastTimerRef.current);
-      }
-    };
-  }, []);
-
-  function showRewardToast(
-    message: Omit<RewardToastMessage, "id">,
-  ) {
-    if (rewardToastTimerRef.current !== null) {
-      window.clearTimeout(rewardToastTimerRef.current);
-    }
-
-    setRewardToast({
-      ...message,
-      id: Date.now(),
-    });
-
-    rewardToastTimerRef.current = window.setTimeout(() => {
-      setRewardToast(null);
-      rewardToastTimerRef.current = null;
-    }, 4200);
-  }
 
   const {
     analysis,
@@ -363,6 +333,19 @@ function App() {
       void makeBotMove({ mode, side, started });
     }, 0);
   }
+
+  useEffect(() => {
+    if (isBotThinking || !isBotTurnFor()) {
+      return;
+    }
+
+    requestBotMove();
+  }, [
+    position,
+    gameMode,
+    playerSide,
+    isBotGameStarted,
+  ]);
 
   function reviewMoveAfterEngineEvaluation({
     playedMove,
@@ -784,10 +767,6 @@ function App() {
       }
     }
 
-    if (moveWasMade && isBotTurnFor()) {
-      requestBotMove();
-    }
-
     return moveWasMade;
   }
 
@@ -854,13 +833,6 @@ function App() {
     resetBestMoveTraining();
     clearAnalysis();
 
-    if (playerSide === "b") {
-      requestBotMove({
-        mode: "bot",
-        side: playerSide,
-        started: true,
-      });
-    }
   }
 
   function handleUndoMove() {
@@ -1038,6 +1010,16 @@ function App() {
             <span className="status-label">
               Состояние партии
             </span>
+
+            {gameMode === "bot" &&
+              isBotGameStarted &&
+              isViewingCurrentPosition &&
+              !game.isGameOver() && (
+                <span className="active-game-indicator" role="status">
+                  <span className="active-game-dot" aria-hidden="true" />
+                  Партия идёт
+                </span>
+              )}
 
             <strong>
               {isBotThinking
