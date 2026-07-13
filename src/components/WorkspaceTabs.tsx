@@ -44,6 +44,23 @@ export default function WorkspaceTabs({
   const activeTab =
     tabs.find((tab) => tab.id === active) ?? tabs[0];
 
+  function handleTabChange(workspace: WorkspaceId) {
+    onChange(workspace);
+
+    if (!window.matchMedia("(max-width: 760px)").matches) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.getElementById("workspace-content")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    });
+  }
+
   return (
     <nav className="workspace-tabs-card" aria-label="Рабочая область">
       <span className="status-label workspace-tabs-label">
@@ -57,12 +74,13 @@ export default function WorkspaceTabs({
             type="button"
             role="tab"
             aria-selected={tab.id === active}
+            aria-controls="workspace-content"
             className={
               tab.id === active
                 ? "workspace-tab active"
                 : "workspace-tab"
             }
-            onClick={() => onChange(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
           >
             <span className="workspace-tab-icon" aria-hidden="true">
               {tab.icon}

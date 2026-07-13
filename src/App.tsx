@@ -864,7 +864,7 @@ function App() {
           />
         </div>
 
-        <aside className="side-panel">
+        <aside className="side-panel" id="workspace-content">
           <GameSessionCard
             stateText={isBotThinking
               ? "Бот думает…"

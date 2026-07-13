@@ -72,6 +72,16 @@ input {
   }
 }
 
+@media (max-width: 760px) {
+  .app {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  #workspace-content {
+    scroll-margin-top: max(12px, env(safe-area-inset-top));
+  }
+}
+
 @media (max-width: 520px) {
   h1 {
     font-size: 30px;
