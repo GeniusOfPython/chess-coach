@@ -7,6 +7,7 @@ import type { SubscriptionTier } from "../features/featureAccess";
 
 type Props = {
   compactUi: boolean;
+  showCompactUiSetting: boolean;
   showAnalysisArrows: boolean;
   subscriptionTier: SubscriptionTier;
   privacyConsent: PrivacyConsentState;
@@ -20,6 +21,7 @@ type Props = {
 
 export default function AppSettingsPanel({
   compactUi,
+  showCompactUiSetting,
   showAnalysisArrows,
   subscriptionTier,
   privacyConsent,
@@ -32,26 +34,27 @@ export default function AppSettingsPanel({
 }: Props) {
   return (
     <div className="app-settings-card">
-      <div className="setting-row">
-        <div>
-          <strong>Компактный интерфейс</strong>
-          <p>
-            Уменьшает отступы и высоту карточек. Удобно для телефона
-            и небольшого экрана.
-          </p>
-        </div>
+      {showCompactUiSetting && (
+        <div className="setting-row">
+          <div>
+            <strong>Компактный интерфейс</strong>
+            <p>
+              Уменьшает отступы и высоту карточек в мобильном приложении.
+            </p>
+          </div>
 
-        <label className="setting-switch">
-          <input
-            type="checkbox"
-            checked={compactUi}
-            onChange={(event) =>
-              onCompactUiChange(event.target.checked)
-            }
-          />
-          <span />
-        </label>
-      </div>
+          <label className="setting-switch">
+            <input
+              type="checkbox"
+              checked={compactUi}
+              onChange={(event) =>
+                onCompactUiChange(event.target.checked)
+              }
+            />
+            <span />
+          </label>
+        </div>
+      )}
 
       <div className="setting-row">
         <div>

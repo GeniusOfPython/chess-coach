@@ -162,7 +162,8 @@ function App() {
   const { message: rewardToast, showRewardToast } = useRewardToast();
 
   const access = getFeatureAccess(subscriptionTier);
-  const showAdvertisingUi = isNativeMobileShell();
+  const isNativeApp = isNativeMobileShell();
+  const showAdvertisingUi = isNativeApp;
 
   const {
     analysis,
@@ -813,7 +814,7 @@ function App() {
   }
 
   return (
-    <main className={compactUi ? "app compact-ui" : "app"}>
+    <main className={compactUi && isNativeApp ? "app compact-ui" : "app"}>
       <header className="header">
         <p className="eyebrow">
           Интерактивный тренер
@@ -1099,6 +1100,7 @@ function App() {
               >
                 <AppSettingsPanel
                   compactUi={compactUi}
+                  showCompactUiSetting={isNativeApp}
                   showAnalysisArrows={showAnalysisArrows}
                   subscriptionTier={subscriptionTier}
                   privacyConsent={privacyConsent}
