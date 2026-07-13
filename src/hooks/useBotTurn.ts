@@ -1,4 +1,9 @@
-import { useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { getBotLevel, type BotLevelId } from "../types/bot";
 
 type CalculateBotMove = (options: {
@@ -30,6 +35,8 @@ export function useBotTurn({
   makeEngineMove,
   setIsThinking,
 }: UseBotTurnOptions) {
+  const [error, setError] = useState<string | null>(null);
+  const [retryId, setRetryId] = useState(0);
   const calculateBotMoveRef = useRef(calculateBotMove);
   const makeEngineMoveRef = useRef(makeEngineMove);
   const activeRequestRef = useRef<string | null>(null);
@@ -39,9 +46,16 @@ export function useBotTurn({
     makeEngineMoveRef.current = makeEngineMove;
   }, [calculateBotMove, makeEngineMove]);
 
+  const retry = useCallback(() => {
+    activeRequestRef.current = null;
+    setError(null);
+    setRetryId((currentId) => currentId + 1);
+  }, []);
+
   useEffect(() => {
     if (!enabled || isGameOver) {
       activeRequestRef.current = null;
+      setError(null);
       setIsThinking(false);
       return;
     }
@@ -53,6 +67,7 @@ export function useBotTurn({
     }
 
     activeRequestRef.current = requestKey;
+    setError(null);
     setIsThinking(true);
 
     let cancelled = false;
@@ -65,14 +80,25 @@ export function useBotTurn({
         botLevel,
       })
         .then((bestMove) => {
-          if (cancelled || !bestMove) {
+          if (cancelled) {
             return;
           }
 
-          makeEngineMoveRef.current(bestMove);
+          if (!bestMove) {
+            setError("Stockfish не смог рассчитать ход.");
+            return;
+          }
+
+          if (!makeEngineMoveRef.current(bestMove)) {
+            setError("Не удалось применить рассчитанный ход.");
+          }
         })
         .catch((error) => {
           console.error("Ошибка автоматического хода бота:", error);
+
+          if (!cancelled) {
+            setError("Stockfish временно недоступен.");
+          }
         })
         .finally(() => {
           if (!cancelled && activeRequestRef.current === requestKey) {
@@ -95,7 +121,13 @@ export function useBotTurn({
     enabled,
     fen,
     isGameOver,
+    retryId,
     sessionId,
     setIsThinking,
   ]);
+
+  return {
+    error,
+    retry,
+  };
 }

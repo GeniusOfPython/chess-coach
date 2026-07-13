@@ -6,7 +6,10 @@ type Props = {
   turnOwner: TurnOwner;
   showStartAction: boolean;
   startDisabled?: boolean;
+  error?: string | null;
+  retryDisabled?: boolean;
   onStart: () => void;
+  onRetry?: () => void;
 };
 
 export default function GameSessionCard({
@@ -15,7 +18,10 @@ export default function GameSessionCard({
   turnOwner,
   showStartAction,
   startDisabled = false,
+  error = null,
+  retryDisabled = false,
   onStart,
+  onRetry,
 }: Props) {
   return (
     <div className={`status-card game-session-card ${active ? "active" : ""}`}>
@@ -42,6 +48,19 @@ export default function GameSessionCard({
         >
           {turnOwner === "bot" ? "Ход бота" : "Ваш ход"}
         </span>
+      )}
+
+      {active && error && onRetry && (
+        <div className="game-session-recovery" role="alert">
+          <span>{error}</span>
+          <button
+            type="button"
+            disabled={retryDisabled}
+            onClick={onRetry}
+          >
+            Повторить ход
+          </button>
+        </div>
       )}
 
       {showStartAction && (

@@ -245,7 +245,10 @@ function App() {
     });
   }
 
-  useBotTurn({
+  const {
+    error: botTurnError,
+    retry: retryBotTurn,
+  } = useBotTurn({
     enabled: isBotTurnFor(),
     fen: position,
     isGameOver: game.isGameOver(),
@@ -908,6 +911,9 @@ function App() {
             showStartAction={gameMode === "bot" && !isBotGameStarted}
             startDisabled={isBotThinking}
             onStart={handleStartBotGame}
+            error={botTurnError}
+            retryDisabled={isBotThinking}
+            onRetry={retryBotTurn}
           />
 
           <MoveFeedbackCard
