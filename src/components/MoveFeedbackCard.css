@@ -1,0 +1,47 @@
+.move-feedback-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #3a443d;
+  border-radius: 13px;
+  background: #171c19;
+}
+
+.move-feedback-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.move-feedback-label {
+  color: #aeb7b1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.move-feedback-card.positive {
+  border-color: rgb(143 202 112 / 65%);
+}
+
+.move-feedback-card.warning {
+  border-color: rgb(224 145 91 / 70%);
+}
+
+.move-feedback-card.evaluating {
+  border-color: rgb(216 197 143 / 50%);
+}
+
+.move-feedback-card button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .move-feedback-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

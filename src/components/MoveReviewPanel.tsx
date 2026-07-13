@@ -1,4 +1,5 @@
 import { explainEngineMove } from "../utils/explainMove";
+import type { MoveReviewVerdict } from "../analysis/reviewTypes";
 
 export type MoveReview = {
   playedMove: string;
@@ -11,149 +12,59 @@ export type MoveReview = {
   evaluationLoss: number | null;
   verdict: MoveReviewVerdict;
 };
+export type { MoveReviewVerdict };
 
-export type MoveReviewVerdict =
-  | "best"
-  | "good"
-  | "inaccuracy"
-  | "mistake"
-  | "blunder"
-  | "unknown";
-
-type Props = {
-  review: MoveReview | null;
-  canShowExplanations?: boolean;
+const presentation: Record<MoveReviewVerdict, { label: string; title: string; tone: string }> = {
+  best: { label: "Лучший ход", title: "Ты сыграл первую линию Stockfish", tone: "good" },
+  good: { label: "Хороший ход", title: "Решение сохраняет качество позиции", tone: "good" },
+  inaccuracy: { label: "Неточность", title: "Был вариант немного сильнее", tone: "warning" },
+  mistake: { label: "Ошибка", title: "Ход заметно ухудшил позицию", tone: "bad" },
+  blunder: { label: "Грубая ошибка", title: "Ход серьёзно изменил оценку позиции", tone: "critical" },
+  unknown: { label: "Без оценки", title: "Недостаточно данных для точного вердикта", tone: "neutral" },
 };
 
 function formatMove(move: string | null) {
-  if (!move || move === "(none)") {
-    return "Нет хода";
-  }
-
-  const from = move.slice(0, 2);
-  const to = move.slice(2, 4);
+  if (!move || move === "(none)") return "Нет хода";
   const promotion = move.slice(4);
-
-  if (promotion) {
-    return `${from} → ${to}, превращение в ${promotion.toUpperCase()}`;
-  }
-
-  return `${from} → ${to}`;
+  return promotion
+    ? `${move.slice(0, 2)} → ${move.slice(2, 4)}, ${promotion.toUpperCase()}`
+    : `${move.slice(0, 2)} → ${move.slice(2, 4)}`;
 }
 
-export default function MoveReviewPanel({
-  review,
-  canShowExplanations = true,
-}: Props) {
+export default function MoveReviewPanel({ review, canShowExplanations = true }: {
+  review: MoveReview | null;
+  canShowExplanations?: boolean;
+}) {
   if (!review) {
-    return (
-      <div className="move-review-card">
-        <span className="status-label">
-          Разбор последнего хода
-        </span>
-
-        <div className="move-review neutral">
-          <strong>Пока нет хода для разбора</strong>
-
-          <p>
-            Чтобы увидеть оценку своего решения: сначала
-            нажми «Показать лучший ход», затем сделай ход
-            на доске.
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="move-review-card"><span className="status-label">Разбор последнего хода</span><div className="move-review neutral"><strong>Пока нет хода для разбора</strong><p>Сделай ход на доске — Stockfish автоматически оценит решение.</p></div></div>;
   }
 
   if (review.bestMove === null) {
-    return (
-      <div className="move-review-card">
-        <span className="status-label">
-          Разбор последнего хода
-        </span>
-
-        <div className="move-review neutral">
-          <strong>
-            Сыграно: {formatMove(review.playedMove)}
-          </strong>
-
-          <p>
-            Ход не сравнивался с рекомендацией. Чтобы
-            приложение оценило твой выбор, перед ходом
-            нажми «Показать лучший ход».
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="move-review-card"><span className="status-label">Разбор последнего хода</span><div className="move-review neutral"><strong>{review.isEvaluating ? "Stockfish оценивает ход…" : `Сыграно: ${formatMove(review.playedMove)}`}</strong><p>{review.isEvaluating ? "Результат появится автоматически." : "Не удалось получить оценку движка."}</p></div></div>;
   }
 
-  if (review.matchedBestMove) {
-    return (
-      <div className="move-review-card">
-        <span className="status-label">
-          Разбор последнего хода
-        </span>
-
-        <div className="move-review good">
-          <strong>
-            Хорошо: ты сыграл лучший ход Stockfish
-          </strong>
-
-          <p>
-            Сыграно: {formatMove(review.playedMove)}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const explanations = explainEngineMove(
-    review.positionBeforeMove,
-    review.bestMove,
-  );
+  const view = presentation[review.verdict];
+  const showAlternative = !review.matchedBestMove;
+  const explanations = showAlternative
+    ? explainEngineMove(review.positionBeforeMove, review.bestMove)
+    : [];
 
   return (
     <div className="move-review-card">
-      <span className="status-label">
-        Разбор последнего хода
-      </span>
-
-      <div className="move-review warning">
-        <strong>
-          Ты отклонился от лучшего варианта
-        </strong>
-
+      <span className="status-label">Разбор последнего хода</span>
+      <div className={`move-review ${view.tone}`}>
+        <div className="move-review-verdict-row">
+          <strong>{view.title}</strong>
+          <span className="move-review-verdict-badge">{view.label}</span>
+        </div>
         <div className="move-review-grid">
-          <span>Твой ход</span>
-          <b>{formatMove(review.playedMove)}</b>
-
-          <span>Лучший ход</span>
-          <b>{formatMove(review.bestMove)}</b>
+          <span>Твой ход</span><b>{formatMove(review.playedMove)}</b>
+          {showAlternative && <><span>Лучший ход</span><b>{formatMove(review.bestMove)}</b></>}
+          {review.evaluationLoss !== null && <><span>Потеря оценки</span><b>{review.evaluationLoss.toFixed(2)}</b></>}
         </div>
-
-        {review.isEvaluating && (
-          <p>Stockfish оценивает последствия хода…</p>
-        )}
-
-        {review.evaluationLoss !== null && (
-          <div className="move-review-grid">
-            <span>Потеря оценки</span>
-            <b>{review.evaluationLoss.toFixed(2)}</b>
-          </div>
-        )}
-
-        {canShowExplanations && (
-        <div className="move-review-explanation">
-          <span>
-            Почему Stockfish предпочитал другой ход
-          </span>
-
-          <ul>
-            {explanations.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
+        {review.isEvaluating && <p>Stockfish оценивает последствия хода…</p>}
+        {canShowExplanations && explanations.length > 0 && (
+          <div className="move-review-explanation"><span>Почему другой ход был сильнее</span><ul>{explanations.map((item) => <li key={item}>{item}</li>)}</ul></div>
         )}
       </div>
     </div>

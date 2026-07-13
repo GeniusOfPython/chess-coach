@@ -34,6 +34,7 @@ import WorkspaceTabs from "./components/WorkspaceTabs";
 import RewardToast from "./components/RewardToast";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import GameSessionCard from "./components/GameSessionCard";
+import MoveFeedbackCard from "./components/MoveFeedbackCard";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import { useAppPreferences } from "./hooks/useAppPreferences";
@@ -49,7 +50,6 @@ import { getFeatureAccess } from "./features/featureAccess";
 import {
   type AdsConsentStatus,
 } from "./features/consent";
-import { getBotLevel } from "./types/bot";
 import { isNativeMobileShell } from "./platform/mobile";
 import { writeStorageValue } from "./platform/appStorage";
 import { settingsStorageKeys } from "./platform/storageKeys";
@@ -61,6 +61,7 @@ import { isBotTurn, isPlayerTurn as getIsPlayerTurn } from "./game/gameFlowRules
 import { useLearningJournal } from "./hooks/useLearningJournal";
 import type { LearningJournalItem } from "./analysis/learningJournal";
 import { useBestMoveTraining } from "./hooks/useBestMoveTraining";
+import { useBotTurn } from "./hooks/useBotTurn";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -82,6 +83,7 @@ import "./components/ConsentBanner.css";
 import "./components/WorkspaceTabs.css";
 import "./components/RewardToast.css";
 import "./components/GameSessionCard.css";
+import "./components/MoveFeedbackCard.css";
 import "./App.css";
 
 function App() {
@@ -110,6 +112,8 @@ function App() {
     setIsBotThinking,
     isBotGameStarted,
     setIsBotGameStarted,
+    botSessionId,
+    startBotSession,
     lastMoveReview,
     setLastMoveReview,
     selectedSquare,
@@ -241,6 +245,17 @@ function App() {
     });
   }
 
+  useBotTurn({
+    enabled: isBotTurnFor(),
+    fen: position,
+    isGameOver: game.isGameOver(),
+    botLevelId,
+    sessionId: botSessionId,
+    calculateBotMove,
+    makeEngineMove,
+    setIsThinking: setIsBotThinking,
+  });
+
   function isPlayerTurn() {
     return getIsPlayerTurn({
       mode: gameMode,
@@ -281,75 +296,6 @@ function App() {
       isGameOver: isViewingCurrentPosition && game.isGameOver(),
     });
   }
-
-  async function makeBotMove({
-    mode = gameMode,
-    side = playerSide,
-    started = isBotGameStarted,
-  }: {
-    mode?: GameMode;
-    side?: Color;
-    started?: boolean;
-  } = {}) {
-    if (!isBotTurnFor({ mode, side, started })) {
-      return;
-    }
-
-    setIsBotThinking(true);
-
-    try {
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, 500);
-      });
-
-      const botLevel = getBotLevel(botLevelId);
-
-      const bestMove = await calculateBotMove({
-        fen: game.fen(),
-        isGameOver: game.isGameOver(),
-        botLevel,
-      });
-
-      if (!bestMove) {
-        return;
-      }
-
-      if (!isBotTurnFor({ mode, side, started })) {
-        return;
-      }
-
-      makeEngineMove(bestMove);
-    } finally {
-      setIsBotThinking(false);
-    }
-  }
-
-  function requestBotMove({
-    mode = gameMode,
-    side = playerSide,
-    started = isBotGameStarted,
-  }: {
-    mode?: GameMode;
-    side?: Color;
-    started?: boolean;
-  } = {}) {
-    window.setTimeout(() => {
-      void makeBotMove({ mode, side, started });
-    }, 0);
-  }
-
-  useEffect(() => {
-    if (isBotThinking || !isBotTurnFor()) {
-      return;
-    }
-
-    requestBotMove();
-  }, [
-    position,
-    gameMode,
-    playerSide,
-    isBotGameStarted,
-  ]);
 
   function reviewMoveAfterEngineEvaluation({
     playedMove,
@@ -767,7 +713,7 @@ function App() {
     newGame();
     setSelectedSquare(null);
     setIsBotThinking(false);
-    setIsBotGameStarted(true);
+    startBotSession();
     setLastMoveReview(null);
     clearLearningJournal();
     clearGameReview();
@@ -962,6 +908,10 @@ function App() {
             showStartAction={gameMode === "bot" && !isBotGameStarted}
             startDisabled={isBotThinking}
             onStart={handleStartBotGame}
+          />
+
+          <MoveFeedbackCard
+            review={lastMoveReview}
           />
 
           <GameModeSelector
