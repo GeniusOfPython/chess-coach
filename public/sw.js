@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "chess-coach-";
-const CACHE_VERSION = `${CACHE_PREFIX}v3`;
+const CACHE_VERSION = `${CACHE_PREFIX}v5`;
 
 const APP_SHELL = [
   "/manifest.webmanifest",
@@ -50,10 +50,7 @@ async function precacheApplication() {
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    precacheApplication()
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(precacheApplication());
 });
 
 self.addEventListener("activate", (event) => {
@@ -96,36 +93,33 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
+      (async () => {
+        const cache = await caches.open(CACHE_VERSION);
+        const cachedPage =
+          (await cache.match("/index.html")) ??
+          (await cache.match("/"));
 
-          caches.open(CACHE_VERSION).then((cache) => {
-            cache.put("/index.html", responseClone);
+        if (cachedPage) {
+          return cachedPage;
+        }
+
+        try {
+          return await fetch(request);
+        } catch {
+          return new Response("Приложение пока недоступно офлайн.", {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
           });
-
-          return response;
-        })
-        .catch(async () => {
-          const cachedPage =
-            (await caches.match("/index.html")) ??
-            (await caches.match("/"));
-
-          return cachedPage ?? new Response(
-            "Приложение пока недоступно офлайн.",
-            {
-              status: 503,
-              headers: { "Content-Type": "text/plain; charset=utf-8" },
-            },
-          );
-        }),
+        }
+      })(),
     );
     return;
   }
 
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(request);
+      const cache = await caches.open(CACHE_VERSION);
+      const cachedResponse = await cache.match(request);
 
       if (cachedResponse) {
         return cachedResponse;
@@ -135,7 +129,6 @@ self.addEventListener("fetch", (event) => {
         const response = await fetch(request);
 
         if (response.ok && response.type === "basic") {
-          const cache = await caches.open(CACHE_VERSION);
           await cache.put(request, response.clone());
         }
 

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shouldRegisterServiceWorker } from "./registerServiceWorker";
+import {
+  shouldAnnounceServiceWorkerUpdate,
+  shouldRegisterServiceWorker,
+} from "./registerServiceWorker";
 
 describe("shouldRegisterServiceWorker", () => {
   it("регистрирует PWA только в production web", () => {
@@ -25,6 +28,25 @@ describe("shouldRegisterServiceWorker", () => {
       isProduction: true,
       isNativeApp: false,
       hasServiceWorker: false,
+    })).toBe(false);
+  });
+});
+
+describe("shouldAnnounceServiceWorkerUpdate", () => {
+  it("показывает обновление только после установки новой версии", () => {
+    expect(shouldAnnounceServiceWorkerUpdate({
+      workerState: "installed",
+      hasController: true,
+    })).toBe(true);
+
+    expect(shouldAnnounceServiceWorkerUpdate({
+      workerState: "installed",
+      hasController: false,
+    })).toBe(false);
+
+    expect(shouldAnnounceServiceWorkerUpdate({
+      workerState: "activated",
+      hasController: true,
     })).toBe(false);
   });
 });
