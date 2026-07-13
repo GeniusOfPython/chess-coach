@@ -19,6 +19,11 @@ export function useEngineAnalysis() {
     [],
   );
 
+  const reviewEngine = useMemo(
+    () => new StockfishService(),
+    [],
+  );
+
   const [analysis, setAnalysis] =
     useState<EngineAnalysis | null>(null);
 
@@ -34,8 +39,9 @@ export function useEngineAnalysis() {
     return () => {
       analysisEngine.destroy();
       botEngine.destroy();
+      reviewEngine.destroy();
     };
-  }, [analysisEngine, botEngine]);
+  }, [analysisEngine, botEngine, reviewEngine]);
 
   const clearAnalysis = useCallback(() => {
     analysisEngine.stop();
@@ -150,7 +156,7 @@ export function useEngineAnalysis() {
       if (isGameOver) return null;
 
       try {
-        return await botEngine.analyze(fen, {
+        return await reviewEngine.analyze(fen, {
           movetime,
           multiPv: 1,
         });
@@ -159,7 +165,7 @@ export function useEngineAnalysis() {
         return null;
       }
     },
-    [botEngine],
+    [reviewEngine],
   );
 
   return {

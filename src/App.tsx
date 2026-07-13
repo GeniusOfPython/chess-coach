@@ -449,6 +449,81 @@ function App() {
     });
   }
 
+  function reviewMoveWithoutSuggestion({
+    playedMove,
+    positionBeforeMove,
+    positionAfterMove,
+    movingSide,
+  }: {
+    playedMove: string;
+    positionBeforeMove: string;
+    positionAfterMove: string;
+    movingSide: Color;
+  }) {
+    void calculatePositionAnalysis({
+      fen: positionBeforeMove,
+      isGameOver: false,
+      movetime: 700,
+    }).then((beforeAnalysis) => {
+      if (!beforeAnalysis?.bestMove) {
+        setLastMoveReview((currentReview) =>
+          currentReview?.playedMove === playedMove &&
+          currentReview.positionBeforeMove === positionBeforeMove
+            ? { ...currentReview, isEvaluating: false }
+            : currentReview,
+        );
+        return;
+      }
+
+      const bestMove = beforeAnalysis.bestMove;
+      const matchedBestMove = isMoveMatchingBestMove({
+        playedMove,
+        bestMove,
+      });
+      const evaluationBeforeWhite = getWhiteEvaluation(
+        beforeAnalysis,
+        movingSide,
+      );
+
+      setLastMoveReview((currentReview) =>
+        currentReview?.playedMove === playedMove &&
+        currentReview.positionBeforeMove === positionBeforeMove
+          ? {
+              ...currentReview,
+              bestMove,
+              matchedBestMove,
+              evaluationBeforeWhite,
+              evaluationLoss: matchedBestMove ? 0 : null,
+              verdict: getVerdict({
+                matchedBestMove,
+                evaluationLoss: matchedBestMove ? 0 : null,
+              }),
+              isEvaluating: !matchedBestMove,
+            }
+          : currentReview,
+      );
+
+      if (matchedBestMove) {
+        showRewardToast({
+          kind: "success",
+          title: "Сильный ход",
+          text: "Stockfish подтвердил: сыгран лучший вариант.",
+        });
+        return;
+      }
+
+      reviewMoveAfterEngineEvaluation({
+        playedMove,
+        matchedBestMove: false,
+        positionBeforeMove,
+        bestMove,
+        positionAfterMove,
+        evaluationBeforeWhite,
+        movingSide,
+      });
+    });
+  }
+
   async function handleRunGameReview() {
     if (isBotThinking || gameReviewStatus === "running") {
       return;
@@ -537,6 +612,7 @@ function App() {
 
     if (moveWasMade) {
       void triggerMoveHaptic();
+      const positionAfterMove = game.fen();
 
       const matchedBestMove =
         suggestedBestMove === null
@@ -549,9 +625,8 @@ function App() {
         matchedBestMove,
         positionBeforeMove,
         isEvaluating:
-          suggestedBestMove !== null &&
-          evaluationBeforeWhite !== null &&
-          !matchedBestMove,
+          suggestedBestMove === null ||
+          (evaluationBeforeWhite !== null && !matchedBestMove),
         evaluationBeforeWhite,
         evaluationAfterWhite: null,
         evaluationLoss: matchedBestMove ? 0 : null,
@@ -619,8 +694,15 @@ function App() {
           bestMove: suggestedBestMove,
           matchedBestMove: false,
           positionBeforeMove,
-          positionAfterMove: game.fen(),
+          positionAfterMove,
           evaluationBeforeWhite,
+          movingSide,
+        });
+      } else if (suggestedBestMove === null) {
+        reviewMoveWithoutSuggestion({
+          playedMove,
+          positionBeforeMove,
+          positionAfterMove,
           movingSide,
         });
       }
