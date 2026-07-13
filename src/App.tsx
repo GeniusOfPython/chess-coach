@@ -60,6 +60,7 @@ import { useTrainingProgress } from "./hooks/useTrainingProgress";
 import { useGameReview } from "./hooks/useGameReview";
 import { useRewardToast } from "./hooks/useRewardToast";
 import { useGameSession } from "./hooks/useGameSession";
+import { isBotTurn, isPlayerTurn as getIsPlayerTurn } from "./game/gameFlowRules";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -230,20 +231,22 @@ function App() {
     side?: Color;
     started?: boolean;
   } = {}) {
-    return (
-      mode === "bot" &&
-      started &&
-      !game.isGameOver() &&
-      game.turn() !== side
-    );
+    return isBotTurn({
+      mode,
+      started,
+      isGameOver: game.isGameOver(),
+      turn: game.turn(),
+      playerSide: side,
+    });
   }
 
   function isPlayerTurn() {
-    if (gameMode === "analysis") {
-      return true;
-    }
-
-    return isBotGameStarted && game.turn() === playerSide;
+    return getIsPlayerTurn({
+      mode: gameMode,
+      started: isBotGameStarted,
+      turn: game.turn(),
+      playerSide,
+    });
   }
 
   function canSelectPiece(square: string) {
@@ -1015,10 +1018,23 @@ function App() {
               isBotGameStarted &&
               isViewingCurrentPosition &&
               !game.isGameOver() && (
-                <span className="active-game-indicator" role="status">
-                  <span className="active-game-dot" aria-hidden="true" />
-                  Партия идёт
-                </span>
+                <div className="active-game-meta" role="status" aria-live="polite">
+                  <span className="active-game-indicator">
+                    <span className="active-game-dot" aria-hidden="true" />
+                    Партия идёт
+                  </span>
+                  <span
+                    className={`turn-indicator ${
+                      isBotThinking || game.turn() !== playerSide
+                        ? "turn-indicator-bot"
+                        : "turn-indicator-player"
+                    }`}
+                  >
+                    {isBotThinking || game.turn() !== playerSide
+                      ? "Ход бота"
+                      : "Ваш ход"}
+                  </span>
+                </div>
               )}
 
             <strong>

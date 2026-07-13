@@ -108,6 +108,33 @@ h1 {
   animation: active-game-pulse 1.8s ease-out infinite;
 }
 
+.active-game-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.turn-indicator {
+  padding: 4px 9px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.turn-indicator-player {
+  color: #d5ebc8;
+  background: rgb(143 202 112 / 10%);
+}
+
+.turn-indicator-bot {
+  color: #d8c58f;
+  background: rgb(216 197 143 / 10%);
+}
+
 @keyframes active-game-pulse {
   0%,
   100% {
