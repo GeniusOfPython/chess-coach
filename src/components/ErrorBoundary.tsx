@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { clearAppStorageValues } from "../platform/appStorage";
 import "./ErrorBoundary.css";
 
 type Props = {
@@ -36,14 +37,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   };
 
   handleResetLocalData = () => {
-    const keysToRemove = Object.keys(window.localStorage).filter((key) =>
-      key.startsWith("chess-coach."),
-    );
-
-    keysToRemove.forEach((key) => {
-      window.localStorage.removeItem(key);
-    });
-
+    clearAppStorageValues();
     window.location.reload();
   };
 
