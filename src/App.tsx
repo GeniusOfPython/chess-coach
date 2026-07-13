@@ -33,6 +33,7 @@ import CollapsibleSection from "./components/CollapsibleSection";
 import WorkspaceTabs from "./components/WorkspaceTabs";
 import RewardToast from "./components/RewardToast";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
+import GameSessionCard from "./components/GameSessionCard";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import { useAppPreferences } from "./hooks/useAppPreferences";
@@ -80,6 +81,7 @@ import "./components/AdSlot.css";
 import "./components/ConsentBanner.css";
 import "./components/WorkspaceTabs.css";
 import "./components/RewardToast.css";
+import "./components/GameSessionCard.css";
 import "./App.css";
 
 function App() {
@@ -862,44 +864,22 @@ function App() {
         </div>
 
         <aside className="side-panel">
-          <div className="status-card">
-            <span className="status-label">
-              Состояние партии
-            </span>
-
-            {gameMode === "bot" &&
-              isBotGameStarted &&
-              isViewingCurrentPosition &&
-              !game.isGameOver() && (
-                <div className="active-game-meta" role="status" aria-live="polite">
-                  <span className="active-game-indicator">
-                    <span className="active-game-dot" aria-hidden="true" />
-                    Партия идёт
-                  </span>
-                  <span
-                    className={`turn-indicator ${
-                      isBotThinking || game.turn() !== playerSide
-                        ? "turn-indicator-bot"
-                        : "turn-indicator-player"
-                    }`}
-                  >
-                    {isBotThinking || game.turn() !== playerSide
-                      ? "Ход бота"
-                      : "Ваш ход"}
-                  </span>
-                </div>
-              )}
-
-            <strong>
-              {isBotThinking
-                ? "Бот думает…"
-                : !isViewingCurrentPosition
-                  ? "Просмотр позиции из истории"
-                  : gameMode === "bot" && !isBotGameStarted
-                    ? "Выбери сторону и нажми «Старт партии»"
-                    : status}
-            </strong>
-          </div>
+          <GameSessionCard
+            stateText={isBotThinking
+              ? "Бот думает…"
+              : !isViewingCurrentPosition
+                ? "Просмотр позиции из истории"
+                : gameMode === "bot" && !isBotGameStarted
+                  ? "Выбери сторону и начни партию"
+                  : status}
+            active={gameMode === "bot" && isBotGameStarted && isViewingCurrentPosition && !game.isGameOver()}
+            turnOwner={gameMode === "bot" && isBotGameStarted && isViewingCurrentPosition && !game.isGameOver()
+              ? isBotThinking || game.turn() !== playerSide ? "bot" : "player"
+              : null}
+            showStartAction={gameMode === "bot" && !isBotGameStarted}
+            startDisabled={isBotThinking}
+            onStart={handleStartBotGame}
+          />
 
           <GameModeSelector
             mode={gameMode}
@@ -921,17 +901,6 @@ function App() {
               disabled={isBotThinking}
               onChange={setBotLevelId}
             />
-          )}
-
-          {gameMode === "bot" && !isBotGameStarted && (
-            <button
-              type="button"
-              className="analyze-button"
-              disabled={isBotThinking}
-              onClick={handleStartBotGame}
-            >
-              Старт партии
-            </button>
           )}
 
           <GameControls
