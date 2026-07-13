@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "chess-coach-";
-const CACHE_VERSION = `${CACHE_PREFIX}v5`;
+const CACHE_VERSION = `${CACHE_PREFIX}v6`;
 
 const APP_SHELL = [
   "/manifest.webmanifest",

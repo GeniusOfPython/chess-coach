@@ -1,12 +1,8 @@
 .pwa-update-notice {
-  position: fixed;
-  z-index: 1200;
-  right: 24px;
-  bottom: calc(24px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 18px;
-  width: min(440px, calc(100vw - 48px));
+  width: 100%;
   padding: 14px 14px 14px 18px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
@@ -63,14 +59,6 @@
   from {
     opacity: 0;
     transform: translateY(12px);
-  }
-}
-
-@media (max-width: 640px) {
-  .pwa-update-notice {
-    right: 12px;
-    bottom: calc(78px + env(safe-area-inset-bottom));
-    width: calc(100vw - 24px);
   }
 }
 
