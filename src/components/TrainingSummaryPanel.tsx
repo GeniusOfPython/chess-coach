@@ -1,4 +1,4 @@
-import type { LearningJournalItem } from "./LearningJournalPanel";
+import type { LearningJournalItem } from "../analysis/learningJournal";
 
 type Props = {
   historyLength: number;

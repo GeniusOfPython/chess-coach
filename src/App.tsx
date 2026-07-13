@@ -25,9 +25,7 @@ import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
 import BestMoveTrainingPanel, {
   type BestMoveTrainingTask,
 } from "./components/BestMoveTrainingPanel";
-import LearningJournalPanel, {
-  type LearningJournalItem,
-} from "./components/LearningJournalPanel";
+import LearningJournalPanel from "./components/LearningJournalPanel";
 import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
 import OpeningPrinciplesPanel from "./components/OpeningPrinciplesPanel";
 import AppSettingsPanel from "./components/AppSettingsPanel";
@@ -61,6 +59,8 @@ import { useGameReview } from "./hooks/useGameReview";
 import { useRewardToast } from "./hooks/useRewardToast";
 import { useGameSession } from "./hooks/useGameSession";
 import { isBotTurn, isPlayerTurn as getIsPlayerTurn } from "./game/gameFlowRules";
+import { useLearningJournal } from "./hooks/useLearningJournal";
+import type { LearningJournalItem } from "./analysis/learningJournal";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -144,8 +144,11 @@ function App() {
     }),
   });
 
-  const [learningJournalItems, setLearningJournalItems] =
-    useState<LearningJournalItem[]>([]);
+  const {
+    items: learningJournalItems,
+    addItem: addLearningJournalItem,
+    clearItems: clearLearningJournal,
+  } = useLearningJournal();
 
   const {
     status: gameReviewStatus,
@@ -424,13 +427,7 @@ function App() {
           evaluationLoss,
         };
 
-        setLearningJournalItems((items) => {
-          if (items.some((item) => item.id === journalItem.id)) {
-            return items;
-          }
-
-          return [journalItem, ...items].slice(0, 12);
-        });
+        addLearningJournalItem(journalItem);
       }
 
       setLastMoveReview((currentReview) => {
@@ -815,7 +812,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
-    setLearningJournalItems([]);
+    clearLearningJournal();
     clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
@@ -831,7 +828,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(true);
     setLastMoveReview(null);
-    setLearningJournalItems([]);
+    clearLearningJournal();
     clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
@@ -916,7 +913,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
-    setLearningJournalItems([]);
+    clearLearningJournal();
     clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
@@ -949,7 +946,7 @@ function App() {
     setIsBotThinking(false);
     setIsBotGameStarted(false);
     setLastMoveReview(null);
-    setLearningJournalItems([]);
+    clearLearningJournal();
     clearGameReview();
     resetBestMoveTraining();
     clearAnalysis();
@@ -1217,7 +1214,7 @@ function App() {
 
                 <LearningJournalPanel
                   items={learningJournalItems}
-                  onClear={() => setLearningJournalItems([])}
+                  onClear={clearLearningJournal}
                 />
               </CollapsibleSection>
 

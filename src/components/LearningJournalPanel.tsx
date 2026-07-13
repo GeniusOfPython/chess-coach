@@ -1,16 +1,7 @@
 import type { Color } from "chess.js";
 import type { MoveReviewVerdict } from "./MoveReviewPanel";
+import type { LearningJournalItem } from "../analysis/learningJournal";
 import "./LearningJournalPanel.css";
-
-export type LearningJournalItem = {
-  id: string;
-  moveNumber: number;
-  side: Color;
-  playedMove: string;
-  bestMove: string;
-  verdict: MoveReviewVerdict;
-  evaluationLoss: number;
-};
 
 type Props = {
   items: LearningJournalItem[];
