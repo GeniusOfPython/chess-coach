@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { Color, Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
@@ -22,9 +22,7 @@ import GameReviewPanel, {
   type GameReviewItem,
 } from "./components/GameReviewPanel";
 import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
-import BestMoveTrainingPanel, {
-  type BestMoveTrainingTask,
-} from "./components/BestMoveTrainingPanel";
+import BestMoveTrainingPanel from "./components/BestMoveTrainingPanel";
 import LearningJournalPanel from "./components/LearningJournalPanel";
 import TrainingSummaryPanel from "./components/TrainingSummaryPanel";
 import OpeningPrinciplesPanel from "./components/OpeningPrinciplesPanel";
@@ -61,6 +59,7 @@ import { useGameSession } from "./hooks/useGameSession";
 import { isBotTurn, isPlayerTurn as getIsPlayerTurn } from "./game/gameFlowRules";
 import { useLearningJournal } from "./hooks/useLearningJournal";
 import type { LearningJournalItem } from "./analysis/learningJournal";
+import { useBestMoveTraining } from "./hooks/useBestMoveTraining";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -82,15 +81,6 @@ import "./components/ConsentBanner.css";
 import "./components/WorkspaceTabs.css";
 import "./components/RewardToast.css";
 import "./App.css";
-
-const initialTrainingTask: BestMoveTrainingTask = {
-  status: "idle",
-  positionFen: null,
-  bestMove: null,
-  playedMove: null,
-  error: null,
-  hintLevel: 0,
-};
 
 function App() {
   const {
@@ -124,8 +114,15 @@ function App() {
     setSelectedSquare,
   } = useGameSession();
 
-  const [bestMoveTrainingTask, setBestMoveTrainingTask] =
-    useState<BestMoveTrainingTask>(initialTrainingTask);
+  const {
+    task: bestMoveTrainingTask,
+    resetTask: resetBestMoveTraining,
+    prepareTask: prepareBestMoveTraining,
+    failTask: failBestMoveTraining,
+    readyTask: readyBestMoveTraining,
+    revealHint: revealBestMoveTrainingHint,
+    completeTask: completeBestMoveTraining,
+  } = useBestMoveTraining();
 
   const {
     currentStreak: trainingCurrentStreak,
@@ -451,10 +448,6 @@ function App() {
     });
   }
 
-  function resetBestMoveTraining() {
-    setBestMoveTrainingTask(initialTrainingTask);
-  }
-
   function clearGameReview() {
     setGameReviewStatus("idle");
     setGameReviewItems([]);
@@ -594,14 +587,7 @@ function App() {
 
     setSelectedSquare(null);
     clearAnalysis();
-    setBestMoveTrainingTask({
-      status: "preparing",
-      positionFen: trainingFen,
-      bestMove: null,
-      playedMove: null,
-      error: null,
-      hintLevel: 0,
-    });
+    prepareBestMoveTraining(trainingFen);
 
     const trainingAnalysis = await calculatePositionAnalysis({
       fen: trainingFen,
@@ -610,38 +596,17 @@ function App() {
     });
 
     if (!trainingAnalysis?.bestMove) {
-      setBestMoveTrainingTask({
-        status: "idle",
-        positionFen: null,
-        bestMove: null,
-        playedMove: null,
-        error: "Не удалось подготовить задачу из текущей позиции.",
-        hintLevel: 0,
-      });
+      failBestMoveTraining(
+        "Не удалось подготовить задачу из текущей позиции.",
+      );
       return;
     }
 
-    setBestMoveTrainingTask({
-      status: "ready",
-      positionFen: trainingFen,
-      bestMove: trainingAnalysis.bestMove,
-      playedMove: null,
-      error: null,
-      hintLevel: 0,
-    });
+    readyBestMoveTraining(trainingFen, trainingAnalysis.bestMove);
   }
 
   function handleRevealBestMoveHint() {
-    setBestMoveTrainingTask((task) => {
-      if (task.status !== "ready") {
-        return task;
-      }
-
-      return {
-        ...task,
-        hintLevel: Math.min(task.hintLevel + 1, 3),
-      };
-    });
+    revealBestMoveTrainingHint();
   }
 
   function handlePieceDrop(args: {
@@ -712,11 +677,7 @@ function App() {
 
         recordTrainingAttempt(trainingSolved);
 
-        setBestMoveTrainingTask({
-          ...bestMoveTrainingTask,
-          status: trainingSolved ? "success" : "fail",
-          playedMove,
-        });
+        completeBestMoveTraining(playedMove, trainingSolved);
 
         if (trainingSolved) {
           showRewardToast({
