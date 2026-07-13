@@ -149,13 +149,11 @@ function App() {
 
   const {
     status: gameReviewStatus,
-    setStatus: setGameReviewStatus,
     items: gameReviewItems,
-    setItems: setGameReviewItems,
     progress: gameReviewProgress,
-    setProgress: setGameReviewProgress,
     error: gameReviewError,
-    setError: setGameReviewError,
+    run: runGameReview,
+    reset: clearGameReview,
   } = useGameReview();
 
 
@@ -448,119 +446,16 @@ function App() {
     });
   }
 
-  function clearGameReview() {
-    setGameReviewStatus("idle");
-    setGameReviewItems([]);
-    setGameReviewProgress(0);
-    setGameReviewError("");
-  }
-
   async function handleRunGameReview() {
     if (isBotThinking || gameReviewStatus === "running") {
       return;
     }
 
-    const totalMoves = Math.min(
-      lastMoveHistory.length,
-      Math.max(0, fenHistory.length - 1),
-      24,
-    );
-
-    if (totalMoves === 0) {
-      return;
-    }
-
-    setGameReviewStatus("running");
-    setGameReviewItems([]);
-    setGameReviewProgress(0);
-    setGameReviewError("");
-
-    const reviewedItems: GameReviewItem[] = [];
-
-    try {
-      for (let index = 0; index < totalMoves; index += 1) {
-        const positionBeforeMove = fenHistory[index];
-        const positionAfterMove = fenHistory[index + 1];
-        const move = lastMoveHistory[index];
-
-        if (!positionBeforeMove || !positionAfterMove || !move) {
-          setGameReviewProgress(index + 1);
-          continue;
-        }
-
-        const movingSide = getTurnFromFen(positionBeforeMove);
-        const playedMove = `${move.from}${move.to}`;
-
-        const beforeAnalysis = await calculatePositionAnalysis({
-          fen: positionBeforeMove,
-          isGameOver: false,
-          movetime: 650,
-        });
-
-        if (!beforeAnalysis?.bestMove) {
-          setGameReviewProgress(index + 1);
-          continue;
-        }
-
-        const afterAnalysis = await calculatePositionAnalysis({
-          fen: positionAfterMove,
-          isGameOver: false,
-          movetime: 450,
-        });
-
-        const matchedBestMove = isMoveMatchingBestMove({
-          playedMove,
-          bestMove: beforeAnalysis.bestMove,
-        });
-
-        const evaluationBeforeWhite = getWhiteEvaluation(
-          beforeAnalysis,
-          movingSide,
-        );
-
-        const evaluationAfterWhite = afterAnalysis
-          ? getWhiteEvaluation(
-              afterAnalysis,
-              getTurnFromFen(positionAfterMove),
-            )
-          : null;
-
-        const evaluationLoss = evaluationAfterWhite === null
-          ? null
-          : Math.max(
-              0,
-              movingSide === "w"
-                ? evaluationBeforeWhite - evaluationAfterWhite
-                : evaluationAfterWhite - evaluationBeforeWhite,
-            );
-
-        reviewedItems.push({
-          id: `${index}-${positionBeforeMove}-${playedMove}`,
-          positionIndex: index,
-          moveNumber: getFullMoveNumber(positionBeforeMove),
-          side: movingSide,
-          playedMove,
-          bestMove: beforeAnalysis.bestMove,
-          verdict: getVerdict({
-            matchedBestMove,
-            evaluationLoss: matchedBestMove ? 0 : evaluationLoss,
-          }),
-          evaluationLoss: matchedBestMove ? 0 : evaluationLoss,
-        });
-
-        setGameReviewItems([...reviewedItems]);
-        setGameReviewProgress(index + 1);
-      }
-
-      setGameReviewStatus("done");
-    } catch (reviewError) {
-      setGameReviewStatus("error");
-      setGameReviewError(
-        reviewError instanceof Error
-          ? reviewError.message
-          : "Не удалось разобрать партию.",
-      );
-    }
+    await runGameReview({
+      fenHistory,
+      moveHistory: lastMoveHistory,
+      calculatePositionAnalysis,
+    });
   }
 
   function handleSelectReviewedPosition(item: GameReviewItem) {
