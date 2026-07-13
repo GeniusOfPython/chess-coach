@@ -68,6 +68,19 @@ describe("createStorageGateway", () => {
     expect(gateway.read("chess-coach.progress")).toBeNull();
     expect(gateway.read("other-app.setting")).toBe("keep");
   });
+
+  it("возвращает снимок только данных приложения", () => {
+    const storage = createMemoryStorage();
+    const gateway = createStorageGateway(() => storage);
+    gateway.write("chess-coach.game", "pgn");
+    gateway.write("chess-coach.mode", "bot");
+    gateway.write("other-app.setting", "private");
+
+    expect(gateway.entries("chess-coach.")).toEqual({
+      "chess-coach.game": "pgn",
+      "chess-coach.mode": "bot",
+    });
+  });
 });
 
 describe("readJsonStorageValue", () => {

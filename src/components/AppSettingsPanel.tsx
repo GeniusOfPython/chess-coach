@@ -4,6 +4,7 @@ import {
   type PrivacyConsentState,
 } from "../features/consent";
 import type { SubscriptionTier } from "../features/featureAccess";
+import DataBackupPanel from "./DataBackupPanel";
 
 type Props = {
   compactUi: boolean;
@@ -185,6 +186,8 @@ export default function AppSettingsPanel({
           </div>
         </>
       )}
+
+      <DataBackupPanel />
     </div>
   );
 }

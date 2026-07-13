@@ -1,0 +1,52 @@
+.data-backup-row {
+  align-items: start;
+}
+
+.data-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.data-backup-actions button {
+  min-height: 40px;
+  padding: 8px 13px;
+  white-space: nowrap;
+}
+
+.data-backup-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.data-backup-status {
+  display: block;
+  margin-top: 9px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.data-backup-status.success {
+  color: #a9d99a;
+}
+
+.data-backup-status.error {
+  color: #e5a39b;
+}
+
+@media (max-width: 720px) {
+  .data-backup-actions {
+    justify-content: stretch;
+  }
+
+  .data-backup-actions button {
+    flex: 1 1 150px;
+  }
+}

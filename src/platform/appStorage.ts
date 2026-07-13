@@ -85,6 +85,43 @@ export function createStorageGateway(
         // Сброс остаётся безопасным даже при заблокированном storage.
       }
     },
+
+    entries(prefix: string) {
+      const values = new Map<string, string>();
+      const storage = getStorage();
+
+      if (storage) {
+        try {
+          for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+
+            if (!key?.startsWith(prefix)) {
+              continue;
+            }
+
+            const value = storage.getItem(key);
+
+            if (value !== null) {
+              values.set(key, value);
+            }
+          }
+        } catch {
+          // Доступные значения из памяти будут добавлены ниже.
+        }
+      }
+
+      for (const [key, value] of memoryStorage) {
+        if (key.startsWith(prefix)) {
+          values.set(key, value);
+        }
+      }
+
+      return Object.fromEntries(
+        [...values.entries()].sort(([left], [right]) =>
+          left.localeCompare(right),
+        ),
+      );
+    },
   };
 }
 
@@ -117,6 +154,20 @@ export function removeStorageValue(key: string) {
 
 export function clearAppStorageValues() {
   appStorage.clearPrefix(appStoragePrefix);
+}
+
+export function readAppStorageEntries() {
+  return appStorage.entries(appStoragePrefix);
+}
+
+export function replaceAppStorageEntries(entries: Record<string, string>) {
+  clearAppStorageValues();
+
+  for (const [key, value] of Object.entries(entries)) {
+    if (key.startsWith(appStoragePrefix)) {
+      writeStorageValue(key, value);
+    }
+  }
 }
 
 export function readJsonStorageValue<T>({
