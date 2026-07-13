@@ -1,5 +1,5 @@
 import type { Color } from "chess.js";
-import type { GameMode } from "../components/GameModeSelector";
+import type { GameMode } from "./gameTypes";
 
 export function isBotTurn({
   mode,
@@ -35,3 +35,4 @@ export function isPlayerTurn({
 }) {
   return mode === "analysis" || (started && turn === playerSide);
 }
+

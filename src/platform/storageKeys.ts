@@ -7,7 +7,6 @@ export const settingsStorageKeys = {
   subscriptionTier: "chess-coach.subscription-tier",
   privacyConsent: "chess-coach.privacy-consent",
   activeWorkspace: "chess-coach.active-workspace",
-  currentPgn: "chess-coach.current-pgn",
   trainingBestStreak: "chess-coach.training-best-streak",
   trainingTotalAttempts: "chess-coach.training-total-attempts",
   trainingTotalSuccesses: "chess-coach.training-total-successes",
@@ -15,3 +14,7 @@ export const settingsStorageKeys = {
   trainingDailySuccesses: "chess-coach.training-daily-successes",
 } as const;
 
+export const gameSessionStorageKeys = {
+  currentPgn: "chess-coach.current-pgn",
+  botGameStarted: "chess-coach.bot-game-started",
+} as const;

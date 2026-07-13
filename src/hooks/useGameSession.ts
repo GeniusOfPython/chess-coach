@@ -1,12 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MoveReview } from "../components/MoveReviewPanel";
+import {
+  readBotGameStarted,
+  writeBotGameStarted,
+} from "../game/gameSessionStorage";
 
 export function useGameSession() {
   const [isBotThinking, setIsBotThinking] = useState(false);
-  const [isBotGameStarted, setIsBotGameStarted] = useState(false);
+  const [isBotGameStarted, setIsBotGameStarted] = useState(
+    readBotGameStarted,
+  );
   const [botSessionId, setBotSessionId] = useState(0);
   const [lastMoveReview, setLastMoveReview] = useState<MoveReview | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+
+  useEffect(() => {
+    writeBotGameStarted(isBotGameStarted);
+  }, [isBotGameStarted]);
 
   function resetSession() {
     setIsBotThinking(false);
@@ -35,4 +45,3 @@ export function useGameSession() {
     resetSession,
   };
 }
-

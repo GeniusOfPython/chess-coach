@@ -1,4 +1,6 @@
-export type GameMode = "analysis" | "bot";
+import type { GameMode } from "../game/gameTypes";
+
+export type { GameMode };
 
 type Props = {
   mode: GameMode;

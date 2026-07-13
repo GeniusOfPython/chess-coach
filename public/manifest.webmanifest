@@ -1,11 +1,13 @@
 {
   "name": "Шахматный помощник",
   "short_name": "Chess Coach",
+  "id": "/",
+  "lang": "ru",
   "description": "Локальный шахматный тренер с анализом Stockfish.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#121613",
   "theme_color": "#121613",
   "icons": [
@@ -13,7 +15,20 @@
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["education", "games"]
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Color } from "chess.js";
-import type { GameMode } from "../components/GameModeSelector";
+import type { GameMode } from "../game/gameTypes";
 import type { WorkspaceId } from "../components/WorkspaceTabs";
 import type { BotLevelId } from "../types/bot";
 import {
@@ -105,4 +105,5 @@ export function useAppPreferences() {
     resetPrivacyConsent,
   };
 }
+
 

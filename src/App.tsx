@@ -4,9 +4,7 @@ import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
 import GameControls from "./components/GameControls";
-import GameModeSelector, {
-  type GameMode,
-} from "./components/GameModeSelector";
+import GameModeSelector from "./components/GameModeSelector";
 import PlayerSideSelector from "./components/PlayerSideSelector";
 import BotLevelSelector from "./components/BotLevelSelector";
 import EvaluationBar from "./components/EvaluationBar";
@@ -47,7 +45,7 @@ import {
 } from "./features/consent";
 import { isNativeMobileShell } from "./platform/mobile";
 import { writeStorageValue } from "./platform/appStorage";
-import { settingsStorageKeys } from "./platform/storageKeys";
+import { gameSessionStorageKeys } from "./platform/storageKeys";
 import { useTrainingProgress } from "./hooks/useTrainingProgress";
 import { useGameReview } from "./hooks/useGameReview";
 import { useRewardToast } from "./hooks/useRewardToast";
@@ -57,6 +55,8 @@ import { useLearningJournal } from "./hooks/useLearningJournal";
 import { useBestMoveTraining } from "./hooks/useBestMoveTraining";
 import { useBotTurn } from "./hooks/useBotTurn";
 import { useMoveReview } from "./hooks/useMoveReview";
+import { createGameLifecycleActions } from "./game/gameLifecycle";
+import type { GameMode } from "./game/gameTypes";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -212,7 +212,7 @@ function App() {
 
 
   useEffect(() => {
-    writeStorageValue(settingsStorageKeys.currentPgn, getPgn());
+    writeStorageValue(gameSessionStorageKeys.currentPgn, getPgn());
   }, [position, history.length, getPgn]);
 
   const boardOrientation =
@@ -259,6 +259,35 @@ function App() {
     calculateBotMove,
     makeEngineMove,
     setIsThinking: setIsBotThinking,
+  });
+
+  const {
+    handleNewGame,
+    handleStartBotGame,
+    handleUndoMove,
+    handleModeChange,
+    handlePlayerSideChange,
+    handleImportFen,
+    handleImportPgn,
+  } = createGameLifecycleActions({
+    isBotThinking,
+    gameMode,
+    newGame,
+    undoMove,
+    isBotTurn: isBotTurnFor,
+    loadFen,
+    loadPgn,
+    setSelectedSquare,
+    setIsBotThinking,
+    setIsBotGameStarted,
+    startBotSession,
+    setLastMoveReview,
+    setGameMode,
+    setPlayerSide,
+    clearLearningJournal,
+    clearGameReview,
+    resetBestMoveTraining,
+    clearAnalysis,
   });
 
   function isPlayerTurn() {
@@ -490,152 +519,12 @@ function App() {
     setSelectedSquare(null);
   }
 
-  function handleNewGame() {
-    newGame();
-    setSelectedSquare(null);
-    setIsBotThinking(false);
-    setIsBotGameStarted(false);
-    setLastMoveReview(null);
-    clearLearningJournal();
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-  }
-
-  function handleStartBotGame() {
-    if (isBotThinking || gameMode !== "bot") {
-      return;
-    }
-
-    newGame();
-    setSelectedSquare(null);
-    setIsBotThinking(false);
-    startBotSession();
-    setLastMoveReview(null);
-    clearLearningJournal();
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-
-  }
-
-  function handleUndoMove() {
-    if (isBotThinking) {
-      return;
-    }
-
-    setSelectedSquare(null);
-
-    if (gameMode === "analysis") {
-      undoMove();
-      setIsBotThinking(false);
-      setLastMoveReview(null);
-      resetBestMoveTraining();
-      clearAnalysis();
-      return;
-    }
-
-    undoMove();
-
-    if (isBotTurnFor()) {
-      undoMove();
-    }
-
-    setIsBotThinking(false);
-    setLastMoveReview(null);
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-  }
-
-  function handleModeChange(mode: GameMode) {
-    if (isBotThinking) {
-      return;
-    }
-
-    setSelectedSquare(null);
-    setGameMode(mode);
-    setIsBotThinking(false);
-    setIsBotGameStarted(false);
-    setLastMoveReview(null);
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-  }
-
-  function handlePlayerSideChange(side: Color) {
-    if (isBotThinking) {
-      return;
-    }
-
-    setSelectedSquare(null);
-    setPlayerSide(side);
-    setIsBotThinking(false);
-    setIsBotGameStarted(false);
-    setLastMoveReview(null);
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-    newGame();
-  }
-
-
-  function handleImportFen(fen: string) {
-    if (isBotThinking) {
-      return false;
-    }
-
-    setSelectedSquare(null);
-
-    const success = loadFen(fen);
-
-    if (!success) {
-      return false;
-    }
-
-    setGameMode("analysis");
-    setIsBotThinking(false);
-    setIsBotGameStarted(false);
-    setLastMoveReview(null);
-    clearLearningJournal();
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-
-    return true;
-  }
-
   function handlePrivacyConsentChange(status: AdsConsentStatus) {
     updatePrivacyConsent(status);
   }
 
   function handleResetPrivacyConsent() {
     resetPrivacyConsent();
-  }
-
-  function handleImportPgn(pgn: string) {
-    if (isBotThinking) {
-      return false;
-    }
-
-    setSelectedSquare(null);
-
-    const success = loadPgn(pgn);
-
-    if (!success) {
-      return false;
-    }
-
-    setGameMode("analysis");
-    setIsBotThinking(false);
-    setIsBotGameStarted(false);
-    setLastMoveReview(null);
-    clearLearningJournal();
-    clearGameReview();
-    resetBestMoveTraining();
-    clearAnalysis();
-
-    return true;
   }
 
   return (
