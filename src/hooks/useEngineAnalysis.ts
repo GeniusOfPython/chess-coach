@@ -5,7 +5,10 @@ import {
   useState,
 } from "react";
 import type { Color } from "chess.js";
-import { StockfishService } from "../engine/StockfishService";
+import {
+  isStockfishAnalysisCancelledError,
+  StockfishService,
+} from "../engine/StockfishService";
 import type { EngineAnalysis } from "../types/chess";
 
 export function useEngineAnalysis() {
@@ -78,6 +81,10 @@ export function useEngineAnalysis() {
         setAnalyzedTurn(turn);
         setAnalysis(result);
       } catch (analysisError) {
+        if (isStockfishAnalysisCancelledError(analysisError)) {
+          return;
+        }
+
         setError(
           analysisError instanceof Error
             ? analysisError.message
@@ -119,6 +126,10 @@ export function useEngineAnalysis() {
 
         return result.bestMove;
       } catch (error) {
+        if (isStockfishAnalysisCancelledError(error)) {
+          return null;
+        }
+
         console.error("Ошибка расчёта хода бота:", error);
         return null;
       }
@@ -161,6 +172,10 @@ export function useEngineAnalysis() {
           multiPv: 1,
         });
       } catch (error) {
+        if (isStockfishAnalysisCancelledError(error)) {
+          return null;
+        }
+
         console.error("Ошибка оценки позиции после хода:", error);
         return null;
       }
@@ -180,4 +195,3 @@ export function useEngineAnalysis() {
     clearAnalysis,
   };
 }
-

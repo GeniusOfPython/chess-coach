@@ -9,6 +9,17 @@ type AnalyzeOptions = {
   timeoutMs?: number;
 };
 
+export class StockfishAnalysisCancelledError extends Error {
+  constructor() {
+    super("Анализ Stockfish остановлен");
+    this.name = "StockfishAnalysisCancelledError";
+  }
+}
+
+export function isStockfishAnalysisCancelledError(error: unknown) {
+  return error instanceof StockfishAnalysisCancelledError;
+}
+
 export class StockfishService {
   private worker: Worker;
   private readyPromise: Promise<void>;
@@ -24,6 +35,11 @@ export class StockfishService {
 
   private lines = new Map<number, EngineLine>();
   private analysisTimer: number | null = null;
+  private analysisQueue: Promise<void> = Promise.resolve();
+  private synchronizationPromise: Promise<void> = Promise.resolve();
+  private resolveSynchronization: (() => void) | null = null;
+  private generation = 0;
+  private destroyed = false;
 
   constructor() {
     this.worker = new Worker(
@@ -60,6 +76,8 @@ export class StockfishService {
     if (message === "readyok") {
       this.resolveReady?.();
       this.resolveReady = null;
+      this.resolveSynchronization?.();
+      this.resolveSynchronization = null;
       return;
     }
 
@@ -85,6 +103,36 @@ export class StockfishService {
     this.rejectAnalysis?.(error);
     this.resolveAnalysis = null;
     this.rejectAnalysis = null;
+  }
+
+  private interruptAnalysis(error: Error) {
+    if (!this.rejectAnalysis) return;
+
+    this.generation += 1;
+    this.finishWithError(error);
+    this.send("stop");
+
+    this.synchronizationPromise = new Promise<void>((resolve) => {
+      this.resolveSynchronization = resolve;
+    });
+
+    this.send("isready");
+  }
+
+  private waitForEngine(promise: Promise<void>) {
+    return new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(() => {
+        reject(new Error("Stockfish не готов к работе"));
+      }, 5000);
+
+      promise.then(() => {
+        window.clearTimeout(timer);
+        resolve();
+      }).catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+    });
   }
 
   private parseInfo(message: string) {
@@ -136,6 +184,8 @@ export class StockfishService {
   }
 
   private finishAnalysis(message: string) {
+    if (!this.resolveAnalysis) return;
+
     const bestMove =
       message.match(/^bestmove\s+(\S+)/)?.[1] ?? "";
 
@@ -185,19 +235,16 @@ export class StockfishService {
     this.rejectAnalysis = null;
   }
 
-  async analyze(
+  private async runAnalysis(
     fen: string,
-    options: AnalyzeOptions = {},
+    options: AnalyzeOptions,
   ): Promise<EngineAnalysis> {
-    await Promise.race([
-      this.readyPromise,
-      new Promise<void>((_, reject) => {
-        window.setTimeout(
-          () => reject(new Error("Stockfish не готов к работе")),
-          5000,
-        );
-      }),
-    ]);
+    await this.waitForEngine(this.readyPromise);
+    await this.waitForEngine(this.synchronizationPromise);
+
+    if (this.destroyed) {
+      throw new StockfishAnalysisCancelledError();
+    }
 
     this.lines.clear();
 
@@ -211,8 +258,7 @@ export class StockfishService {
         this.rejectAnalysis = reject;
 
         this.analysisTimer = window.setTimeout(() => {
-          this.stop();
-          this.finishWithError(
+          this.interruptAnalysis(
             new Error("Stockfish не ответил вовремя"),
           );
         }, timeoutMs);
@@ -226,13 +272,44 @@ export class StockfishService {
     );
   }
 
+  analyze(
+    fen: string,
+    options: AnalyzeOptions = {},
+  ): Promise<EngineAnalysis> {
+    const requestGeneration = this.generation;
+    const request = this.analysisQueue.then(() => {
+      if (
+        this.destroyed ||
+        requestGeneration !== this.generation
+      ) {
+        throw new StockfishAnalysisCancelledError();
+      }
+
+      return this.runAnalysis(fen, options);
+    });
+
+    this.analysisQueue = request.then(
+      () => undefined,
+      () => undefined,
+    );
+
+    return request;
+  }
+
   stop() {
-    this.clearAnalysisTimer();
-    this.send("stop");
+    this.interruptAnalysis(
+      new StockfishAnalysisCancelledError(),
+    );
   }
 
   destroy() {
-    this.clearAnalysisTimer();
+    this.destroyed = true;
+    this.generation += 1;
+    this.finishWithError(
+      new StockfishAnalysisCancelledError(),
+    );
+    this.resolveSynchronization?.();
+    this.resolveSynchronization = null;
     this.worker.terminate();
   }
 }
