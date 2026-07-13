@@ -20,7 +20,6 @@ import CoachPanel from "./components/CoachPanel";
 import GameResultPanel from "./components/GameResultPanel";
 import GameReviewPanel, {
   type GameReviewItem,
-  type GameReviewStatus,
 } from "./components/GameReviewPanel";
 import MoveNavigatorPanel from "./components/MoveNavigatorPanel";
 import BestMoveTrainingPanel, {
@@ -60,6 +59,7 @@ import { isNativeMobileShell } from "./platform/mobile";
 import { writeStorageValue } from "./platform/appStorage";
 import { settingsStorageKeys } from "./platform/storageKeys";
 import { useTrainingProgress } from "./hooks/useTrainingProgress";
+import { useGameReview } from "./hooks/useGameReview";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -147,17 +147,16 @@ function App() {
   const [learningJournalItems, setLearningJournalItems] =
     useState<LearningJournalItem[]>([]);
 
-  const [gameReviewStatus, setGameReviewStatus] =
-    useState<GameReviewStatus>("idle");
-
-  const [gameReviewItems, setGameReviewItems] =
-    useState<GameReviewItem[]>([]);
-
-  const [gameReviewProgress, setGameReviewProgress] =
-    useState(0);
-
-  const [gameReviewError, setGameReviewError] =
-    useState("");
+  const {
+    status: gameReviewStatus,
+    setStatus: setGameReviewStatus,
+    items: gameReviewItems,
+    setItems: setGameReviewItems,
+    progress: gameReviewProgress,
+    setProgress: setGameReviewProgress,
+    error: gameReviewError,
+    setError: setGameReviewError,
+  } = useGameReview();
 
 
   const [rewardToast, setRewardToast] =
