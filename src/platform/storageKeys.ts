@@ -1,0 +1,17 @@
+export const settingsStorageKeys = {
+  gameMode: "chess-coach.game-mode",
+  playerSide: "chess-coach.player-side",
+  botLevelId: "chess-coach.bot-level-id",
+  compactUi: "chess-coach.compact-ui",
+  showAnalysisArrows: "chess-coach.show-analysis-arrows",
+  subscriptionTier: "chess-coach.subscription-tier",
+  privacyConsent: "chess-coach.privacy-consent",
+  activeWorkspace: "chess-coach.active-workspace",
+  currentPgn: "chess-coach.current-pgn",
+  trainingBestStreak: "chess-coach.training-best-streak",
+  trainingTotalAttempts: "chess-coach.training-total-attempts",
+  trainingTotalSuccesses: "chess-coach.training-total-successes",
+  trainingDailyDate: "chess-coach.training-daily-date",
+  trainingDailySuccesses: "chess-coach.training-daily-successes",
+} as const;
+

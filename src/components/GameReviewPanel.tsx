@@ -9,6 +9,7 @@ export type GameReviewStatus =
 
 export type GameReviewItem = {
   id: string;
+  positionIndex: number;
   moveNumber: number;
   side: Color;
   playedMove: string;
@@ -26,6 +27,7 @@ type Props = {
   disabled?: boolean;
   onRun: () => void;
   onClear: () => void;
+  onSelectPosition: (item: GameReviewItem) => void;
 };
 
 const verdictLabels: Record<MoveReviewVerdict, string> = {
@@ -76,6 +78,7 @@ export default function GameReviewPanel({
   disabled = false,
   onRun,
   onClear,
+  onSelectPosition,
 }: Props) {
   const mistakes = getCount(items, "mistake");
   const blunders = getCount(items, "blunder");
@@ -166,9 +169,11 @@ export default function GameReviewPanel({
           ) : (
             <div className="game-review-list">
               {keyMoments.slice(0, 8).map((item) => (
-                <div
+                <button
+                  type="button"
                   className={`game-review-item ${item.verdict}`}
                   key={item.id}
+                  onClick={() => onSelectPosition(item)}
                 >
                   <div className="game-review-item-top">
                     <strong>
@@ -187,7 +192,8 @@ export default function GameReviewPanel({
                     <span>Потеря</span>
                     <b>{formatLoss(item.evaluationLoss)}</b>
                   </div>
-                </div>
+                  <span className="game-review-open">Показать позицию на доске</span>
+                </button>
               ))}
             </div>
           )}

@@ -23,7 +23,7 @@ export function buildMoveExplanations(
 
   if (analysis.isCapture && analysis.capturedPieceName) {
     explanations.push(
-      `Ход забирает ${analysis.capturedPieceName} соперника.`,
+      `Ход выигрывает материал: забирает ${analysis.capturedPieceName} соперника.`,
     );
   }
 
@@ -68,13 +68,13 @@ export function buildMoveExplanations(
     explanations.length <= 1
   ) {
     explanations.push(
-      "Ферзь выходит рано, но Stockfish считает это тактически оправданным в данной позиции.",
+      "Ферзь выходит рано, но в этой позиции Stockfish считает это тактически оправданным.",
     );
   }
 
   if (explanations.length === 0) {
     explanations.push(
-      "Ход улучшает позицию по расчёту Stockfish и подготавливает наиболее сильное продолжение.",
+      "Ход улучшает позицию по расчёту Stockfish и ведёт к наиболее сильному продолжению.",
     );
   }
 

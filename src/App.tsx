@@ -12,7 +12,6 @@ import BotLevelSelector from "./components/BotLevelSelector";
 import EvaluationBar from "./components/EvaluationBar";
 import MoveReviewPanel, {
   type MoveReview,
-  type MoveReviewVerdict,
 } from "./components/MoveReviewPanel";
 import PgnPanel from "./components/PgnPanel";
 import FenPanel from "./components/FenPanel";
@@ -36,36 +35,31 @@ import AppSettingsPanel from "./components/AppSettingsPanel";
 import AdSlot from "./components/AdSlot";
 import ConsentBanner from "./components/ConsentBanner";
 import CollapsibleSection from "./components/CollapsibleSection";
-import WorkspaceTabs, {
-  type WorkspaceId,
-} from "./components/WorkspaceTabs";
+import WorkspaceTabs from "./components/WorkspaceTabs";
 import RewardToast, {
   type RewardToastMessage,
 } from "./components/RewardToast";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
-import type { EngineAnalysis } from "./types/chess";
+import { useAppPreferences } from "./hooks/useAppPreferences";
 import {
-  getFeatureAccess,
-  type SubscriptionTier,
-} from "./features/featureAccess";
+  getFullMoveNumber,
+  getTurnFromFen,
+  getVerdict,
+  getWhiteEvaluation,
+  isMoveMatchingBestMove,
+  shouldAddToLearningJournal,
+} from "./analysis/reviewRules";
+import { getFeatureAccess } from "./features/featureAccess";
 import {
-  createPrivacyConsent,
-  parsePrivacyConsent,
   type AdsConsentStatus,
-  type PrivacyConsentState,
 } from "./features/consent";
-import {
-  getBotLevel,
-  type BotLevelId,
-} from "./types/bot";
+import { getBotLevel } from "./types/bot";
 import { isNativeMobileShell } from "./platform/mobile";
-import {
-  readStorageValue,
-  writeJsonStorageValue,
-  writeStorageValue,
-} from "./platform/appStorage";
+import { writeStorageValue } from "./platform/appStorage";
+import { settingsStorageKeys } from "./platform/storageKeys";
+import { useTrainingProgress } from "./hooks/useTrainingProgress";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -88,210 +82,6 @@ import "./components/WorkspaceTabs.css";
 import "./components/RewardToast.css";
 import "./App.css";
 
-function getTurnFromFen(fen: string): Color {
-  return fen.split(" ")[1] === "b" ? "b" : "w";
-}
-
-function getWhiteEvaluation(
-  analysis: EngineAnalysis,
-  turn: Color,
-) {
-  if (analysis.mate !== null) {
-    const mateForWhite =
-      turn === "w" ? analysis.mate : -analysis.mate;
-
-    return mateForWhite > 0 ? 99 : -99;
-  }
-
-  if (analysis.evaluation === null) {
-    return 0;
-  }
-
-  return turn === "w"
-    ? analysis.evaluation
-    : -analysis.evaluation;
-}
-
-function getFullMoveNumber(fen: string) {
-  const value = Number(fen.split(" ")[5]);
-
-  return Number.isFinite(value) ? value : 1;
-}
-
-function shouldAddToLearningJournal(verdict: MoveReviewVerdict) {
-  return (
-    verdict === "inaccuracy" ||
-    verdict === "mistake" ||
-    verdict === "blunder"
-  );
-}
-
-function getVerdict({
-  matchedBestMove,
-  evaluationLoss,
-}: {
-  matchedBestMove: boolean | null;
-  evaluationLoss: number | null;
-}): MoveReviewVerdict {
-  if (matchedBestMove) {
-    return "best";
-  }
-
-  if (evaluationLoss === null) {
-    return "unknown";
-  }
-
-  if (evaluationLoss <= 0.2) {
-    return "good";
-  }
-
-  if (evaluationLoss <= 0.6) {
-    return "inaccuracy";
-  }
-
-  if (evaluationLoss <= 1.5) {
-    return "mistake";
-  }
-
-  return "blunder";
-}
-
-const settingsStorageKeys = {
-  gameMode: "chess-coach.game-mode",
-  playerSide: "chess-coach.player-side",
-  botLevelId: "chess-coach.bot-level-id",
-  compactUi: "chess-coach.compact-ui",
-  showAnalysisArrows: "chess-coach.show-analysis-arrows",
-  subscriptionTier: "chess-coach.subscription-tier",
-  privacyConsent: "chess-coach.privacy-consent",
-  activeWorkspace: "chess-coach.active-workspace",
-  currentPgn: "chess-coach.current-pgn",
-  trainingBestStreak: "chess-coach.training-best-streak",
-  trainingTotalAttempts: "chess-coach.training-total-attempts",
-  trainingTotalSuccesses: "chess-coach.training-total-successes",
-  trainingDailyDate: "chess-coach.training-daily-date",
-  trainingDailySuccesses: "chess-coach.training-daily-successes",
-};
-
-function readStoredBoolean({
-  key,
-  fallback,
-}: {
-  key: string;
-  fallback: boolean;
-}) {
-  const value = readStorageValue(key);
-
-  if (value === "true") {
-    return true;
-  }
-
-  if (value === "false") {
-    return false;
-  }
-
-  return fallback;
-}
-
-function readStoredNumber({
-  key,
-  fallback,
-}: {
-  key: string;
-  fallback: number;
-}) {
-  const value = Number(readStorageValue(key));
-
-  return Number.isFinite(value) && value >= 0
-    ? value
-    : fallback;
-}
-
-function readStoredGameMode(): GameMode {
-  const value = readStorageValue(
-    settingsStorageKeys.gameMode,
-  );
-
-  return value === "bot" || value === "analysis"
-    ? value
-    : "analysis";
-}
-
-function readStoredPlayerSide(): Color {
-  const value = readStorageValue(
-    settingsStorageKeys.playerSide,
-  );
-
-  return value === "b" ? "b" : "w";
-}
-
-function readStoredBotLevelId(): BotLevelId {
-  const value = readStorageValue(
-    settingsStorageKeys.botLevelId,
-  );
-
-  if (
-    value === "beginner" ||
-    value === "casual" ||
-    value === "club" ||
-    value === "strong" ||
-    value === "max"
-  ) {
-    return value;
-  }
-
-  return "casual";
-}
-
-function readStoredSubscriptionTier(): SubscriptionTier {
-  const value = readStorageValue(
-    settingsStorageKeys.subscriptionTier,
-  );
-
-  return value === "free" ? "free" : "premium";
-}
-
-function readStoredPrivacyConsent(): PrivacyConsentState {
-  return parsePrivacyConsent(
-    readStorageValue(
-      settingsStorageKeys.privacyConsent,
-    ),
-  );
-}
-
-function readStoredWorkspace(): WorkspaceId {
-  const value = readStorageValue(
-    settingsStorageKeys.activeWorkspace,
-  );
-
-  if (value === "game" || value === "tools") {
-    return value;
-  }
-
-  return "coach";
-}
-
-const dailyTrainingGoal = 5;
-
-function getTodayStorageKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function readStoredDailySuccesses() {
-  const storedDate = readStorageValue(
-    settingsStorageKeys.trainingDailyDate,
-  );
-
-  if (storedDate !== getTodayStorageKey()) {
-    return 0;
-  }
-
-  return readStoredNumber({
-    key: settingsStorageKeys.trainingDailySuccesses,
-    fallback: 0,
-  });
-}
-
 const initialTrainingTask: BestMoveTrainingTask = {
   status: "idle",
   positionFen: null,
@@ -302,17 +92,28 @@ const initialTrainingTask: BestMoveTrainingTask = {
 };
 
 function App() {
+  const {
+    gameMode,
+    setGameMode,
+    playerSide,
+    setPlayerSide,
+    botLevelId,
+    setBotLevelId,
+    activeWorkspace,
+    setActiveWorkspace,
+    compactUi,
+    setCompactUi,
+    showAnalysisArrows,
+    setShowAnalysisArrows,
+    subscriptionTier,
+    setSubscriptionTier,
+    privacyConsent,
+    updatePrivacyConsent,
+    resetPrivacyConsent,
+  } = useAppPreferences();
+
   const [isBotThinking, setIsBotThinking] =
     useState(false);
-
-  const [gameMode, setGameMode] =
-    useState<GameMode>(() => readStoredGameMode());
-
-  const [playerSide, setPlayerSide] =
-    useState<Color>(() => readStoredPlayerSide());
-
-  const [botLevelId, setBotLevelId] =
-    useState<BotLevelId>(() => readStoredBotLevelId());
 
   const [isBotGameStarted, setIsBotGameStarted] =
     useState(false);
@@ -326,35 +127,22 @@ function App() {
   const [bestMoveTrainingTask, setBestMoveTrainingTask] =
     useState<BestMoveTrainingTask>(initialTrainingTask);
 
-  const [trainingCurrentStreak, setTrainingCurrentStreak] =
-    useState(0);
-
-  const [trainingBestStreak, setTrainingBestStreak] =
-    useState(() =>
-      readStoredNumber({
-        key: settingsStorageKeys.trainingBestStreak,
-        fallback: 0,
-      }),
-    );
-
-  const [trainingTotalAttempts, setTrainingTotalAttempts] =
-    useState(() =>
-      readStoredNumber({
-        key: settingsStorageKeys.trainingTotalAttempts,
-        fallback: 0,
-      }),
-    );
-
-  const [trainingTotalSuccesses, setTrainingTotalSuccesses] =
-    useState(() =>
-      readStoredNumber({
-        key: settingsStorageKeys.trainingTotalSuccesses,
-        fallback: 0,
-      }),
-    );
-
-  const [trainingDailySuccesses, setTrainingDailySuccesses] =
-    useState(() => readStoredDailySuccesses());
+  const {
+    currentStreak: trainingCurrentStreak,
+    bestStreak: trainingBestStreak,
+    totalAttempts: trainingTotalAttempts,
+    totalSuccesses: trainingTotalSuccesses,
+    dailySuccesses: trainingDailySuccesses,
+    dailyGoal: dailyTrainingGoal,
+    recordAttempt: recordTrainingAttempt,
+    resetStats: resetTrainingStats,
+  } = useTrainingProgress({
+    onDailyGoalReached: () => showRewardToast({
+      kind: "success",
+      title: "Цель дня выполнена",
+      text: "Пять лучших ходов найдены. Можно закончить на хорошем результате или продолжить серию.",
+    }),
+  });
 
   const [learningJournalItems, setLearningJournalItems] =
     useState<LearningJournalItem[]>([]);
@@ -371,33 +159,6 @@ function App() {
   const [gameReviewError, setGameReviewError] =
     useState("");
 
-  const [activeWorkspace, setActiveWorkspace] =
-    useState<WorkspaceId>(() => readStoredWorkspace());
-
-  const [compactUi, setCompactUi] = useState(() =>
-    readStoredBoolean({
-      key: settingsStorageKeys.compactUi,
-      fallback: false,
-    }),
-  );
-
-  const [showAnalysisArrows, setShowAnalysisArrows] =
-    useState(() =>
-      readStoredBoolean({
-        key: settingsStorageKeys.showAnalysisArrows,
-        fallback: true,
-      }),
-    );
-
-  const [subscriptionTier, setSubscriptionTier] =
-    useState<SubscriptionTier>(() =>
-      readStoredSubscriptionTier(),
-    );
-
-  const [privacyConsent, setPrivacyConsent] =
-    useState<PrivacyConsentState>(() =>
-      readStoredPrivacyConsent(),
-    );
 
   const [rewardToast, setRewardToast] =
     useState<RewardToastMessage | null>(null);
@@ -406,79 +167,6 @@ function App() {
 
   const access = getFeatureAccess(subscriptionTier);
   const showAdvertisingUi = isNativeMobileShell();
-
-  useEffect(() => {
-    writeStorageValue(settingsStorageKeys.gameMode, gameMode);
-  }, [gameMode]);
-
-  useEffect(() => {
-    writeStorageValue(settingsStorageKeys.playerSide, playerSide);
-  }, [playerSide]);
-
-  useEffect(() => {
-    writeStorageValue(settingsStorageKeys.botLevelId, botLevelId);
-  }, [botLevelId]);
-
-  useEffect(() => {
-    writeStorageValue(settingsStorageKeys.compactUi, String(compactUi));
-  }, [compactUi]);
-
-  useEffect(() => {
-    writeStorageValue(settingsStorageKeys.activeWorkspace, activeWorkspace);
-  }, [activeWorkspace]);
-
-  useEffect(() => {
-    writeStorageValue(
-      settingsStorageKeys.trainingBestStreak,
-      String(trainingBestStreak),
-    );
-  }, [trainingBestStreak]);
-
-  useEffect(() => {
-    writeStorageValue(
-      settingsStorageKeys.trainingTotalAttempts,
-      String(trainingTotalAttempts),
-    );
-  }, [trainingTotalAttempts]);
-
-  useEffect(() => {
-    writeStorageValue(
-      settingsStorageKeys.trainingTotalSuccesses,
-      String(trainingTotalSuccesses),
-    );
-  }, [trainingTotalSuccesses]);
-
-  useEffect(() => {
-    writeStorageValue(
-      settingsStorageKeys.trainingDailyDate,
-      getTodayStorageKey(),
-    );
-    writeStorageValue(
-      settingsStorageKeys.trainingDailySuccesses,
-      String(trainingDailySuccesses),
-    );
-  }, [trainingDailySuccesses]);
-
-  useEffect(() => {
-    writeStorageValue(
-      settingsStorageKeys.showAnalysisArrows,
-      String(showAnalysisArrows),
-    );
-  }, [showAnalysisArrows]);
-
-  useEffect(() => {
-    writeStorageValue(
-      settingsStorageKeys.subscriptionTier,
-      subscriptionTier,
-    );
-  }, [subscriptionTier]);
-
-  useEffect(() => {
-    writeJsonStorageValue(
-      settingsStorageKeys.privacyConsent,
-      privacyConsent,
-    );
-  }, [privacyConsent]);
 
   useEffect(() => {
     return () => {
@@ -540,6 +228,7 @@ function App() {
     viewPreviousMove,
     viewNextMove,
     viewCurrentMove,
+    viewMove,
   } = useChessGame({
     onPositionChanged: clearAnalysis,
   });
@@ -872,6 +561,7 @@ function App() {
 
         reviewedItems.push({
           id: `${index}-${positionBeforeMove}-${playedMove}`,
+          positionIndex: index,
           moveNumber: getFullMoveNumber(positionBeforeMove),
           side: movingSide,
           playedMove,
@@ -898,64 +588,15 @@ function App() {
     }
   }
 
-  function isMoveMatchingBestMove({
-    playedMove,
-    bestMove,
-  }: {
-    playedMove: string;
-    bestMove: string | null;
-  }) {
-    if (!bestMove) {
-      return false;
-    }
-
-    return bestMove.startsWith(playedMove);
-  }
-
-  function recordTrainingAttempt(solved: boolean) {
-    setTrainingTotalAttempts((value) => value + 1);
-
-    if (!solved) {
-      setTrainingCurrentStreak(0);
-      return;
-    }
-
-    setTrainingTotalSuccesses((value) => value + 1);
-
-    setTrainingDailySuccesses((currentDailySuccesses) => {
-      const nextDailySuccesses = currentDailySuccesses + 1;
-
-      if (
-        currentDailySuccesses < dailyTrainingGoal &&
-        nextDailySuccesses >= dailyTrainingGoal
-      ) {
-        showRewardToast({
-          kind: "success",
-          title: "Цель дня выполнена",
-          text: "Пять лучших ходов найдены. Можно закончить на хорошем результате или продолжить серию.",
-        });
-      }
-
-      return nextDailySuccesses;
-    });
-
-    setTrainingCurrentStreak((currentStreak) => {
-      const nextStreak = currentStreak + 1;
-
-      setTrainingBestStreak((bestStreak) =>
-        Math.max(bestStreak, nextStreak),
-      );
-
-      return nextStreak;
-    });
+  function handleSelectReviewedPosition(item: GameReviewItem) {
+    setSelectedSquare(null);
+    clearAnalysis();
+    resetBestMoveTraining();
+    viewMove(item.positionIndex);
   }
 
   function handleResetTrainingStats() {
-    setTrainingCurrentStreak(0);
-    setTrainingBestStreak(0);
-    setTrainingTotalAttempts(0);
-    setTrainingTotalSuccesses(0);
-    setTrainingDailySuccesses(0);
+    resetTrainingStats();
   }
 
   async function handleStartBestMoveTraining() {
@@ -1310,11 +951,11 @@ function App() {
   }
 
   function handlePrivacyConsentChange(status: AdsConsentStatus) {
-    setPrivacyConsent(createPrivacyConsent(status));
+    updatePrivacyConsent(status);
   }
 
   function handleResetPrivacyConsent() {
-    setPrivacyConsent(createPrivacyConsent("unknown"));
+    resetPrivacyConsent();
   }
 
   function handleImportPgn(pgn: string) {
@@ -1525,6 +1166,7 @@ function App() {
                 disabled={isBotThinking}
                 onRun={handleRunGameReview}
                 onClear={clearGameReview}
+                onSelectPosition={handleSelectReviewedPosition}
               />
 
               {access.canUseMoveReview ? (

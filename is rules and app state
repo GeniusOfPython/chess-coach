@@ -1,0 +1,243 @@
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/package.json b/package.json[m
+[1mindex 86ac982..1c92182 100644[m
+[1m--- a/package.json[m
+[1m+++ b/package.json[m
+[36m@@ -7,6 +7,7 @@[m
+     "dev": "vite",[m
+     "build": "tsc -b && vite build",[m
+     "lint": "oxlint",[m
+[32m+[m[32m    "test": "vitest run",[m
+     "preview": "vite preview"[m
+   },[m
+   "dependencies": {[m
+[36m@@ -23,6 +24,7 @@[m
+     "@vitejs/plugin-react": "^6.0.3",[m
+     "oxlint": "^1.71.0",[m
+     "typescript": "~6.0.2",[m
+[31m-    "vite": "^8.1.1"[m
+[32m+[m[32m    "vite": "^8.1.1",[m
+[32m+[m[32m    "vitest": "^4.1.10"[m
+   }[m
+ }[m
+[1mdiff --git a/src/App.tsx b/src/App.tsx[m
+[1mindex eb8d43f..dd942d3 100644[m
+[1m--- a/src/App.tsx[m
+[1m+++ b/src/App.tsx[m
+[36m@@ -12,7 +12,6 @@[m [mimport BotLevelSelector from "./components/BotLevelSelector";[m
+ import EvaluationBar from "./components/EvaluationBar";[m
+ import MoveReviewPanel, {[m
+   type MoveReview,[m
+[31m-  type MoveReviewVerdict,[m
+ } from "./components/MoveReviewPanel";[m
+ import PgnPanel from "./components/PgnPanel";[m
+ import FenPanel from "./components/FenPanel";[m
+[36m@@ -36,36 +35,31 @@[m [mimport AppSettingsPanel from "./components/AppSettingsPanel";[m
+ import AdSlot from "./components/AdSlot";[m
+ import ConsentBanner from "./components/ConsentBanner";[m
+ import CollapsibleSection from "./components/CollapsibleSection";[m
+[31m-import WorkspaceTabs, {[m
+[31m-  type WorkspaceId,[m
+[31m-} from "./components/WorkspaceTabs";[m
+[32m+[m[32mimport WorkspaceTabs from "./components/WorkspaceTabs";[m
+ import RewardToast, {[m
+   type RewardToastMessage,[m
+ } from "./components/RewardToast";[m
+ import PremiumFeatureNotice from "./components/PremiumFeatureNotice";[m
+ import { useChessGame } from "./hooks/useChessGame";[m
+ import { useEngineAnalysis } from "./hooks/useEngineAnalysis";[m
+[31m-import type { EngineAnalysis } from "./types/chess";[m
+[32m+[m[32mimport { useAppPreferences } from "./hooks/useAppPreferences";[m
+ import {[m
+[31m-  getFeatureAccess,[m
+[31m-  type SubscriptionTier,[m
+[31m-} from "./features/featureAccess";[m
+[32m+[m[32m  getFullMoveNumber,[m
+[32m+[m[32m  getTurnFromFen,[m
+[32m+[m[32m  getVerdict,[m
+[32m+[m[32m  getWhiteEvaluation,[m
+[32m+[m[32m  isMoveMatchingBestMove,[m
+[32m+[m[32m  shouldAddToLearningJournal,[m
+[32m+[m[32m} from "./analysis/reviewRules";[m
+[32m+[m[32mimport { getFeatureAccess } from "./features/featureAccess";[m
+ import {[m
+[31m-  createPrivacyConsent,[m
+[31m-  parsePrivacyConsent,[m
+   type AdsConsentStatus,[m
+[31m-  type PrivacyConsentState,[m
+ } from "./features/consent";[m
+[31m-import {[m
+[31m-  getBotLevel,[m
+[31m-  type BotLevelId,[m
+[31m-} from "./types/bot";[m
+[32m+[m[32mimport { getBotLevel } from "./types/bot";[m
+ import { isNativeMobileShell } from "./platform/mobile";[m
+[31m-import {[m
+[31m-  readStorageValue,[m
+[31m-  writeJsonStorageValue,[m
+[31m-  writeStorageValue,[m
+[31m-} from "./platform/appStorage";[m
+[32m+[m[32mimport { writeStorageValue } from "./platform/appStorage";[m
+[32m+[m[32mimport { settingsStorageKeys } from "./platform/storageKeys";[m
+[32m+[m[32mimport { useTrainingProgress } from "./hooks/useTrainingProgress";[m
+ import {[m
+   triggerErrorHaptic,[m
+   triggerLightHaptic,[m
+[36m@@ -88,210 +82,6 @@[m [mimport "./components/WorkspaceTabs.css";[m
+ import "./components/RewardToast.css";[m
+ import "./App.css";[m
+ [m
+[31m-function getTurnFromFen(fen: string): Color {[m
+[31m-  return fen.split(" ")[1] === "b" ? "b" : "w";[m
+[31m-}[m
+[31m-[m
+[31m-function getWhiteEvaluation([m
+[31m-  analysis: EngineAnalysis,[m
+[31m-  turn: Color,[m
+[31m-) {[m
+[31m-  if (analysis.mate !== null) {[m
+[31m-    const mateForWhite =[m
+[31m-      turn === "w" ? analysis.mate : -analysis.mate;[m
+[31m-[m
+[31m-    return mateForWhite > 0 ? 99 : -99;[m
+[31m-  }[m
+[31m-[m
+[31m-  if (analysis.evaluation === null) {[m
+[31m-    return 0;[m
+[31m-  }[m
+[31m-[m
+[31m-  return turn === "w"[m
+[31m-    ? analysis.evaluation[m
+[31m-    : -analysis.evaluation;[m
+[31m-}[m
+[31m-[m
+[31m-function getFullMoveNumber(fen: string) {[m
+[31m-  const value = Number(fen.split(" ")[5]);[m
+[31m-[m
+[31m-  return Number.isFinite(value) ? value : 1;[m
+[31m-}[m
+[31m-[m
+[31m-function shouldAddToLearningJournal(verdict: MoveReviewVerdict) {[m
+[31m-  return ([m
+[31m-    verdict === "inaccuracy" ||[m
+[31m-    verdict === "mistake" ||[m
+[31m-    verdict === "blunder"[m
+[31m-  );[m
+[31m-}[m
+[31m-[m
+[31m-function getVerdict({[m
+[31m-  matchedBestMove,[m
+[31m-  evaluationLoss,[m
+[31m-}: {[m
+[31m-  matchedBestMove: boolean | null;[m
+[31m-  evaluationLoss: number | null;[m
+[31m-}): MoveReviewVerdict {[m
+[31m-  if (matchedBestMove) {[m
+[31m-    return "best";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (evaluationLoss === null) {[m
+[31m-    return "unknown";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (evaluationLoss <= 0.2) {[m
+[31m-    return "good";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (evaluationLoss <= 0.6) {[m
+[31m-    return "inaccuracy";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (evaluationLoss <= 1.5) {[m
+[31m-    return "mistake";[m
+[31m-  }[m
+[31m-[m
+[31m-  return "blunder";[m
+[31m-}[m
+[31m-[m
+[31m-const settingsStorageKeys = {[m
+[31m-  gameMode: "chess-coach.game-mode",[m
+[31m-  playerSide: "chess-coach.player-side",[m
+[31m-  botLevelId: "chess-coach.bot-level-id",[m
+[31m-  compactUi: "chess-coach.compact-ui",[m
+[31m-  showAnalysisArrows: "chess-coach.show-analysis-arrows",[m
+[31m-  subscriptionTier: "chess-coach.subscription-tier",[m
+[31m-  privacyConsent: "chess-coach.privacy-consent",[m
+[31m-  activeWorkspace: "chess-coach.active-workspace",[m
+[31m-  currentPgn: "chess-coach.current-pgn",[m
+[31m-  trainingBestStreak: "chess-coach.training-best-streak",[m
+[31m-  trainingTotalAttempts: "chess-coach.training-total-attempts",[m
+[31m-  trainingTotalSuccesses: "chess-coach.training-total-successes",[m
+[31m-  trainingDailyDate: "chess-coach.training-daily-date",[m
+[31m-  trainingDailySuccesses: "chess-coach.training-daily-successes",[m
+[31m-};[m
+[31m-[m
+[31m-function readStoredBoolean({[m
+[31m-  key,[m
+[31m-  fallback,[m
+[31m-}: {[m
+[31m-  key: string;[m
+[31m-  fallback: boolean;[m
+[31m-}) {[m
+[31m-  const value = readStorageValue(key);[m
+[31m-[m
+[31m-  if (value === "true") {[m
+[31m-    return true;[m
+[31m-  }[m
+[31m-[m
+[31m-  if (value === "false") {[m
+[31m-    return false;[m
+[31m-  }[m
+[31m-[m
+[31m-  return fallback;[m
+[31m-}[m
+[31m-[m
+[31m-function readStoredNumber({[m
+[31m-  key,[m
+[31m-  fallback,[m
+[31m-}: {[m
+[31m-  key: string;[m
+[31m-  fallback: number;[m
+[31m-}) {[m
+[31m-  const value = Number(readStorageValue(key));[m
+[31m-[m
+[31m-  return Number.isFinite(value) && value >= 0[m
+[31m-    ? value[m
+[31m-    : fallback;[m
+[31m-}[m
+[31m-[m
+[31m-function readStoredGameMode(): GameMode {[m
+[31m-  const value = readStorageValue([m
+[31m-    settingsStorageKeys.gameMode,[m
+[31m-  );[m
+[31m-[m
+[31m-  return value === "bot" || value === "analysis"[m
+[31m-    ? value[m
+[31m-    : "analysis";[m
+[31m-}[m
+[31m-[m
+[31m-function readStoredPlayerSide(): Color {[m
+[31m-  const value = readStorageValue([m
+[31m-    settingsStorageKeys.playerSide,[m
+[31m-  );[m
+[31m-[m
+[31m-  return value === "b" ? "b" : "w";[m
+[31m-}[m
+[31m-[m
+[31m-function readStoredBotLevelId(): BotLevelId {[m
+[31m-  const value = readStorageValue([m
+[31m-    settingsStorageKeys.botLevelId,[m
+[31m-  );[m
+[31m-[m
+[31m-  if ([m
+[31m-    value === "beginner" ||[m
+[31m-    value === "casual" ||[m
+[31m-    value === "club" ||[m
+[31m-    value === "strong" ||[m
+[31m-    value === "max"[m
+[31m-  ) {[m
+[31m-    return value;[m
+[31m-  }[m
+[31m-[m
+[31m-  return "

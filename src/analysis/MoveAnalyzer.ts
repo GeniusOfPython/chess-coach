@@ -31,12 +31,12 @@ export type MoveAnalysis = {
 };
 
 const pieceNames: Record<PieceSymbol, string> = {
-  p: "пешку",
-  n: "коня",
-  b: "слона",
-  r: "ладью",
-  q: "ферзя",
-  k: "короля",
+  p: "пешка",
+  n: "конь",
+  b: "слон",
+  r: "ладья",
+  q: "ферзь",
+  k: "король",
 };
 
 const centerSquares = new Set(["d4", "e4", "d5", "e5"]);
@@ -71,8 +71,19 @@ function getSupportCount(
   square: Square,
   color: Color,
 ) {
+  const extendedGame = game as unknown as {
+    attackers?: (
+      square: Square,
+      color?: Color,
+    ) => Square[];
+  };
+
+  if (typeof extendedGame.attackers !== "function") {
+    return 0;
+  }
+
   try {
-    return game.attackers(square, color).length;
+    return extendedGame.attackers(square, color).length;
   } catch {
     return 0;
   }
@@ -90,7 +101,7 @@ function createInvalidAnalysis(
     san: "",
     piece: null,
     pieceColor: null,
-    pieceName: "фигуру",
+    pieceName: "фигура",
     capturedPiece: null,
     capturedPieceName: null,
     isCapture: false,
@@ -172,9 +183,18 @@ export function analyzeMove(
   const opensDevelopmentLine =
     isOpening &&
     movingPiece.type === "p" &&
-    ["c", "d", "e"].includes(from[0] ?? "");
+    ["c", "d", "e"].includes(from[0]);
 
   const isCenterMove = centerSquares.has(to);
+
+  const supportCount = getSupportCount(
+    game,
+    to,
+    movingPiece.color,
+  );
+
+  const isCheckmate = game.isCheckmate();
+  const isCheck = !isCheckmate && game.inCheck();
 
   return {
     isLegal: true,
@@ -191,17 +211,13 @@ export function analyzeMove(
       ? pieceNames[capturedPiece]
       : null,
     isCapture: Boolean(capturedPiece),
-    isCheck: !game.isCheckmate() && game.inCheck(),
-    isCheckmate: game.isCheckmate(),
+    isCheck,
+    isCheckmate,
     isCastle,
     isPromotion,
     isDevelopment,
     isCenterMove,
-    isSupported: getSupportCount(
-      game,
-      to,
-      movingPiece.color,
-    ) > 0,
+    isSupported: supportCount > 0,
     isOpening,
     opensDevelopmentLine,
     isEarlyQueenMove:

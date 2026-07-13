@@ -6,7 +6,6 @@ import type {
 type AnalyzeOptions = {
   movetime?: number;
   multiPv?: number;
-  timeoutMs?: number;
 };
 
 export class StockfishService {
@@ -21,8 +20,6 @@ export class StockfishService {
   private rejectAnalysis:
     | ((error: Error) => void)
     | null = null;
-
-  private analysisTimer: number | null = null;
 
   private lines = new Map<number, EngineLine>();
 
@@ -40,7 +37,7 @@ export class StockfishService {
     };
 
     this.worker.onerror = () => {
-      this.finishWithError(
+      this.rejectAnalysis?.(
         new Error("Не удалось запустить Stockfish"),
       );
     };
@@ -50,20 +47,6 @@ export class StockfishService {
 
   private send(command: string) {
     this.worker.postMessage(command);
-  }
-
-  private clearAnalysisTimer() {
-    if (this.analysisTimer !== null) {
-      window.clearTimeout(this.analysisTimer);
-      this.analysisTimer = null;
-    }
-  }
-
-  private finishWithError(error: Error) {
-    this.clearAnalysisTimer();
-    this.rejectAnalysis?.(error);
-    this.resolveAnalysis = null;
-    this.rejectAnalysis = null;
   }
 
   private handleMessage(message: string) {
@@ -143,9 +126,12 @@ export class StockfishService {
       message.match(/^bestmove\s+(\S+)/)?.[1] ?? "";
 
     if (!bestMove || bestMove === "(none)") {
-      this.finishWithError(
+      this.rejectAnalysis?.(
         new Error("Stockfish не вернул допустимый ход"),
       );
+
+      this.resolveAnalysis = null;
+      this.rejectAnalysis = null;
       return;
     }
 
@@ -164,15 +150,9 @@ export class StockfishService {
       });
     }
 
-    const firstLine = sortedLines[0];
-
-    const primary: EngineLine = {
-      ...firstLine,
-      bestMove: bestMove || firstLine.bestMove,
-      variation:
-        firstLine.variation.length > 0
-          ? firstLine.variation
-          : [bestMove],
+    const primary = {
+      ...sortedLines[0],
+      bestMove,
     };
 
     const result: EngineAnalysis = {
@@ -187,7 +167,6 @@ export class StockfishService {
       ],
     };
 
-    this.clearAnalysisTimer();
     this.resolveAnalysis?.(result);
 
     this.resolveAnalysis = null;
@@ -200,30 +179,15 @@ export class StockfishService {
   ): Promise<EngineAnalysis> {
     await this.readyPromise;
 
-    if (this.resolveAnalysis || this.rejectAnalysis) {
-      this.stop();
-      this.finishWithError(
-        new Error("Предыдущий анализ Stockfish был остановлен"),
-      );
-    }
-
     this.lines.clear();
 
     const multiPv = options.multiPv ?? 1;
     const movetime = options.movetime ?? 1500;
-    const timeoutMs = options.timeoutMs ?? movetime + 3500;
 
     return new Promise<EngineAnalysis>(
       (resolve, reject) => {
         this.resolveAnalysis = resolve;
         this.rejectAnalysis = reject;
-
-        this.analysisTimer = window.setTimeout(() => {
-          this.stop();
-          this.finishWithError(
-            new Error("Stockfish не ответил вовремя"),
-          );
-        }, timeoutMs);
 
         this.send(
           `setoption name MultiPV value ${multiPv}`,
@@ -239,7 +203,6 @@ export class StockfishService {
   }
 
   destroy() {
-    this.clearAnalysisTimer();
     this.worker.terminate();
   }
 }
