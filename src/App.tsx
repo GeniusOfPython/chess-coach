@@ -10,9 +10,7 @@ import GameModeSelector, {
 import PlayerSideSelector from "./components/PlayerSideSelector";
 import BotLevelSelector from "./components/BotLevelSelector";
 import EvaluationBar from "./components/EvaluationBar";
-import MoveReviewPanel, {
-  type MoveReview,
-} from "./components/MoveReviewPanel";
+import MoveReviewPanel from "./components/MoveReviewPanel";
 import PgnPanel from "./components/PgnPanel";
 import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
@@ -39,12 +37,9 @@ import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import { useAppPreferences } from "./hooks/useAppPreferences";
 import {
-  getFullMoveNumber,
   getTurnFromFen,
-  getVerdict,
   getWhiteEvaluation,
   isMoveMatchingBestMove,
-  shouldAddToLearningJournal,
 } from "./analysis/reviewRules";
 import { getFeatureAccess } from "./features/featureAccess";
 import {
@@ -59,9 +54,9 @@ import { useRewardToast } from "./hooks/useRewardToast";
 import { useGameSession } from "./hooks/useGameSession";
 import { isBotTurn, isPlayerTurn as getIsPlayerTurn } from "./game/gameFlowRules";
 import { useLearningJournal } from "./hooks/useLearningJournal";
-import type { LearningJournalItem } from "./analysis/learningJournal";
 import { useBestMoveTraining } from "./hooks/useBestMoveTraining";
 import { useBotTurn } from "./hooks/useBotTurn";
+import { useMoveReview } from "./hooks/useMoveReview";
 import {
   triggerErrorHaptic,
   triggerLightHaptic,
@@ -179,6 +174,13 @@ function App() {
     calculatePositionAnalysis,
     clearAnalysis,
   } = useEngineAnalysis();
+
+  const { reviewMove } = useMoveReview({
+    calculatePositionAnalysis,
+    setLastMoveReview,
+    addLearningJournalItem,
+    showRewardToast,
+  });
 
   const {
     game,
@@ -300,179 +302,6 @@ function App() {
     });
   }
 
-  function reviewMoveAfterEngineEvaluation({
-    playedMove,
-    matchedBestMove,
-    positionBeforeMove,
-    bestMove,
-    positionAfterMove,
-    evaluationBeforeWhite,
-    movingSide,
-  }: {
-    playedMove: string;
-    bestMove: string;
-    matchedBestMove: boolean;
-    positionBeforeMove: string;
-    positionAfterMove: string;
-    evaluationBeforeWhite: number;
-    movingSide: Color;
-  }) {
-    void calculatePositionAnalysis({
-      fen: positionAfterMove,
-      isGameOver: false,
-      movetime: 900,
-    }).then((afterAnalysis) => {
-      if (!afterAnalysis) {
-        setLastMoveReview((currentReview) => {
-          if (
-            !currentReview ||
-            currentReview.playedMove !== playedMove ||
-            currentReview.positionBeforeMove !==
-              positionBeforeMove
-          ) {
-            return currentReview;
-          }
-
-          return {
-            ...currentReview,
-            isEvaluating: false,
-            verdict: getVerdict({
-              matchedBestMove,
-              evaluationLoss: null,
-            }),
-          };
-        });
-
-        return;
-      }
-
-      const turnAfterMove = getTurnFromFen(positionAfterMove);
-      const evaluationAfterWhite = getWhiteEvaluation(
-        afterAnalysis,
-        turnAfterMove,
-      );
-
-      const rawLoss =
-        movingSide === "w"
-          ? evaluationBeforeWhite - evaluationAfterWhite
-          : evaluationAfterWhite - evaluationBeforeWhite;
-
-      const evaluationLoss = Math.max(0, rawLoss);
-      const verdict = getVerdict({
-        matchedBestMove,
-        evaluationLoss,
-      });
-
-      if (shouldAddToLearningJournal(verdict)) {
-        const journalItem: LearningJournalItem = {
-          id: `${positionBeforeMove}-${playedMove}`,
-          moveNumber: getFullMoveNumber(positionBeforeMove),
-          side: movingSide,
-          playedMove,
-          bestMove,
-          verdict,
-          evaluationLoss,
-        };
-
-        addLearningJournalItem(journalItem);
-      }
-
-      setLastMoveReview((currentReview) => {
-        if (
-          !currentReview ||
-          currentReview.playedMove !== playedMove ||
-          currentReview.positionBeforeMove !==
-            positionBeforeMove
-        ) {
-          return currentReview;
-        }
-
-        return {
-          ...currentReview,
-          isEvaluating: false,
-          evaluationAfterWhite,
-          evaluationLoss,
-          verdict,
-        };
-      });
-    });
-  }
-
-  function reviewMoveWithoutSuggestion({
-    playedMove,
-    positionBeforeMove,
-    positionAfterMove,
-    movingSide,
-  }: {
-    playedMove: string;
-    positionBeforeMove: string;
-    positionAfterMove: string;
-    movingSide: Color;
-  }) {
-    void calculatePositionAnalysis({
-      fen: positionBeforeMove,
-      isGameOver: false,
-      movetime: 700,
-    }).then((beforeAnalysis) => {
-      if (!beforeAnalysis?.bestMove) {
-        setLastMoveReview((currentReview) =>
-          currentReview?.playedMove === playedMove &&
-          currentReview.positionBeforeMove === positionBeforeMove
-            ? { ...currentReview, isEvaluating: false }
-            : currentReview,
-        );
-        return;
-      }
-
-      const bestMove = beforeAnalysis.bestMove;
-      const matchedBestMove = isMoveMatchingBestMove({
-        playedMove,
-        bestMove,
-      });
-      const evaluationBeforeWhite = getWhiteEvaluation(
-        beforeAnalysis,
-        movingSide,
-      );
-
-      setLastMoveReview((currentReview) =>
-        currentReview?.playedMove === playedMove &&
-        currentReview.positionBeforeMove === positionBeforeMove
-          ? {
-              ...currentReview,
-              bestMove,
-              matchedBestMove,
-              evaluationBeforeWhite,
-              evaluationLoss: matchedBestMove ? 0 : null,
-              verdict: getVerdict({
-                matchedBestMove,
-                evaluationLoss: matchedBestMove ? 0 : null,
-              }),
-              isEvaluating: !matchedBestMove,
-            }
-          : currentReview,
-      );
-
-      if (matchedBestMove) {
-        showRewardToast({
-          kind: "success",
-          title: "Сильный ход",
-          text: "Stockfish подтвердил: сыгран лучший вариант.",
-        });
-        return;
-      }
-
-      reviewMoveAfterEngineEvaluation({
-        playedMove,
-        matchedBestMove: false,
-        positionBeforeMove,
-        bestMove,
-        positionAfterMove,
-        evaluationBeforeWhite,
-        movingSide,
-      });
-    });
-  }
-
   async function handleRunGameReview() {
     if (isBotThinking || gameReviewStatus === "running") {
       return;
@@ -563,29 +392,16 @@ function App() {
       void triggerMoveHaptic();
       const positionAfterMove = game.fen();
 
-      const matchedBestMove =
-        suggestedBestMove === null
-          ? null
-          : suggestedBestMove.startsWith(playedMove);
-
-      const initialReview: MoveReview = {
+      const moveReview = reviewMove({
         playedMove,
-        bestMove: suggestedBestMove,
-        matchedBestMove,
         positionBeforeMove,
-        isEvaluating:
-          suggestedBestMove === null ||
-          (evaluationBeforeWhite !== null && !matchedBestMove),
+        positionAfterMove,
+        movingSide,
+        suggestedBestMove,
         evaluationBeforeWhite,
-        evaluationAfterWhite: null,
-        evaluationLoss: matchedBestMove ? 0 : null,
-        verdict: getVerdict({
-          matchedBestMove,
-          evaluationLoss: matchedBestMove ? 0 : null,
-        }),
-      };
+      });
+      const matchedBestMove = moveReview.matchedBestMove;
 
-      setLastMoveReview(initialReview);
       clearGameReview();
 
       if (
@@ -633,28 +449,6 @@ function App() {
         });
       }
 
-      if (
-        suggestedBestMove !== null &&
-        evaluationBeforeWhite !== null &&
-        !matchedBestMove
-      ) {
-        reviewMoveAfterEngineEvaluation({
-          playedMove,
-          bestMove: suggestedBestMove,
-          matchedBestMove: false,
-          positionBeforeMove,
-          positionAfterMove,
-          evaluationBeforeWhite,
-          movingSide,
-        });
-      } else if (suggestedBestMove === null) {
-        reviewMoveWithoutSuggestion({
-          playedMove,
-          positionBeforeMove,
-          positionAfterMove,
-          movingSide,
-        });
-      }
     }
 
     return moveWasMade;
