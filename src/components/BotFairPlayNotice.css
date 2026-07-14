@@ -1,0 +1,19 @@
+.bot-fair-play-notice {
+  display: grid;
+  gap: 9px;
+  padding: 18px;
+  border: 1px solid rgba(157, 142, 92, 0.36);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(69, 59, 30, 0.26), rgba(11, 15, 12, 0.28));
+}
+
+.bot-fair-play-notice strong {
+  color: #eee7cd;
+  font-size: 17px;
+}
+
+.bot-fair-play-notice p {
+  margin: 0;
+  color: #bcbcad;
+  line-height: 1.5;
+}

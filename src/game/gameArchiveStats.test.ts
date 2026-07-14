@@ -51,16 +51,6 @@ describe("game archive stats", () => {
     expect(stats.bestWinStreak).toBe(3);
   });
 
-  it("находит самый сильный побеждённый уровень", () => {
-    const stats = buildGameArchiveStats([
-      game("loss", "max"),
-      game("win", "club"),
-      game("win", "beginner"),
-    ]);
-
-    expect(stats.strongestDefeatedLevel).toBe("club");
-  });
-
   it("не смешивает режим анализа со статистикой против бота", () => {
     const analysisGame = {
       ...game("completed", null),
@@ -71,7 +61,6 @@ describe("game archive stats", () => {
     expect(buildGameArchiveStats([analysisGame])).toMatchObject({
       botGames: 0,
       scorePercent: 0,
-      recentForm: [],
     });
   });
 });

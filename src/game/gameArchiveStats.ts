@@ -1,8 +1,4 @@
-import { BOT_LEVELS, type BotLevelId } from "../types/bot";
-import type {
-  ArchivedGame,
-  ArchivedGameOutcome,
-} from "./gameArchive";
+import type { ArchivedGame } from "./gameArchive";
 
 export type GameArchiveStats = {
   botGames: number;
@@ -12,13 +8,7 @@ export type GameArchiveStats = {
   scorePercent: number;
   currentWinStreak: number;
   bestWinStreak: number;
-  strongestDefeatedLevel: BotLevelId | null;
-  recentForm: ArchivedGameOutcome[];
 };
-
-const levelStrength = new Map(
-  BOT_LEVELS.map((level, index) => [level.id, index]),
-);
 
 export function buildGameArchiveStats(
   games: ArchivedGame[],
@@ -50,25 +40,6 @@ export function buildGameArchiveStats(
     }
   }
 
-  const strongestDefeatedLevel = botGames.reduce<BotLevelId | null>(
-    (strongestLevel, game) => {
-      if (game.outcome !== "win" || !game.botLevelId) {
-        return strongestLevel;
-      }
-
-      if (
-        strongestLevel === null ||
-        (levelStrength.get(game.botLevelId) ?? -1) >
-          (levelStrength.get(strongestLevel) ?? -1)
-      ) {
-        return game.botLevelId;
-      }
-
-      return strongestLevel;
-    },
-    null,
-  );
-
   return {
     botGames: botGames.length,
     wins,
@@ -79,10 +50,5 @@ export function buildGameArchiveStats(
       : 0,
     currentWinStreak,
     bestWinStreak,
-    strongestDefeatedLevel,
-    recentForm: botGames
-      .filter((game) => game.outcome !== "completed")
-      .slice(0, 8)
-      .map((game) => game.outcome),
   };
 }

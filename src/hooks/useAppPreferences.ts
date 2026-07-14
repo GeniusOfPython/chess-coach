@@ -40,8 +40,12 @@ function readBotLevelId(): BotLevelId {
     : "casual";
 }
 
-function readWorkspace(): WorkspaceId {
+function readWorkspace(): WorkspaceId | null {
   const value = readStorageValue(settingsStorageKeys.activeWorkspace);
+
+  if (value === "none") {
+    return null;
+  }
 
   return value === "game" || value === "tools" ? value : "coach";
 }
@@ -56,7 +60,7 @@ export function useAppPreferences() {
   const [gameMode, setGameMode] = useState<GameMode>(readGameMode);
   const [playerSide, setPlayerSide] = useState<Color>(readPlayerSide);
   const [botLevelId, setBotLevelId] = useState<BotLevelId>(readBotLevelId);
-  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>(readWorkspace);
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId | null>(readWorkspace);
   const [compactUi, setCompactUi] = useState(() =>
     readBoolean(settingsStorageKeys.compactUi, false),
   );
@@ -71,7 +75,7 @@ export function useAppPreferences() {
   useEffect(() => writeStorageValue(settingsStorageKeys.gameMode, gameMode), [gameMode]);
   useEffect(() => writeStorageValue(settingsStorageKeys.playerSide, playerSide), [playerSide]);
   useEffect(() => writeStorageValue(settingsStorageKeys.botLevelId, botLevelId), [botLevelId]);
-  useEffect(() => writeStorageValue(settingsStorageKeys.activeWorkspace, activeWorkspace), [activeWorkspace]);
+  useEffect(() => writeStorageValue(settingsStorageKeys.activeWorkspace, activeWorkspace ?? "none"), [activeWorkspace]);
   useEffect(() => writeStorageValue(settingsStorageKeys.compactUi, String(compactUi)), [compactUi]);
   useEffect(() => writeStorageValue(settingsStorageKeys.showAnalysisArrows, String(showAnalysisArrows)), [showAnalysisArrows]);
   useEffect(() => writeStorageValue(settingsStorageKeys.subscriptionTier, subscriptionTier), [subscriptionTier]);
@@ -105,5 +109,3 @@ export function useAppPreferences() {
     resetPrivacyConsent,
   };
 }
-
-

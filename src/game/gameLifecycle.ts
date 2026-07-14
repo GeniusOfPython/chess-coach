@@ -20,6 +20,7 @@ type GameLifecycleDependencies = {
   clearGameReview: () => void;
   resetBestMoveTraining: () => void;
   clearAnalysis: () => void;
+  clearGameTermination: () => void;
 };
 
 export function createGameLifecycleActions({
@@ -41,6 +42,7 @@ export function createGameLifecycleActions({
   clearGameReview,
   resetBestMoveTraining,
   clearAnalysis,
+  clearGameTermination,
 }: GameLifecycleDependencies) {
   function clearTransientState({
     clearJournal = false,
@@ -51,6 +53,7 @@ export function createGameLifecycleActions({
   } = {}) {
     setIsBotThinking(false);
     setLastMoveReview(null);
+    clearGameTermination();
 
     if (clearJournal) clearLearningJournal();
     if (clearReview) clearGameReview();
@@ -135,4 +138,3 @@ export function createGameLifecycleActions({
     handleImportPgn: (pgn: string) => importPosition(pgn, loadPgn),
   };
 }
-

@@ -1,3 +1,5 @@
+import { toggleWorkspace } from "../game/workspaceNavigation";
+
 export type WorkspaceId = "coach" | "game" | "tools";
 
 type WorkspaceTab = {
@@ -33,21 +35,24 @@ const tabs: WorkspaceTab[] = [
 ];
 
 type Props = {
-  active: WorkspaceId;
-  onChange: (workspace: WorkspaceId) => void;
+  active: WorkspaceId | null;
+  onChange: (workspace: WorkspaceId | null) => void;
 };
 
 export default function WorkspaceTabs({
   active,
   onChange,
 }: Props) {
-  const activeTab =
-    tabs.find((tab) => tab.id === active) ?? tabs[0];
+  const activeTab = tabs.find((tab) => tab.id === active) ?? null;
 
   function handleTabChange(workspace: WorkspaceId) {
-    onChange(workspace);
+    const nextWorkspace = toggleWorkspace(active, workspace);
+    onChange(nextWorkspace);
 
-    if (!window.matchMedia("(max-width: 760px)").matches) {
+    if (
+      nextWorkspace === null ||
+      !window.matchMedia("(max-width: 760px)").matches
+    ) {
       return;
     }
 
@@ -92,7 +97,7 @@ export default function WorkspaceTabs({
       </div>
 
       <p className="workspace-tabs-description">
-        {activeTab.description}
+        {activeTab?.description ?? "Выбери раздел, чтобы открыть рабочую область."}
       </p>
     </nav>
   );

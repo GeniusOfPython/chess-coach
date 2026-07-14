@@ -4,11 +4,8 @@ type Props = {
   stateText: string;
   active: boolean;
   turnOwner: TurnOwner;
-  showStartAction: boolean;
-  startDisabled?: boolean;
   error?: string | null;
   retryDisabled?: boolean;
-  onStart: () => void;
   onRetry?: () => void;
 };
 
@@ -16,11 +13,8 @@ export default function GameSessionCard({
   stateText,
   active,
   turnOwner,
-  showStartAction,
-  startDisabled = false,
   error = null,
   retryDisabled = false,
-  onStart,
   onRetry,
 }: Props) {
   return (
@@ -63,16 +57,6 @@ export default function GameSessionCard({
         </div>
       )}
 
-      {showStartAction && (
-        <button
-          type="button"
-          className="game-session-start"
-          disabled={startDisabled}
-          onClick={onStart}
-        >
-          Старт партии
-        </button>
-      )}
     </div>
   );
 }

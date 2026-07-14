@@ -77,17 +77,31 @@ input {
     padding-bottom: calc(112px + env(safe-area-inset-bottom));
   }
 
+  .header {
+    margin-bottom: 12px;
+  }
+
+  .header .eyebrow,
+  .header .subtitle {
+    display: none;
+  }
+
+  .header h1 {
+    font-size: 26px;
+    line-height: 1.1;
+  }
+
   #workspace-content {
     scroll-margin-top: max(12px, env(safe-area-inset-top));
   }
 }
 
 @media (max-width: 520px) {
-  h1 {
-    font-size: 30px;
+  .controls {
+    grid-template-columns: 1fr;
   }
 
-  .controls {
+  .resign-controls {
     grid-template-columns: 1fr;
   }
 

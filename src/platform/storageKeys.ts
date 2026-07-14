@@ -13,10 +13,12 @@ export const settingsStorageKeys = {
   trainingDailyDate: "chess-coach.training-daily-date",
   trainingDailySuccesses: "chess-coach.training-daily-successes",
   aiCoachUsage: "chess-coach.ai-coach-usage",
+  chessAchievements: "chess-coach.chess-achievements",
 } as const;
 
 export const gameSessionStorageKeys = {
   currentPgn: "chess-coach.current-pgn",
   botGameStarted: "chess-coach.bot-game-started",
+  gameTermination: "chess-coach.game-termination",
   gameArchive: "chess-coach.game-archive",
 } as const;

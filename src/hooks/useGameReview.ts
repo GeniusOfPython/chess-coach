@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Color } from "chess.js";
 import type { GameReviewItem, GameReviewStatus } from "../components/GameReviewPanel";
 import type { EngineAnalysis } from "../types/chess";
 import { getFullMoveNumber, getTurnFromFen, getVerdict, getWhiteEvaluation, isMoveMatchingBestMove } from "../analysis/reviewRules";
@@ -10,7 +11,7 @@ export function useGameReview() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   function reset() { setStatus("idle"); setItems([]); setProgress(0); setError(""); }
-  async function run({ fenHistory, moveHistory, calculatePositionAnalysis }: { fenHistory: string[]; moveHistory: ReviewMove[]; calculatePositionAnalysis: AnalyzePosition }) {
+  async function run({ fenHistory, moveHistory, calculatePositionAnalysis, reviewSide }: { fenHistory: string[]; moveHistory: ReviewMove[]; calculatePositionAnalysis: AnalyzePosition; reviewSide?: Color }) {
     if (status === "running") return;
     const total = Math.min(moveHistory.length, Math.max(0, fenHistory.length - 1), 24);
     if (total === 0) return;
@@ -21,6 +22,7 @@ export function useGameReview() {
         const beforeFen = fenHistory[index]; const afterFen = fenHistory[index + 1]; const move = moveHistory[index];
         if (!beforeFen || !afterFen || !move) { setProgress(index + 1); continue; }
         const side = getTurnFromFen(beforeFen); const playedMove = `${move.from}${move.to}`;
+        if (reviewSide && side !== reviewSide) { setProgress(index + 1); continue; }
         const before = await calculatePositionAnalysis({ fen: beforeFen, isGameOver: false, movetime: 650 });
         if (!before?.bestMove) { setProgress(index + 1); continue; }
         const after = await calculatePositionAnalysis({ fen: afterFen, isGameOver: false, movetime: 450 });

@@ -1,0 +1,70 @@
+.chess-achievements,
+.chess-achievements-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.chess-achievements-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #9ca69f;
+  font-size: 13px;
+}
+
+.chess-achievements-summary strong {
+  color: #e3e9e5;
+}
+
+.chess-achievements-grid article {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid #303833;
+  border-radius: 11px;
+  background: rgba(9, 13, 10, 0.3);
+}
+
+.chess-achievements-grid article > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #2d342f;
+  color: #7f8983;
+  font-weight: 900;
+}
+
+.chess-achievements-grid article.unlocked {
+  border-color: rgba(99, 160, 78, 0.42);
+}
+
+.chess-achievements-grid article.unlocked > span {
+  background: #456c39;
+  color: #eff9eb;
+}
+
+.chess-achievements-grid article div {
+  display: grid;
+  gap: 4px;
+}
+
+.chess-achievements-grid article strong {
+  color: #e3e9e5;
+  font-size: 14px;
+}
+
+.chess-achievements-grid article p {
+  margin: 0;
+  color: #939d97;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.chess-achievements-grid article.locked strong,
+.chess-achievements-grid article.locked p {
+  color: #747d77;
+}

@@ -35,4 +35,3 @@ export function isPlayerTurn({
 }) {
   return mode === "analysis" || (started && turn === playerSide);
 }
-

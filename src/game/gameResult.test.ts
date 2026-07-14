@@ -1,6 +1,9 @@
 import { Chess } from "chess.js";
 import { describe, expect, it } from "vitest";
-import { getGameResultInfo } from "./gameResult";
+import {
+  getGameResultInfo,
+  getTerminatedGameResultInfo,
+} from "./gameResult";
 
 describe("game result", () => {
   it("определяет победителя после мата", () => {
@@ -22,6 +25,19 @@ describe("game result", () => {
       isGameOver: false,
       result: "*",
       winner: null,
+    });
+  });
+
+  it("оформляет досрочное завершение партии", () => {
+    expect(getTerminatedGameResultInfo({
+      reason: "resignation",
+      winner: "black",
+      result: "0-1",
+    })).toMatchObject({
+      isGameOver: true,
+      winner: "black",
+      result: "0-1",
+      title: "Досрочное завершение. Победили чёрные",
     });
   });
 });

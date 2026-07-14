@@ -65,27 +65,6 @@ export default function GameArchivePanel({
             </div>
           </div>
 
-          <div className="game-archive-form">
-            <span>Последние партии</span>
-            <div aria-label="Форма последних партий">
-              {stats.recentForm.map((outcome, index) => (
-                <span
-                  className={`game-archive-form-dot ${outcome}`}
-                  title={outcomeLabels[outcome]}
-                  aria-label={outcomeLabels[outcome]}
-                  key={`${outcome}-${index}`}
-                >
-                  {outcome === "win" ? "В" : outcome === "draw" ? "Н" : "П"}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {stats.strongestDefeatedLevel && (
-            <p className="game-archive-best-level">
-              Самый сильный побеждённый бот — {getBotLevel(stats.strongestDefeatedLevel).title}.
-            </p>
-          )}
         </section>
       )}
 

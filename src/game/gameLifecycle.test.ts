@@ -21,6 +21,7 @@ function createDependencies(overrides: Record<string, unknown> = {}) {
     clearGameReview: vi.fn(),
     resetBestMoveTraining: vi.fn(),
     clearAnalysis: vi.fn(),
+    clearGameTermination: vi.fn(),
     ...overrides,
   };
 }
@@ -37,9 +38,31 @@ describe("createGameLifecycleActions", () => {
     expect(dependencies.clearLearningJournal).toHaveBeenCalledOnce();
     expect(dependencies.clearGameReview).toHaveBeenCalledOnce();
     expect(dependencies.clearAnalysis).toHaveBeenCalledOnce();
+    expect(dependencies.startBotSession).not.toHaveBeenCalled();
   });
 
-  it("не запускает новую сессию во время расчёта бота", () => {
+  it("не запускает партию через сброс доски", () => {
+    const dependencies = createDependencies();
+    const actions = createGameLifecycleActions(dependencies);
+
+    actions.handleNewGame();
+
+    expect(dependencies.newGame).toHaveBeenCalledOnce();
+    expect(dependencies.startBotSession).not.toHaveBeenCalled();
+  });
+
+  it("запускает настроенную партию только явным действием", () => {
+    const dependencies = createDependencies();
+    const actions = createGameLifecycleActions(dependencies);
+
+    actions.handleStartBotGame();
+
+    expect(dependencies.newGame).toHaveBeenCalledOnce();
+    expect(dependencies.startBotSession).toHaveBeenCalledOnce();
+    expect(dependencies.clearLearningJournal).toHaveBeenCalledOnce();
+  });
+
+  it("не запускает партию во время расчёта бота", () => {
     const dependencies = createDependencies({ isBotThinking: true });
     const actions = createGameLifecycleActions(dependencies);
 
@@ -81,4 +104,3 @@ describe("createGameLifecycleActions", () => {
     expect(dependencies.clearLearningJournal).toHaveBeenCalledOnce();
   });
 });
-

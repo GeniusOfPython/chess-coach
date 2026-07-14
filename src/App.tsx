@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { Color, Square } from "chess.js";
+import { Chess, type Color, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
 import MoveHistory from "./components/MoveHistory";
@@ -32,6 +32,8 @@ import RewardToast from "./components/RewardToast";
 import PremiumFeatureNotice from "./components/PremiumFeatureNotice";
 import GameSessionCard from "./components/GameSessionCard";
 import MoveFeedbackCard from "./components/MoveFeedbackCard";
+import BotFairPlayNotice from "./components/BotFairPlayNotice";
+import ChessAchievementsPanel from "./components/ChessAchievementsPanel";
 import { useChessGame } from "./hooks/useChessGame";
 import { useEngineAnalysis } from "./hooks/useEngineAnalysis";
 import { useAppPreferences } from "./hooks/useAppPreferences";
@@ -51,7 +53,10 @@ import { useTrainingProgress } from "./hooks/useTrainingProgress";
 import { useGameReview } from "./hooks/useGameReview";
 import { useRewardToast } from "./hooks/useRewardToast";
 import { useGameSession } from "./hooks/useGameSession";
-import { isBotTurn, isPlayerTurn as getIsPlayerTurn } from "./game/gameFlowRules";
+import {
+  isBotTurn,
+  isPlayerTurn as getIsPlayerTurn,
+} from "./game/gameFlowRules";
 import { useLearningJournal } from "./hooks/useLearningJournal";
 import { useBestMoveTraining } from "./hooks/useBestMoveTraining";
 import { useBotTurn } from "./hooks/useBotTurn";
@@ -61,7 +66,13 @@ import {
   createArchivedGame,
   type ArchivedGame,
 } from "./game/gameArchive";
-import { getGameResultInfo } from "./game/gameResult";
+import {
+  getGameResultInfo,
+  getTerminatedGameResultInfo,
+} from "./game/gameResult";
+import { useChessAchievements } from "./hooks/useChessAchievements";
+import { detectChessAchievements } from "./features/chessAchievements";
+import { isBotFairPlayActive } from "./game/fairPlayRules";
 import { createGameLifecycleActions } from "./game/gameLifecycle";
 import type { GameMode } from "./game/gameTypes";
 import {
@@ -87,6 +98,8 @@ import "./components/RewardToast.css";
 import "./components/GameSessionCard.css";
 import "./components/MoveFeedbackCard.css";
 import "./App.css";
+
+const INITIAL_POSITION_FEN = new Chess().fen();
 
 function App() {
   const {
@@ -120,6 +133,9 @@ function App() {
     setLastMoveReview,
     selectedSquare,
     setSelectedSquare,
+    gameTermination,
+    terminateBotGame,
+    clearGameTermination,
   } = useGameSession();
 
   const {
@@ -171,6 +187,11 @@ function App() {
     clearGames: clearArchivedGames,
   } = useGameArchive();
   const archivedPositionRef = useRef<string | null>(null);
+  const {
+    unlocked: unlockedAchievements,
+    unlock: unlockAchievements,
+  } = useChessAchievements();
+  const achievementPositionRef = useRef<string | null>(null);
 
 
   const { message: rewardToast, showRewardToast } = useRewardToast();
@@ -224,6 +245,8 @@ function App() {
   } = useChessGame({
     onPositionChanged: clearAnalysis,
   });
+  const isMatchFinished = game.isGameOver() || gameTermination !== null;
+  const showInitialBoard = isMatchFinished && isViewingCurrentPosition;
 
 
   useEffect(() => {
@@ -231,7 +254,7 @@ function App() {
   }, [position, history.length, getPgn]);
 
   useEffect(() => {
-    if (!game.isGameOver() || history.length === 0) {
+    if (!isMatchFinished || history.length === 0) {
       archivedPositionRef.current = null;
       return;
     }
@@ -242,7 +265,9 @@ function App() {
       return;
     }
 
-    const resultInfo = getGameResultInfo(game);
+    const resultInfo = gameTermination
+      ? getTerminatedGameResultInfo(gameTermination)
+      : getGameResultInfo(game);
     archivedPositionRef.current = pgn;
     addArchivedGame(createArchivedGame({
       pgn,
@@ -257,17 +282,64 @@ function App() {
     addArchivedGame,
     botLevelId,
     game,
+    gameTermination,
     gameMode,
     getPgn,
     history.length,
+    isMatchFinished,
     playerSide,
     position,
+  ]);
+
+  useEffect(() => {
+    if (!isMatchFinished || history.length === 0) {
+      achievementPositionRef.current = null;
+      return;
+    }
+
+    const pgn = getPgn();
+
+    if (!pgn || achievementPositionRef.current === pgn) {
+      return;
+    }
+
+    achievementPositionRef.current = pgn;
+    const newlyUnlocked = unlockAchievements(detectChessAchievements({
+      game,
+      mode: gameMode,
+      playerSide,
+    }));
+    const firstAchievement = newlyUnlocked[0];
+
+    if (firstAchievement) {
+      showRewardToast({
+        kind: "success",
+        title: `Достижение: ${firstAchievement.title}`,
+        text: firstAchievement.description,
+      });
+      void triggerSuccessHaptic();
+    }
+  }, [
+    game,
+    gameMode,
+    getPgn,
+    history.length,
+    isMatchFinished,
+    playerSide,
+    position,
+    showRewardToast,
+    unlockAchievements,
   ]);
 
   const boardOrientation =
     gameMode === "bot" && playerSide === "b"
       ? "black"
       : "white";
+  const isActiveBotGame = isBotFairPlayActive({
+    mode: gameMode,
+    started: isBotGameStarted,
+    isGameOver: isMatchFinished,
+  });
 
   const legalMoveSquares = isViewingCurrentPosition && selectedSquare
     ? game
@@ -290,7 +362,7 @@ function App() {
     return isBotTurn({
       mode,
       started,
-      isGameOver: game.isGameOver(),
+      isGameOver: isMatchFinished,
       turn: game.turn(),
       playerSide: side,
     });
@@ -302,7 +374,7 @@ function App() {
   } = useBotTurn({
     enabled: isBotTurnFor(),
     fen: position,
-    isGameOver: game.isGameOver(),
+    isGameOver: isMatchFinished,
     botLevelId,
     sessionId: botSessionId,
     calculateBotMove,
@@ -337,9 +409,14 @@ function App() {
     clearGameReview,
     resetBestMoveTraining,
     clearAnalysis,
+    clearGameTermination,
   });
 
   function isPlayerTurn() {
+    if (isMatchFinished) {
+      return false;
+    }
+
     return getIsPlayerTurn({
       mode: gameMode,
       started: isBotGameStarted,
@@ -371,6 +448,10 @@ function App() {
   }
 
   function handleAnalyzePosition() {
+    if (isActiveBotGame) {
+      return;
+    }
+
     resetBestMoveTraining();
 
     void analyzePosition({
@@ -389,6 +470,7 @@ function App() {
       fenHistory,
       moveHistory: lastMoveHistory,
       calculatePositionAnalysis,
+      reviewSide: gameMode === "bot" ? playerSide : undefined,
     });
   }
 
@@ -414,6 +496,7 @@ function App() {
   async function handleStartBestMoveTraining() {
     if (
       isBotThinking ||
+      isActiveBotGame ||
       !isViewingCurrentPosition ||
       game.isGameOver()
     ) {
@@ -478,15 +561,17 @@ function App() {
       void triggerMoveHaptic();
       const positionAfterMove = game.fen();
 
-      const moveReview = reviewMove({
-        playedMove,
-        positionBeforeMove,
-        positionAfterMove,
-        movingSide,
-        suggestedBestMove,
-        evaluationBeforeWhite,
-      });
-      const matchedBestMove = moveReview.matchedBestMove;
+      const moveReview = isActiveBotGame
+        ? null
+        : reviewMove({
+            playedMove,
+            positionBeforeMove,
+            positionAfterMove,
+            movingSide,
+            suggestedBestMove,
+            evaluationBeforeWhite,
+          });
+      const matchedBestMove = moveReview?.matchedBestMove ?? false;
 
       clearGameReview();
 
@@ -611,24 +696,24 @@ function App() {
       <section className="game-layout">
         <div className="board-panel">
           <ChessBoard
-            position={displayedPosition}
+            position={showInitialBoard ? INITIAL_POSITION_FEN : displayedPosition}
             bestMove={
-              bestMoveTrainingTask.status === "ready"
+              showInitialBoard || bestMoveTrainingTask.status === "ready"
                 ? undefined
                 : analysis?.bestMove
             }
             candidateMoves={
-              bestMoveTrainingTask.status === "ready"
+              showInitialBoard || bestMoveTrainingTask.status === "ready"
                 ? []
                 : analysis?.lines
                     .slice(1, 3)
                     .map((line) => line.bestMove)
             }
             boardOrientation={boardOrientation}
-            lastMove={displayedLastMove}
-            selectedSquare={selectedSquare}
-            legalMoveSquares={legalMoveSquares}
-            checkSquare={displayedCheckSquare}
+            lastMove={showInitialBoard ? null : displayedLastMove}
+            selectedSquare={showInitialBoard ? null : selectedSquare}
+            legalMoveSquares={showInitialBoard ? [] : legalMoveSquares}
+            checkSquare={showInitialBoard ? null : displayedCheckSquare}
             showAnalysisArrows={showAnalysisArrows}
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
@@ -639,47 +724,68 @@ function App() {
           <GameSessionCard
             stateText={isBotThinking
               ? "Бот думает…"
+              : gameTermination
+                ? "Партия завершена досрочно"
               : !isViewingCurrentPosition
                 ? "Просмотр позиции из истории"
                 : gameMode === "bot" && !isBotGameStarted
-                  ? "Выбери сторону и начни партию"
+                  ? "Настрой партию и запусти её"
                   : status}
-            active={gameMode === "bot" && isBotGameStarted && isViewingCurrentPosition && !game.isGameOver()}
-            turnOwner={gameMode === "bot" && isBotGameStarted && isViewingCurrentPosition && !game.isGameOver()
+            active={isActiveBotGame && isViewingCurrentPosition}
+            turnOwner={isActiveBotGame && isViewingCurrentPosition
               ? isBotThinking || game.turn() !== playerSide ? "bot" : "player"
               : null}
-            showStartAction={gameMode === "bot" && !isBotGameStarted}
-            startDisabled={isBotThinking}
-            onStart={handleStartBotGame}
             error={botTurnError}
             retryDisabled={isBotThinking}
             onRetry={retryBotTurn}
           />
 
-          <MoveFeedbackCard
-            review={lastMoveReview}
-          />
-
-          <GameModeSelector
-            mode={gameMode}
-            disabled={isBotThinking}
-            onChange={handleModeChange}
-          />
-
-          {gameMode === "bot" && (
-            <PlayerSideSelector
-              side={playerSide}
-              disabled={isBotThinking}
-              onChange={handlePlayerSideChange}
-            />
+          {!isActiveBotGame && (
+            <MoveFeedbackCard review={lastMoveReview} />
           )}
 
-          {gameMode === "bot" && (
-            <BotLevelSelector
-              levelId={botLevelId}
-              disabled={isBotThinking}
-              onChange={setBotLevelId}
-            />
+          {!isActiveBotGame && (
+            <CollapsibleSection
+              title="Настройка партии"
+              description="Режим, сторона и уровень бота"
+              defaultOpen={gameMode === "bot" && !isBotGameStarted}
+              storageKey="chess-coach.section.game-setup"
+            >
+              <GameModeSelector
+                mode={gameMode}
+                disabled={isBotThinking}
+                onChange={handleModeChange}
+              />
+
+              {gameMode === "bot" && (
+                <BotLevelSelector
+                  levelId={botLevelId}
+                  disabled={isBotThinking}
+                  onChange={setBotLevelId}
+                />
+              )}
+
+              {gameMode === "bot" && (
+                <PlayerSideSelector
+                  side={playerSide}
+                  disabled={isBotThinking}
+                  onChange={handlePlayerSideChange}
+                />
+              )}
+
+              {gameMode === "bot" && (
+                <button
+                  type="button"
+                  className="setup-start-button"
+                  disabled={isBotThinking}
+                  onClick={handleStartBotGame}
+                >
+                  {playerSide === "w"
+                    ? "Начать за белых"
+                    : "Начать за чёрных"}
+                </button>
+              )}
+            </CollapsibleSection>
           )}
 
           <GameControls
@@ -689,13 +795,19 @@ function App() {
               isViewingCurrentPosition
             }
             isAnalyzing={isAnalyzing || isBotThinking}
-            isGameOver={game.isGameOver()}
+            isGameOver={isMatchFinished}
+            canAnalyze={gameMode === "analysis"}
+            canTerminate={isActiveBotGame}
+            showNewGame={
+              gameMode !== "bot" || isBotGameStarted || isMatchFinished
+            }
             onNewGame={handleNewGame}
             onUndoMove={handleUndoMove}
             onAnalyze={handleAnalyzePosition}
+            onTerminate={() => terminateBotGame(playerSide)}
           />
 
-          {showAdvertisingUi && (
+          {showAdvertisingUi && !isActiveBotGame && (
             <AdSlot
               tier={subscriptionTier}
               placement="sidePanel"
@@ -710,43 +822,49 @@ function App() {
 
           {activeWorkspace === "coach" && (
             <section className="workspace-panel">
-              <CoachPanel
-                analysis={analysis}
-                position={displayedPosition}
-                subscriptionTier={subscriptionTier}
-              />
+              {isActiveBotGame ? (
+                <BotFairPlayNotice />
+              ) : (
+                <>
+                  <CoachPanel
+                    analysis={analysis}
+                    position={displayedPosition}
+                    subscriptionTier={subscriptionTier}
+                  />
 
-              <AnalysisPanel
-                analysis={analysis}
-                analyzedTurn={analyzedTurn}
-                position={displayedPosition}
-                isAnalyzing={isAnalyzing}
-                error={error}
-                canShowExplanations={
-                  access.canUseMoveExplanations
-                }
-              />
+                  <AnalysisPanel
+                    analysis={analysis}
+                    analyzedTurn={analyzedTurn}
+                    position={displayedPosition}
+                    isAnalyzing={isAnalyzing}
+                    error={error}
+                    canShowExplanations={
+                      access.canUseMoveExplanations
+                    }
+                  />
 
-              <BestMoveTrainingPanel
-                task={bestMoveTrainingTask}
-                stats={{
-                  currentStreak: trainingCurrentStreak,
-                  bestStreak: trainingBestStreak,
-                  totalAttempts: trainingTotalAttempts,
-                  totalSuccesses: trainingTotalSuccesses,
-                  dailyGoal: dailyTrainingGoal,
-                  dailySuccesses: trainingDailySuccesses,
-                }}
-                canStart={
-                  !isBotThinking &&
-                  isViewingCurrentPosition &&
-                  !game.isGameOver()
-                }
-                onStart={handleStartBestMoveTraining}
-                onRevealHint={handleRevealBestMoveHint}
-                onReset={resetBestMoveTraining}
-                onResetStats={handleResetTrainingStats}
-              />
+                  <BestMoveTrainingPanel
+                    task={bestMoveTrainingTask}
+                    stats={{
+                      currentStreak: trainingCurrentStreak,
+                      bestStreak: trainingBestStreak,
+                      totalAttempts: trainingTotalAttempts,
+                      totalSuccesses: trainingTotalSuccesses,
+                      dailyGoal: dailyTrainingGoal,
+                      dailySuccesses: trainingDailySuccesses,
+                    }}
+                    canStart={
+                      !isBotThinking &&
+                      isViewingCurrentPosition &&
+                      !game.isGameOver()
+                    }
+                    onStart={handleStartBestMoveTraining}
+                    onRevealHint={handleRevealBestMoveHint}
+                    onReset={resetBestMoveTraining}
+                    onResetStats={handleResetTrainingStats}
+                  />
+                </>
+              )}
             </section>
           )}
 
@@ -762,30 +880,36 @@ function App() {
                 )}
                 items={gameReviewItems}
                 error={gameReviewError}
-                disabled={isBotThinking}
+                disabled={isBotThinking || isActiveBotGame}
+                disabledMessage={isActiveBotGame
+                  ? "Разбор станет доступен после завершения партии."
+                  : undefined}
                 onRun={handleRunGameReview}
                 onClear={clearGameReview}
                 onSelectPosition={handleSelectReviewedPosition}
               />
 
-              {access.canUseMoveReview ? (
+              {gameMode === "analysis" && access.canUseMoveReview ? (
                 <MoveReviewPanel
                   review={lastMoveReview}
                   canShowExplanations={
                     access.canUseMoveExplanations
                   }
                 />
-              ) : (
+              ) : gameMode === "analysis" ? (
                 <PremiumFeatureNotice
                   featureKey="moveReview"
                   description="Разбор последнего хода подготовлен как премиальная функция для будущей мобильной версии."
                 />
-              )}
+              ) : null}
 
               <GameResultPanel
                 game={game}
                 historyLength={history.length}
                 onNewGame={handleNewGame}
+                overrideResult={gameTermination
+                  ? getTerminatedGameResultInfo(gameTermination)
+                  : null}
               />
 
               <EvaluationBar
@@ -799,6 +923,16 @@ function App() {
 
           {activeWorkspace === "tools" && (
             <section className="workspace-panel">
+              <CollapsibleSection
+                title="Достижения"
+                description="Проверяемые шахматные события в честных партиях"
+                storageKey="chess-coach.section.achievements"
+              >
+                <ChessAchievementsPanel
+                  unlocked={unlockedAchievements}
+                />
+              </CollapsibleSection>
+
               <CollapsibleSection
                 title="Дебютные принципы"
                 description="Центр, развитие фигур и безопасность короля"

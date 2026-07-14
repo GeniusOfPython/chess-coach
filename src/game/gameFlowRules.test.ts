@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { isBotTurn, isPlayerTurn } from "./gameFlowRules";
+import {
+  isBotTurn,
+  isPlayerTurn,
+} from "./gameFlowRules";
 
 describe("game flow rules", () => {
   it("starts with the bot turn when the player chooses black", () => {
@@ -41,4 +44,14 @@ describe("game flow rules", () => {
       playerSide: "w",
     })).toBe(true);
   });
+
+  it("blocks board moves before a bot game starts", () => {
+    expect(isPlayerTurn({
+      mode: "bot",
+      started: false,
+      turn: "w",
+      playerSide: "w",
+    })).toBe(false);
+  });
+
 });

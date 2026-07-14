@@ -28,8 +28,7 @@
   background: rgba(8, 12, 9, 0.35);
 }
 
-.game-archive-stat-grid span,
-.game-archive-form > span {
+.game-archive-stat-grid span {
   color: #98a39c;
   font-size: 11px;
   font-weight: 700;
@@ -45,53 +44,6 @@
   color: #9da7a1;
   font-size: 11px;
   line-height: 1.35;
-}
-
-.game-archive-form,
-.game-archive-form > div {
-  display: flex;
-  align-items: center;
-}
-
-.game-archive-form {
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.game-archive-form > div {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 5px;
-}
-
-.game-archive-form-dot {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  background: #303832;
-  color: #d9dfdb;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.game-archive-form-dot.win {
-  background: #456c39;
-}
-
-.game-archive-form-dot.loss {
-  background: #744040;
-}
-
-.game-archive-form-dot.draw {
-  background: #6d603c;
-}
-
-.game-archive-best-level {
-  margin: 0;
-  color: #bacdb1;
-  font-size: 13px;
 }
 
 .game-archive-heading,

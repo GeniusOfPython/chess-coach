@@ -1,4 +1,5 @@
 import type { Chess } from "chess.js";
+import type { BotGameTermination } from "./gameTypes";
 
 export type GameResultInfo = {
   isGameOver: boolean;
@@ -86,5 +87,19 @@ export function getGameResultInfo(game: Chess): GameResultInfo {
     description: "Игра больше не имеет легальных продолжений.",
     result: "*",
     winner: null,
+  };
+}
+
+export function getTerminatedGameResultInfo(
+  termination: BotGameTermination,
+): GameResultInfo {
+  return {
+    isGameOver: true,
+    title: termination.winner === "white"
+      ? "Досрочное завершение. Победили белые"
+      : "Досрочное завершение. Победили чёрные",
+    description: "Игрок завершил партию до её естественного окончания.",
+    result: termination.result,
+    winner: termination.winner,
   };
 }

@@ -25,6 +25,7 @@ type Props = {
   items: GameReviewItem[];
   error: string;
   disabled?: boolean;
+  disabledMessage?: string;
   onRun: () => void;
   onClear: () => void;
   onSelectPosition: (item: GameReviewItem) => void;
@@ -76,6 +77,7 @@ export default function GameReviewPanel({
   items,
   error,
   disabled = false,
+  disabledMessage,
   onRun,
   onClear,
   onSelectPosition,
@@ -119,6 +121,10 @@ export default function GameReviewPanel({
         <p className="game-review-empty">
           Сделай несколько ходов, чтобы появился материал для обзора.
         </p>
+      )}
+
+      {disabled && disabledMessage && (
+        <p className="game-review-empty">{disabledMessage}</p>
       )}
 
       {status === "running" && (

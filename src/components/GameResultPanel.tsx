@@ -1,18 +1,21 @@
 import type { Chess } from "chess.js";
 import { getGameResultInfo } from "../game/gameResult";
+import type { GameResultInfo } from "../game/gameResult";
 
 type Props = {
   game: Chess;
   historyLength: number;
   onNewGame: () => void;
+  overrideResult?: GameResultInfo | null;
 };
 
 export default function GameResultPanel({
   game,
   historyLength,
   onNewGame,
+  overrideResult = null,
 }: Props) {
-  const resultInfo = getGameResultInfo(game);
+  const resultInfo = overrideResult ?? getGameResultInfo(game);
 
   return (
     <div className="game-result-card">
