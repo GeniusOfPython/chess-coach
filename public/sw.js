@@ -63,21 +63,25 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_VERSION);
-        const cachedPage =
-          (await cache.match("/index.html", { ignoreVary: true })) ??
-          (await cache.match("/", { ignoreVary: true }));
-
-        if (cachedPage) {
-          return cachedPage;
-        }
 
         try {
-          return await fetch(request);
+          const response = await fetch(request);
+
+          if (response.ok && response.type === "basic") {
+            await cache.put("/index.html", response.clone());
+            await cache.put("/", response.clone());
+          }
+
+          return response;
         } catch {
-          return new Response("Приложение пока недоступно офлайн.", {
-            status: 503,
-            headers: { "Content-Type": "text/plain; charset=utf-8" },
-          });
+          return (
+            (await cache.match("/index.html", { ignoreVary: true })) ??
+            (await cache.match("/", { ignoreVary: true })) ??
+            new Response("Приложение пока недоступно офлайн.", {
+              status: 503,
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            })
+          );
         }
       })(),
     );

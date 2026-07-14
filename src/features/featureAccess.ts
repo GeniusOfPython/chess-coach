@@ -1,8 +1,11 @@
 export type SubscriptionTier = "free" | "premium";
 
+export const freeAiCoachDailyLimit = 3;
+
 export type PremiumFeatureKey =
   | "moveReview"
   | "moveExplanations"
+  | "aiCoach"
   | "pgnTools"
   | "fenTools";
 
@@ -13,6 +16,7 @@ export type FeatureAccess = {
   canUseMoveExplanations: boolean;
   canUsePgnTools: boolean;
   canUseFenTools: boolean;
+  aiCoachDailyLimit: number | null;
 };
 
 export function getFeatureAccess(
@@ -27,6 +31,7 @@ export function getFeatureAccess(
     canUseMoveExplanations: isPremium,
     canUsePgnTools: true,
     canUseFenTools: true,
+    aiCoachDailyLimit: isPremium ? null : freeAiCoachDailyLimit,
   };
 }
 
@@ -37,7 +42,8 @@ export function isPremiumFeature(
 ) {
   return (
     featureKey === "moveReview" ||
-    featureKey === "moveExplanations"
+    featureKey === "moveExplanations" ||
+    featureKey === "aiCoach"
   );
 }
 
@@ -50,6 +56,10 @@ export function getPremiumFeatureTitle(
 
   if (featureKey === "moveExplanations") {
     return "Пояснения к ходам";
+  }
+
+  if (featureKey === "aiCoach") {
+    return "ИИ-тренер без лимита";
   }
 
   if (featureKey === "fenTools") {

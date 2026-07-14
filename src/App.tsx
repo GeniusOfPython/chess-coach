@@ -656,6 +656,7 @@ function App() {
               <CoachPanel
                 analysis={analysis}
                 position={displayedPosition}
+                subscriptionTier={subscriptionTier}
               />
 
               <AnalysisPanel

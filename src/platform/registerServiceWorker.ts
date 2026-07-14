@@ -2,6 +2,7 @@ import { isNativeMobileShell } from "./mobile";
 import { announcePwaUpdateReady } from "./pwaUpdate";
 
 const serviceWorkerPath = "/sw.js";
+const applicationCachePrefix = "chess-coach-";
 
 export function shouldRegisterServiceWorker({
   isProduction,
@@ -23,6 +24,40 @@ export function shouldAnnounceServiceWorkerUpdate({
   hasController: boolean;
 }) {
   return workerState === "installed" && hasController;
+}
+
+export function shouldCleanDevelopmentPwa({
+  isProduction,
+  isNativeApp,
+  hasServiceWorker,
+}: {
+  isProduction: boolean;
+  isNativeApp: boolean;
+  hasServiceWorker: boolean;
+}) {
+  return !isProduction && !isNativeApp && hasServiceWorker;
+}
+
+async function cleanDevelopmentPwa() {
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  const currentOrigin = window.location.origin;
+
+  await Promise.all(
+    registrations
+      .filter((registration) => registration.scope.startsWith(currentOrigin))
+      .map((registration) => registration.unregister()),
+  );
+
+  if (!("caches" in window)) {
+    return;
+  }
+
+  const cacheKeys = await caches.keys();
+  await Promise.all(
+    cacheKeys
+      .filter((key) => key.startsWith(applicationCachePrefix))
+      .map((key) => caches.delete(key)),
+  );
 }
 
 function observeServiceWorkerUpdates(registration: ServiceWorkerRegistration) {
@@ -65,11 +100,20 @@ function observeServiceWorkerUpdates(registration: ServiceWorkerRegistration) {
 }
 
 export function registerServiceWorker() {
-  if (!shouldRegisterServiceWorker({
+  const environment = {
     isProduction: import.meta.env.PROD,
     isNativeApp: isNativeMobileShell(),
     hasServiceWorker: "serviceWorker" in navigator,
-  })) {
+  };
+
+  if (shouldCleanDevelopmentPwa(environment)) {
+    void cleanDevelopmentPwa().catch((error) => {
+      console.warn("Не удалось очистить PWA-кеш разработки:", error);
+    });
+    return;
+  }
+
+  if (!shouldRegisterServiceWorker(environment)) {
     return;
   }
 
