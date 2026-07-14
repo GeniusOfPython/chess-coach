@@ -1,4 +1,4 @@
-/* Aurora theme: visual tokens live in index.css, component layout stays local. */
+/* Retrowave theme: visual tokens live in index.css, component layout stays local. */
 
 .app {
   position: relative;
@@ -20,63 +20,35 @@
   width: 64px;
   height: 64px;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 24%);
-  border-radius: 20px;
+  border: 1px solid rgb(121 241 255 / 52%);
+  border-radius: 18px;
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 22%), transparent 42%),
-    linear-gradient(135deg, var(--color-primary), #6366f1 45%, var(--color-secondary));
+    linear-gradient(145deg, rgb(255 255 255 / 24%), transparent 40%),
+    linear-gradient(135deg, var(--color-primary), #d946ef 44%, var(--color-secondary));
   box-shadow:
-    0 18px 42px rgb(88 80 236 / 34%),
-    inset 0 1px 0 rgb(255 255 255 / 32%);
+    0 0 0 3px rgb(255 60 172 / 10%),
+    0 18px 42px rgb(255 60 172 / 28%),
+    0 0 30px rgb(0 229 255 / 18%),
+    inset 0 1px 0 rgb(255 255 255 / 34%);
   color: #fff;
   font-size: 40px;
   line-height: 1;
-  text-shadow: 0 5px 18px rgb(20 15 70 / 48%);
+  text-shadow:
+    0 4px 14px rgb(18 3 27 / 58%),
+    0 0 18px rgb(255 255 255 / 32%);
   content: "♞";
   animation: brand-mark-float 5s ease-in-out infinite;
 }
 
-.brand-heading {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.brand-mark {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  flex: 0 0 auto;
-  overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 24%);
-  border-radius: 20px;
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 22%), transparent 42%),
-    linear-gradient(135deg, var(--color-primary), #6366f1 45%, var(--color-secondary));
-  box-shadow:
-    0 18px 42px rgb(88 80 236 / 34%),
-    inset 0 1px 0 rgb(255 255 255 / 32%);
-  color: #fff;
-  font-size: 40px;
-  line-height: 1;
-  text-shadow: 0 5px 18px rgb(20 15 70 / 48%);
-  animation: brand-mark-float 5s ease-in-out infinite;
-}
-
-.brand-mark::after {
+.header::after {
   position: absolute;
-  inset: -50% auto -50% -70%;
-  width: 36%;
-  transform: rotate(20deg);
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 34%), transparent);
+  bottom: -13px;
+  left: 82px;
+  width: min(260px, calc(100% - 82px));
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent), var(--color-secondary), transparent);
+  box-shadow: 0 0 14px rgb(255 60 172 / 50%);
   content: "";
-  animation: brand-mark-shine 6s ease-in-out infinite;
-}
-
-.brand-copy {
-  min-width: 0;
 }
 
 .eyebrow {
@@ -85,11 +57,13 @@
 
 h1 {
   width: fit-content;
-  background: linear-gradient(105deg, #fff 8%, #d9d6ff 42%, #82ebff 100%);
+  background: linear-gradient(105deg, #fff 5%, #ff9ae2 42%, #79f1ff 100%);
+  -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   letter-spacing: -0.035em;
-  text-shadow: 0 12px 44px rgb(99 102 241 / 15%);
+  text-shadow: 0 12px 44px rgb(255 60 172 / 14%);
+  -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
@@ -100,8 +74,8 @@ h1 {
 .side-panel > div {
   border: 1px solid transparent;
   background:
-    linear-gradient(145deg, rgb(20 26 52 / 94%), rgb(12 16 35 / 96%)) padding-box,
-    linear-gradient(135deg, rgb(139 92 246 / 65%), rgb(34 211 238 / 32%), rgb(251 113 133 / 32%)) border-box;
+    linear-gradient(145deg, rgb(20 13 50 / 95%), rgb(8 8 29 / 97%)) padding-box,
+    linear-gradient(135deg, rgb(255 60 172 / 66%), rgb(255 138 61 / 28%), rgb(0 229 255 / 42%)) border-box;
   box-shadow: var(--shadow-card), var(--shadow-glow);
   backdrop-filter: blur(18px);
 }
@@ -111,7 +85,8 @@ h1 {
   overflow: hidden;
   box-shadow:
     0 26px 70px rgb(0 0 0 / 40%),
-    0 0 55px rgb(99 102 241 / 18%);
+    0 0 56px rgb(255 60 172 / 14%),
+    0 0 38px rgb(0 229 255 / 10%);
   animation: surface-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -121,7 +96,7 @@ h1 {
   width: 210px;
   height: 210px;
   border-radius: 50%;
-  background: rgb(34 211 238 / 9%);
+  background: linear-gradient(135deg, rgb(255 60 172 / 12%), rgb(0 229 255 / 10%));
   filter: blur(30px);
   pointer-events: none;
   content: "";
@@ -149,24 +124,28 @@ h1 {
 
 .active-game-dot {
   background: var(--color-secondary);
-  box-shadow: 0 0 0 4px rgb(34 211 238 / 16%);
+  box-shadow:
+    0 0 0 4px rgb(0 229 255 / 16%),
+    0 0 15px rgb(0 229 255 / 58%);
 }
 
 .turn-indicator-player {
-  color: #a5f3fc;
-  background: rgb(34 211 238 / 10%);
+  color: #9af5ff;
+  background: rgb(0 229 255 / 10%);
 }
 
 .turn-indicator-bot {
-  color: #ddd6fe;
-  background: rgb(139 92 246 / 12%);
+  color: #ffb8e8;
+  background: rgb(255 60 172 / 11%);
 }
 
 button {
-  border-color: rgb(139 92 246 / 62%);
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
-  box-shadow: 0 8px 20px rgb(99 102 241 / 18%);
-  color: #fff;
+  border-color: rgb(255 122 217 / 76%);
+  background: linear-gradient(135deg, #ff3cac, #d946ef);
+  box-shadow:
+    0 8px 22px rgb(255 60 172 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 28%);
+  color: var(--color-ink);
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease,
@@ -175,9 +154,11 @@ button {
 }
 
 button:hover:not(:disabled) {
-  filter: brightness(1.1) saturate(1.08);
+  filter: brightness(1.08) saturate(1.06);
   transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgb(99 102 241 / 28%);
+  box-shadow:
+    0 10px 28px rgb(255 60 172 / 32%),
+    0 0 18px rgb(255 60 172 / 16%);
 }
 
 button:active:not(:disabled) {
@@ -189,45 +170,64 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 3px solid rgb(34 211 238 / 52%);
+  outline: 3px solid rgb(0 229 255 / 58%);
   outline-offset: 3px;
 }
 
 button.secondary {
   border-color: var(--color-border);
-  background: rgb(21 28 57 / 74%);
+  background: rgb(14 10 37 / 84%);
   box-shadow: none;
   color: var(--color-text);
 }
 
 .setup-start-button {
-  border-color: rgb(255 226 128 / 78%);
-  background: linear-gradient(120deg, #ffb35c 0%, #fb7185 48%, #c084fc 100%);
+  position: relative;
+  min-height: 58px;
+  border: 2px solid rgb(255 228 128 / 92%);
+  background: linear-gradient(110deg, #ffcf4a 0%, #ff8a3d 34%, #ff3cac 70%, #00e5ff 112%);
   box-shadow:
-    0 14px 34px rgb(251 113 133 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 36%);
-  color: #170d27;
-  text-shadow: 0 1px 0 rgb(255 255 255 / 22%);
+    0 0 0 3px rgb(255 60 172 / 14%),
+    0 16px 38px rgb(255 60 172 / 38%),
+    0 0 28px rgb(255 138 61 / 28%),
+    inset 0 2px 0 rgb(255 255 255 / 42%);
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.025em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 36%);
+  animation: start-cta-pulse 2.8s ease-in-out infinite;
 }
 
 .setup-start-button:hover:not(:disabled) {
+  filter: brightness(1.08) saturate(1.08);
+  transform: translateY(-2px);
   box-shadow:
-    0 17px 42px rgb(251 113 133 / 38%),
-    inset 0 1px 0 rgb(255 255 255 / 44%);
+    0 0 0 4px rgb(0 229 255 / 18%),
+    0 20px 46px rgb(255 60 172 / 46%),
+    0 0 34px rgb(255 138 61 / 32%),
+    inset 0 2px 0 rgb(255 255 255 / 50%);
+}
+
+.setup-start-button:disabled {
+  animation: none;
+  filter: saturate(0.55);
 }
 
 .mode-button {
   border-color: var(--color-border);
-  background: rgb(11 16 36 / 72%);
+  background: rgb(9 8 29 / 78%);
   box-shadow: none;
   color: var(--color-text-muted);
 }
 
 .mode-button.active {
-  border-color: rgb(34 211 238 / 60%);
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  box-shadow: 0 10px 24px rgb(99 102 241 / 24%);
-  color: #fff;
+  border-color: rgb(121 241 255 / 72%);
+  background: linear-gradient(135deg, #00e5ff, #68d5ff);
+  box-shadow:
+    0 10px 24px rgb(0 229 255 / 22%),
+    0 0 18px rgb(0 229 255 / 14%);
+  color: var(--color-ink);
 }
 
 .mode-description,
@@ -264,7 +264,7 @@ button.secondary {
 .coach-main-move,
 .coach-tactic {
   border-color: var(--color-border);
-  background: rgb(12 17 38 / 66%);
+  background: rgb(10 8 31 / 74%);
 }
 
 .engine-line.primary {
@@ -274,52 +274,53 @@ button.secondary {
 
 .move-review.good,
 .move-feedback-card.positive {
-  border-color: rgb(45 212 191 / 66%);
+  border-color: rgb(57 245 196 / 66%);
 }
 
 .move-review.warning,
 .move-feedback-card.warning {
-  border-color: rgb(251 191 36 / 70%);
+  border-color: rgb(255 207 74 / 70%);
 }
 
 .error-message {
-  color: #fda4af;
+  color: #ff9eb7;
 }
 
 .resign-controls .resign-action {
-  border-color: rgb(251 113 133 / 42%);
-  color: #fecdd3;
+  border-color: rgb(255 71 120 / 46%);
+  color: #ffb4c7;
 }
 
 .resign-controls .resign-confirm {
-  border-color: rgb(251 113 133 / 72%);
-  background: linear-gradient(135deg, #be123c, #e11d48);
+  border-color: rgb(255 71 120 / 72%);
+  background: linear-gradient(135deg, #9d174d, #be185d);
   color: #fff;
 }
 
 .workspace-tabs-card {
-  border-color: rgb(139 92 246 / 34%);
-  background: linear-gradient(145deg, rgb(24 29 59 / 94%), rgb(11 15 34 / 96%));
+  border-color: rgb(255 60 172 / 38%);
+  background: linear-gradient(145deg, rgb(27 16 60 / 95%), rgb(8 8 29 / 97%));
 }
 
 .workspace-tab {
   border-color: var(--color-border);
-  background: rgb(8 12 29 / 72%);
+  background: rgb(7 7 25 / 78%);
   color: var(--color-text-muted);
 }
 
 .workspace-tab:hover {
-  border-color: rgb(34 211 238 / 44%);
+  border-color: rgb(0 229 255 / 48%);
 }
 
 .workspace-tab.active {
-  border-color: rgb(34 211 238 / 55%);
-  background: linear-gradient(135deg, rgb(99 102 241 / 42%), rgb(34 211 238 / 18%));
+  border-color: rgb(0 229 255 / 58%);
+  background: linear-gradient(135deg, rgb(255 60 172 / 36%), rgb(0 229 255 / 18%));
   color: #fff;
+  box-shadow: inset 0 -2px 0 rgb(0 229 255 / 72%);
 }
 
 .workspace-tab.active .workspace-tab-icon {
-  background: rgb(34 211 238 / 18%);
+  background: rgb(0 229 255 / 18%);
   color: var(--color-secondary-bright);
 }
 
@@ -327,41 +328,18 @@ button.secondary {
   color: var(--color-text-subtle);
 }
 
-.collapsible-section {
-  border-color: var(--color-border);
-  background: rgb(10 14 32 / 82%);
-}
-
-.collapsible-heading strong {
-  color: var(--color-text);
-}
-
-.collapsible-heading span,
-.collapsible-chevron {
-  color: var(--color-text-subtle);
-}
-
-.collapsible-chevron {
-  border-color: var(--color-border);
-  background: rgb(139 92 246 / 8%);
-}
-
-.collapsible-content > * {
-  border-color: var(--color-border);
-  background: rgb(17 22 47 / 72%);
-}
-
 .game-session-card.active::before {
   width: 4px;
-  background: linear-gradient(to bottom, var(--color-secondary), var(--color-primary));
-  box-shadow: 0 0 18px rgb(34 211 238 / 42%);
+  background: linear-gradient(to bottom, var(--color-secondary), var(--color-primary), var(--color-accent));
+  box-shadow: 0 0 18px rgb(0 229 255 / 46%);
 }
 
 .coach-card {
-  border-color: rgb(139 92 246 / 48%);
+  border-color: rgb(255 60 172 / 48%);
   background:
-    radial-gradient(circle at top right, rgb(34 211 238 / 12%), transparent 46%),
-    linear-gradient(135deg, rgb(42 31 91 / 90%), rgb(15 20 45 / 96%));
+    radial-gradient(circle at top right, rgb(0 229 255 / 12%), transparent 46%),
+    radial-gradient(circle at bottom left, rgb(255 138 61 / 10%), transparent 42%),
+    linear-gradient(135deg, rgb(53 19 83 / 90%), rgb(10 9 34 / 97%));
   box-shadow: 0 18px 46px rgb(0 0 0 / 28%);
 }
 
@@ -378,26 +356,27 @@ button.secondary {
 }
 
 .coach-meta-row span {
-  border-color: rgb(34 211 238 / 18%);
-  background: rgb(34 211 238 / 8%);
-  color: #c8f7ff;
+  border-color: rgb(0 229 255 / 22%);
+  background: rgb(0 229 255 / 9%);
+  color: #c4f9ff;
 }
 
 .coach-tactics {
-  border-color: rgb(251 191 36 / 30%);
-  background: rgb(76 45 15 / 22%);
+  border-color: rgb(255 207 74 / 34%);
+  background: rgb(101 45 13 / 20%);
 }
 
 .ai-coach {
-  border-color: rgb(167 139 250 / 42%);
+  border-color: rgb(255 122 217 / 44%);
   background:
-    radial-gradient(circle at top right, rgb(34 211 238 / 10%), transparent 45%),
-    linear-gradient(135deg, rgb(64 45 123 / 38%), rgb(10 14 34 / 62%));
+    radial-gradient(circle at top right, rgb(0 229 255 / 10%), transparent 45%),
+    linear-gradient(135deg, rgb(255 60 172 / 15%), rgb(9 8 31 / 72%));
 }
 
 .game-result-button {
-  background: linear-gradient(135deg, var(--color-secondary), #3b82f6);
-  color: #06121d;
+  border-color: rgb(121 241 255 / 76%);
+  background: linear-gradient(135deg, var(--color-secondary), #7cdbff);
+  color: var(--color-ink);
 }
 
 :is(
@@ -441,7 +420,7 @@ button.secondary {
   .pgn-output
 ) {
   border-color: var(--color-border);
-  background: rgb(12 17 38 / 64%);
+  background: rgb(10 8 31 / 70%);
 }
 
 :is(.fen-input, .pgn-input, .data-backup-input) {
@@ -450,30 +429,328 @@ button.secondary {
   color: var(--color-text);
 }
 
+/* Shared expanded-panel styling. Component CSS owns layout; the theme owns color. */
+.mode-card {
+  border-color: rgb(255 60 172 / 32%);
+  background:
+    radial-gradient(circle at top right, rgb(0 229 255 / 7%), transparent 44%),
+    linear-gradient(145deg, rgb(22 12 52 / 90%), rgb(10 8 31 / 94%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
+}
+
+.mode-card .status-label {
+  color: #ffb8e8;
+}
+
+.bot-level-select {
+  min-height: 46px;
+  padding-right: 42px;
+  appearance: none;
+  border-color: rgb(0 229 255 / 42%);
+  background:
+    linear-gradient(45deg, transparent 50%, #79f1ff 50%) calc(100% - 17px) calc(50% - 2px) / 6px 6px no-repeat,
+    linear-gradient(135deg, #79f1ff 50%, transparent 50%) calc(100% - 13px) calc(50% - 2px) / 6px 6px no-repeat,
+    linear-gradient(135deg, rgb(21 12 50 / 96%), rgb(8 8 29 / 98%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 4%),
+    0 0 18px rgb(0 229 255 / 6%);
+}
+
+.bot-level-select:hover:not(:disabled) {
+  border-color: rgb(0 229 255 / 68%);
+}
+
+.bot-level-select option {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+:is(
+  .best-move-training,
+  .best-move-training-stats div,
+  .training-summary-grid div,
+  .training-summary-errors span,
+  .move-navigator-status,
+  .material-balance,
+  .material-captured-row,
+  .game-archive-stat-grid > div,
+  .game-archive-item,
+  .game-archive-empty,
+  .chess-achievements-grid article,
+  .opening-item,
+  .learning-journal-item
+) {
+  border-color: var(--color-border);
+  background: rgb(10 8 31 / 76%);
+}
+
+:is(
+  .best-move-training p,
+  .best-move-training-result span,
+  .best-move-training-explanation > span,
+  .best-move-training-explanation li,
+  .best-move-training-stats span,
+  .best-move-training-daily-header span,
+  .training-summary-grid span,
+  .training-summary-errors,
+  .training-summary-card p,
+  .move-navigator-status p,
+  .material-balance span,
+  .material-captured-row > span,
+  .material-empty,
+  .game-archive-stat-grid span,
+  .game-archive-stat-grid small,
+  .game-archive-heading,
+  .game-archive-main time,
+  .game-archive-item p,
+  .game-archive-empty p,
+  .chess-achievements-summary,
+  .chess-achievements-grid article p,
+  .opening-item p,
+  .learning-journal-empty,
+  .learning-journal-grid span
+) {
+  color: var(--color-text-muted);
+}
+
+:is(
+  .best-move-training-stats strong,
+  .best-move-training-daily-header strong,
+  .training-summary-grid strong,
+  .game-archive-stat-grid strong,
+  .chess-achievements-summary strong,
+  .chess-achievements-grid article strong,
+  .material-balance strong
+) {
+  color: var(--color-text);
+}
+
+.best-move-training.ready {
+  border-color: rgb(0 229 255 / 66%);
+  box-shadow: inset 3px 0 0 var(--color-secondary);
+}
+
+.best-move-training.success,
+.best-move-training-streak-note {
+  border-color: rgb(57 245 196 / 58%);
+  background: rgb(57 245 196 / 8%);
+}
+
+.best-move-training.fail {
+  border-color: rgb(255 138 61 / 68%);
+  background: rgb(255 138 61 / 8%);
+}
+
+.best-move-training-hints {
+  border-color: rgb(0 229 255 / 42%);
+  background: rgb(0 229 255 / 8%);
+}
+
+.best-move-training-hints p {
+  color: #c4f9ff;
+}
+
+.best-move-training-daily {
+  border-color: rgb(255 60 172 / 30%);
+  background: rgb(15 10 38 / 78%);
+}
+
+.best-move-training-daily-bar {
+  background: rgb(37 16 54 / 92%);
+  box-shadow: inset 0 0 0 1px rgb(255 60 172 / 14%);
+}
+
+.best-move-training-daily-bar > div {
+  background: linear-gradient(90deg, var(--color-secondary), var(--color-primary), var(--color-accent));
+  box-shadow: 0 0 12px rgb(255 60 172 / 36%);
+}
+
+:is(
+  .best-move-training-reset-stats,
+  .learning-journal-clear,
+  .game-archive-heading button
+) {
+  border-color: var(--color-border);
+  background: rgb(14 10 37 / 88%);
+  box-shadow: none;
+  color: var(--color-text-muted);
+}
+
+:is(
+  .best-move-training-reset-stats,
+  .learning-journal-clear,
+  .game-archive-heading button
+):hover:not(:disabled) {
+  border-color: rgb(0 229 255 / 54%);
+  color: var(--color-text);
+}
+
+:is(
+  .pgn-actions button,
+  .pgn-import-button,
+  .fen-actions button,
+  .fen-import-button
+) {
+  border: 1px solid rgb(255 122 217 / 70%);
+  background: linear-gradient(135deg, #ff3cac, #d946ef);
+  box-shadow: 0 8px 22px rgb(255 60 172 / 20%);
+  color: var(--color-ink);
+}
+
+.opening-focus {
+  border-color: rgb(0 229 255 / 44%);
+  background: rgb(0 229 255 / 8%);
+}
+
+.opening-focus p {
+  color: #d7faff;
+}
+
+.opening-marker {
+  background: rgb(255 60 172 / 10%);
+  color: var(--color-text);
+}
+
+.opening-item.good {
+  border-color: rgb(57 245 196 / 46%);
+}
+
+.opening-item.good .opening-marker {
+  background: rgb(57 245 196 / 17%);
+  color: #80ffd8;
+}
+
+.opening-item.warning {
+  border-color: rgb(255 207 74 / 54%);
+}
+
+.opening-item.warning .opening-marker {
+  background: rgb(255 207 74 / 16%);
+  color: #ffe18a;
+}
+
+.opening-item.neutral {
+  border-color: rgb(0 229 255 / 42%);
+}
+
+.opening-item.neutral .opening-marker {
+  background: rgb(0 229 255 / 14%);
+  color: var(--color-secondary-bright);
+}
+
+.chess-achievements-grid article > span {
+  background: rgb(255 60 172 / 10%);
+  color: var(--color-text-subtle);
+}
+
+.chess-achievements-grid article.unlocked {
+  border-color: rgb(255 207 74 / 48%);
+  background: linear-gradient(135deg, rgb(255 207 74 / 8%), rgb(255 60 172 / 8%));
+}
+
+.chess-achievements-grid article.unlocked > span {
+  background: linear-gradient(135deg, var(--color-warm), var(--color-primary));
+  color: var(--color-ink);
+}
+
+.game-archive-stats {
+  border-color: rgb(255 60 172 / 34%);
+  background: linear-gradient(135deg, rgb(255 60 172 / 10%), rgb(0 229 255 / 7%));
+}
+
+.game-archive-outcome {
+  background: rgb(255 60 172 / 12%);
+  color: var(--color-text-muted);
+}
+
+.game-archive-outcome.win {
+  background: rgb(57 245 196 / 13%);
+  color: #9affdf;
+}
+
+.game-archive-outcome.loss {
+  background: rgb(255 71 120 / 14%);
+  color: #ffadc3;
+}
+
+.game-archive-outcome.draw {
+  background: rgb(255 207 74 / 13%);
+  color: #ffe59b;
+}
+
+.setting-switch span {
+  border-color: rgb(255 60 172 / 34%);
+  background: rgb(8 7 27 / 94%);
+}
+
+.setting-switch span::after {
+  background: var(--color-text-muted);
+}
+
+.setting-switch input:checked + span {
+  border-color: rgb(0 229 255 / 72%);
+  background: var(--color-secondary);
+  box-shadow: 0 0 15px rgb(0 229 255 / 20%);
+}
+
+.setting-switch input:checked + span::after {
+  background: var(--color-ink);
+}
+
+.subscription-toggle {
+  border-color: var(--color-border);
+  background: rgb(8 7 27 / 92%);
+}
+
+.subscription-option {
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-muted);
+}
+
+.subscription-option.active {
+  border-color: rgb(0 229 255 / 70%);
+  background: var(--color-secondary);
+  color: var(--color-ink);
+}
+
+.consent-option {
+  border-color: var(--color-border);
+  background: rgb(14 10 37 / 86%);
+  box-shadow: none;
+  color: var(--color-text-muted);
+}
+
+.consent-option.active {
+  border-color: rgb(255 122 217 / 72%);
+  background: var(--color-primary);
+  color: var(--color-ink);
+}
+
 .ad-slot {
-  border-color: rgb(139 92 246 / 44%);
-  background: linear-gradient(135deg, rgb(139 92 246 / 11%), rgb(12 17 38 / 88%));
+  border-color: rgb(255 60 172 / 42%);
+  background: linear-gradient(135deg, rgb(255 60 172 / 10%), rgb(9 8 31 / 90%));
 }
 
 .ad-slot-label {
-  border-color: rgb(34 211 238 / 32%);
+  border-color: rgb(0 229 255 / 34%);
   color: var(--color-secondary-bright);
 }
 
 .bot-fair-play-notice {
-  border-color: rgb(34 211 238 / 32%);
-  background: rgb(34 211 238 / 8%);
+  border-color: rgb(0 229 255 / 34%);
+  background: rgb(0 229 255 / 8%);
 }
 
 .premium-notice {
-  border-color: rgb(251 191 36 / 34%);
-  background: linear-gradient(135deg, rgb(251 191 36 / 10%), rgb(139 92 246 / 10%));
+  border-color: rgb(255 207 74 / 38%);
+  background: linear-gradient(135deg, rgb(255 207 74 / 10%), rgb(255 60 172 / 10%));
 }
 
 .consent-banner,
 .pwa-update-notice {
-  border-color: rgb(139 92 246 / 48%);
-  background: rgb(12 17 38 / 94%);
+  border-color: rgb(255 60 172 / 48%);
+  background: rgb(10 8 31 / 96%);
   box-shadow: var(--shadow-card);
 }
 
@@ -500,21 +777,37 @@ button.secondary {
   }
 }
 
-@keyframes brand-mark-shine {
+@keyframes active-game-pulse {
   0%,
-  58% {
-    transform: translateX(0) rotate(20deg);
-    opacity: 0;
-  }
-
-  68% {
-    opacity: 1;
-  }
-
-  84%,
   100% {
-    transform: translateX(420%) rotate(20deg);
-    opacity: 0;
+    box-shadow:
+      0 0 0 4px rgb(0 229 255 / 16%),
+      0 0 15px rgb(0 229 255 / 58%);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 8px rgb(0 229 255 / 0%),
+      0 0 22px rgb(0 229 255 / 70%);
+  }
+}
+
+@keyframes start-cta-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgb(255 60 172 / 14%),
+      0 16px 38px rgb(255 60 172 / 34%),
+      0 0 24px rgb(255 138 61 / 22%),
+      inset 0 2px 0 rgb(255 255 255 / 42%);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 5px rgb(0 229 255 / 12%),
+      0 18px 42px rgb(255 60 172 / 44%),
+      0 0 34px rgb(255 138 61 / 32%),
+      inset 0 2px 0 rgb(255 255 255 / 48%);
   }
 }
 
@@ -531,23 +824,18 @@ button.secondary {
     font-size: 28px;
   }
 
-  .brand-heading {
-    gap: 11px;
-  }
-
-  .brand-mark {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    font-size: 28px;
+  .header::after {
+    bottom: -9px;
+    left: 56px;
+    width: min(220px, calc(100% - 56px));
   }
 
   .workspace-tabs-card {
-    border-color: rgb(139 92 246 / 44%);
-    background: rgb(10 13 31 / 92%);
+    border-color: rgb(255 60 172 / 44%);
+    background: rgb(9 7 29 / 94%);
     box-shadow:
       0 18px 44px rgb(0 0 0 / 50%),
-      0 0 28px rgb(99 102 241 / 14%);
+      0 0 28px rgb(255 60 172 / 13%);
   }
 }
 

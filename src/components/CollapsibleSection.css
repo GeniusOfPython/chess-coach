@@ -1,8 +1,19 @@
 .collapsible-section {
   overflow: hidden;
-  border: 1px solid #374039;
-  border-radius: 14px;
-  background: rgba(18, 23, 19, 0.96);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: rgb(9 7 29 / 92%);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 20%);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.collapsible-section[open] {
+  border-color: rgb(255 60 172 / 54%);
+  box-shadow:
+    0 18px 42px rgb(0 0 0 / 30%),
+    0 0 24px rgb(255 60 172 / 10%);
 }
 
 .collapsible-summary {
@@ -10,10 +21,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 15px;
+  background: linear-gradient(110deg, rgb(255 60 172 / 8%), transparent 42%, rgb(0 229 255 / 5%));
   cursor: pointer;
   list-style: none;
   user-select: none;
+  transition: background 180ms ease;
+}
+
+.collapsible-summary:hover {
+  background: linear-gradient(110deg, rgb(255 60 172 / 14%), transparent 48%, rgb(0 229 255 / 9%));
 }
 
 .collapsible-summary::-webkit-details-marker {
@@ -22,16 +39,16 @@
 
 .collapsible-heading {
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 
 .collapsible-heading strong {
-  color: #eef4ef;
+  color: var(--color-text);
   font-size: 14px;
 }
 
 .collapsible-heading span {
-  color: #8f9a93;
+  color: var(--color-text-subtle);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -39,28 +56,41 @@
 .collapsible-chevron {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid #3c463f;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid rgb(255 60 172 / 44%);
   border-radius: 999px;
-  color: #c8d0cb;
+  background: rgb(255 60 172 / 9%);
+  box-shadow: 0 0 14px rgb(255 60 172 / 8%);
+  color: var(--color-secondary-bright);
   font-size: 17px;
   line-height: 1;
-  transition: transform 0.2s ease;
+  transition:
+    transform 200ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
 .collapsible-section[open] .collapsible-chevron {
   transform: rotate(180deg);
+  border-color: rgb(121 241 255 / 74%);
+  background: var(--color-secondary);
+  color: var(--color-ink);
 }
 
 .collapsible-content {
   display: grid;
-  gap: 10px;
-  padding: 0 10px 10px;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid rgb(0 229 255 / 14%);
+  background:
+    radial-gradient(circle at top right, rgb(0 229 255 / 7%), transparent 42%),
+    linear-gradient(180deg, rgb(15 9 39 / 72%), rgb(7 7 25 / 84%));
 }
 
-.collapsible-content > * {
-  background: #171c19;
-  border: 1px solid #2b332f;
-  border-radius: 12px;
+.collapsible-content > :not(button) {
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  background: rgb(15 10 38 / 82%);
 }
