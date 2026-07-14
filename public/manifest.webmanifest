@@ -3,13 +3,13 @@
   "short_name": "Chess Coach",
   "id": "/",
   "lang": "ru",
-  "description": "Локальный шахматный тренер с анализом Stockfish.",
+  "description": "Персональный шахматный тренер для практики, обучения и разбора партий.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#080a18",
-  "theme_color": "#0b1023",
+  "background_color": "#050617",
+  "theme_color": "#090821",
   "icons": [
     {
       "src": "/favicon.svg",

@@ -41,7 +41,7 @@ export default function DataBackupPanel() {
       restoreAppBackup(await file.text());
       setImportStatus({
         kind: "success",
-        message: "Копия восстановлена. Перезапускаем приложение…",
+        message: "Копия восстановлена. Обновляем данные…",
       });
       window.setTimeout(() => window.location.reload(), 700);
     } catch (error) {
@@ -62,7 +62,7 @@ export default function DataBackupPanel() {
         <strong>Резервная копия</strong>
         <p>
           Сохраняет текущую партию, настройки и учебный прогресс в один
-          локальный JSON-файл.
+          резервный файл.
         </p>
 
         {importStatus && (

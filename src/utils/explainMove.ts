@@ -89,7 +89,7 @@ export function explainEngineMove(
     });
 
     if (!move) {
-      return ["Stockfish предложил ход, который не удалось применить к позиции."];
+      return ["Рекомендованный ход не удалось применить к позиции."];
     }
 
     const isCastle =
@@ -177,18 +177,18 @@ export function explainEngineMove(
 
     if (isEarlyQueenMove && explanations.length <= 1) {
       explanations.push(
-        "Ферзь выходит рано, но Stockfish считает это тактически оправданным в данной позиции.",
+        "Ферзь выходит рано, но в этой позиции ход тактически оправдан.",
       );
     }
 
     if (explanations.length === 0) {
       explanations.push(
-        "Ход улучшает позицию по расчёту Stockfish и ведёт к наиболее сильному продолжению.",
+        "Ход улучшает позицию и ведёт к наиболее сильному продолжению.",
       );
     }
 
     return explanations.slice(0, 5);
   } catch {
-    return ["Не удалось разобрать вариант Stockfish."];
+    return ["Не удалось разобрать рекомендованный вариант."];
   }
 }

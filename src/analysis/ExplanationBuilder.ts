@@ -4,7 +4,7 @@ export function buildMoveExplanations(
   analysis: MoveAnalysis,
 ): string[] {
   if (!analysis.isLegal) {
-    return ["Не удалось корректно разобрать ход Stockfish."];
+    return ["Не удалось корректно разобрать рекомендованный ход."];
   }
 
   const explanations: string[] = [];
@@ -68,13 +68,13 @@ export function buildMoveExplanations(
     explanations.length <= 1
   ) {
     explanations.push(
-      "Ферзь выходит рано, но в этой позиции Stockfish считает это тактически оправданным.",
+      "Ферзь выходит рано, но в этой позиции ход тактически оправдан.",
     );
   }
 
   if (explanations.length === 0) {
     explanations.push(
-      "Ход улучшает позицию по расчёту Stockfish и ведёт к наиболее сильному продолжению.",
+      "Ход улучшает позицию и ведёт к наиболее сильному продолжению.",
     );
   }
 

@@ -103,7 +103,7 @@ export default function GameReviewPanel({
           <span className="status-label">Обзор партии</span>
           <p>
             Быстрый разбор партии: находит ключевые ошибки и
-            показывает, где Stockfish предпочитал другой ход.
+            показывает ключевые ошибки и более сильные продолжения.
           </p>
         </div>
 

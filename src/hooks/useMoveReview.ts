@@ -205,7 +205,7 @@ export function useMoveReview({
         showRewardToast({
           kind: "success",
           title: "Сильный ход",
-          text: "Stockfish подтвердил: сыгран лучший вариант.",
+          text: "Расчёт подтверждает: сыгран лучший вариант.",
         });
         return;
       }

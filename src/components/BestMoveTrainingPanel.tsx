@@ -69,7 +69,7 @@ function getTargetHint(move: string | null) {
 
 function getStatusText(task: BestMoveTrainingTask) {
   if (task.status === "preparing") {
-    return "Stockfish готовит задачу…";
+    return "Готовим задачу…";
   }
 
   if (task.status === "ready") {
@@ -77,11 +77,11 @@ function getStatusText(task: BestMoveTrainingTask) {
   }
 
   if (task.status === "success") {
-    return "Верно. Это лучший ход по расчёту Stockfish.";
+    return "Верно. Ты нашёл сильнейшее продолжение.";
   }
 
   if (task.status === "fail") {
-    return "Ход не совпал с лучшей рекомендацией Stockfish.";
+    return "Есть более сильное продолжение.";
   }
 
   return "Запусти тренировку, чтобы попробовать самому найти лучший ход без подсказки.";
@@ -207,8 +207,8 @@ export default function BestMoveTrainingPanel({
         {task.status === "ready" && (
           <>
             <p>
-              Сделай ход на доске. После хода приложение
-              скажет, совпал ли он с лучшим ходом Stockfish.
+              Сделай ход на доске. После хода появится оценка решения и
+              сравнение с лучшим продолжением.
             </p>
 
             {visibleHints.length > 0 && (

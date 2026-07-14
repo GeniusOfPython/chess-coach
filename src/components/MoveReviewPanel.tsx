@@ -15,7 +15,7 @@ export type MoveReview = {
 export type { MoveReviewVerdict };
 
 const presentation: Record<MoveReviewVerdict, { label: string; title: string; tone: string }> = {
-  best: { label: "Лучший ход", title: "Ты сыграл первую линию Stockfish", tone: "good" },
+  best: { label: "Лучший ход", title: "Ты нашёл сильнейшее продолжение", tone: "good" },
   good: { label: "Хороший ход", title: "Решение сохраняет качество позиции", tone: "good" },
   inaccuracy: { label: "Неточность", title: "Был вариант немного сильнее", tone: "warning" },
   mistake: { label: "Ошибка", title: "Ход заметно ухудшил позицию", tone: "bad" },
@@ -36,11 +36,11 @@ export default function MoveReviewPanel({ review, canShowExplanations = true }: 
   canShowExplanations?: boolean;
 }) {
   if (!review) {
-    return <div className="move-review-card"><span className="status-label">Разбор последнего хода</span><div className="move-review neutral"><strong>Пока нет хода для разбора</strong><p>Сделай ход на доске — Stockfish автоматически оценит решение.</p></div></div>;
+    return <div className="move-review-card"><span className="status-label">Разбор последнего хода</span><div className="move-review neutral"><strong>Пока нет хода для разбора</strong><p>Сделай ход на доске — оценка решения появится автоматически.</p></div></div>;
   }
 
   if (review.bestMove === null) {
-    return <div className="move-review-card"><span className="status-label">Разбор последнего хода</span><div className="move-review neutral"><strong>{review.isEvaluating ? "Stockfish оценивает ход…" : `Сыграно: ${formatMove(review.playedMove)}`}</strong><p>{review.isEvaluating ? "Результат появится автоматически." : "Не удалось получить оценку движка."}</p></div></div>;
+    return <div className="move-review-card"><span className="status-label">Разбор последнего хода</span><div className="move-review neutral"><strong>{review.isEvaluating ? "Оцениваем ход…" : `Сыграно: ${formatMove(review.playedMove)}`}</strong><p>{review.isEvaluating ? "Результат появится автоматически." : "Не удалось получить оценку."}</p></div></div>;
   }
 
   const view = presentation[review.verdict];
@@ -62,7 +62,7 @@ export default function MoveReviewPanel({ review, canShowExplanations = true }: 
           {showAlternative && <><span>Лучший ход</span><b>{formatMove(review.bestMove)}</b></>}
           {review.evaluationLoss !== null && <><span>Потеря оценки</span><b>{review.evaluationLoss.toFixed(2)}</b></>}
         </div>
-        {review.isEvaluating && <p>Stockfish оценивает последствия хода…</p>}
+        {review.isEvaluating && <p>Оцениваем последствия хода…</p>}
         {canShowExplanations && explanations.length > 0 && (
           <div className="move-review-explanation"><span>Почему другой ход был сильнее</span><ul>{explanations.map((item) => <li key={item}>{item}</li>)}</ul></div>
         )}

@@ -46,7 +46,12 @@ h1 {
 }
 
 .board-panel,
-.side-panel > div {
+.status-card,
+.history-card,
+.hint-card,
+.analysis-card,
+.evaluation-card,
+.move-review-card {
   border: 1px solid #303733;
   background: #1c211e;
 }
@@ -214,7 +219,7 @@ h1 {
 button {
   min-height: 46px;
   border: 1px solid #839376;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: #839376;
   color: #101410;
   font-weight: 700;

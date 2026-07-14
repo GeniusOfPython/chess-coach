@@ -11,7 +11,7 @@ async function precacheApplication() {
   });
 
   if (!cachedIndex) {
-    throw new Error("Офлайн-оболочка приложения не собрана");
+    throw new Error("Офлайн-режим пока недоступен");
   }
 
   await cache.put("/", cachedIndex.clone());

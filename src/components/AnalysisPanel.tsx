@@ -193,7 +193,7 @@ export default function AnalysisPanel({
           ) : (
             <PremiumFeatureNotice
               featureKey="moveExplanations"
-              description="Пояснения к ходам будут доступны в премиум-версии. Технически ограничение уже вынесено в featureAccess."
+              description="Подробные объяснения и персональные рекомендации доступны в Premium."
             />
           )}
         </div>

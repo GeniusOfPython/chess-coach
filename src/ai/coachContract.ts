@@ -65,7 +65,7 @@ export function createAiCoachRequest({
   const game = new Chess(fen);
 
   if (!movePattern.test(analysis.bestMove)) {
-    throw new Error("Stockfish вернул некорректный лучший ход");
+    throw new Error("Не удалось проверить рекомендованный ход");
   }
 
   const fullMoveNumber = Number(game.fen().split(" ")[5]);

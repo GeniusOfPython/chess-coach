@@ -85,7 +85,7 @@ export function useBotTurn({
           }
 
           if (!bestMove) {
-            setError("Stockfish не смог рассчитать ход.");
+            setError("Соперник не смог рассчитать ход.");
             return;
           }
 
@@ -97,7 +97,7 @@ export function useBotTurn({
           console.error("Ошибка автоматического хода бота:", error);
 
           if (!cancelled) {
-            setError("Stockfish временно недоступен.");
+            setError("Соперник временно недоступен.");
           }
         })
         .finally(() => {

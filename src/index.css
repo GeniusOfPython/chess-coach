@@ -3,31 +3,39 @@
   font-family:
     Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #f7f8ff;
-  background: #080a18;
+  color: #fff8ff;
+  background: #050617;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --color-bg: #080a18;
-  --color-bg-elevated: #0e1328;
-  --color-surface: rgb(18 23 46 / 88%);
-  --color-surface-strong: #161c38;
-  --color-surface-soft: rgb(29 36 68 / 72%);
-  --color-border: rgb(133 151 255 / 23%);
-  --color-border-strong: rgb(139 92 246 / 58%);
-  --color-text: #f7f8ff;
-  --color-text-muted: #b8c2df;
-  --color-text-subtle: #8995ba;
-  --color-primary: #8b5cf6;
-  --color-primary-bright: #a78bfa;
-  --color-secondary: #22d3ee;
-  --color-secondary-bright: #67e8f9;
-  --color-accent: #fb7185;
-  --color-warm: #fbbf24;
-  --color-success: #2dd4bf;
-  --color-danger: #fb7185;
-  --shadow-card: 0 20px 55px rgb(0 0 0 / 30%);
-  --shadow-glow: 0 0 40px rgb(139 92 246 / 16%);
+  --color-bg: #050617;
+  --color-bg-elevated: #0b0c26;
+  --color-surface: rgb(16 12 41 / 91%);
+  --color-surface-strong: #171039;
+  --color-surface-soft: rgb(30 20 64 / 74%);
+  --color-border: rgb(255 78 205 / 25%);
+  --color-border-strong: rgb(255 60 172 / 62%);
+  --color-text: #fff8ff;
+  --color-text-muted: #d7c7e8;
+  --color-text-subtle: #a89abf;
+  --color-primary: #ff3cac;
+  --color-primary-bright: #ff7ad9;
+  --color-secondary: #00e5ff;
+  --color-secondary-bright: #79f1ff;
+  --color-accent: #ff8a3d;
+  --color-warm: #ffcf4a;
+  --color-success: #39f5c4;
+  --color-danger: #ff4778;
+  --color-ink: #12031b;
+  --shadow-card: 0 20px 55px rgb(0 0 0 / 42%);
+  --shadow-glow: 0 0 42px rgb(255 60 172 / 13%);
+  --radius-panel: 18px;
+  --radius-card: 14px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --motion-fast: 160ms;
+  --motion-medium: 280ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 html {
@@ -43,30 +51,41 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 8% 3%, rgb(124 58 237 / 30%), transparent 34rem),
-    radial-gradient(circle at 92% 12%, rgb(6 182 212 / 22%), transparent 30rem),
-    radial-gradient(circle at 48% 95%, rgb(244 63 94 / 15%), transparent 34rem),
-    linear-gradient(155deg, #080a18 0%, #0b1023 48%, #090b19 100%);
+    radial-gradient(circle at 7% 2%, rgb(255 60 172 / 25%), transparent 34rem),
+    radial-gradient(circle at 94% 10%, rgb(0 229 255 / 18%), transparent 31rem),
+    radial-gradient(circle at 48% 105%, rgb(255 138 61 / 15%), transparent 38rem),
+    linear-gradient(155deg, #050617 0%, #0a0824 48%, #070719 100%);
 }
 
 body::before {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgb(255 255 255 / 2.5%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 2.5%) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(to bottom, black, transparent 78%);
+    linear-gradient(to bottom, rgb(255 255 255 / 2.2%) 1px, transparent 1px),
+    linear-gradient(rgb(255 60 172 / 3.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 229 255 / 3.5%) 1px, transparent 1px);
+  background-size:
+    100% 4px,
+    64px 64px,
+    64px 64px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
   content: "";
 }
 
 ::selection {
-  background: rgb(139 92 246 / 48%);
+  background: rgb(255 60 172 / 55%);
   color: #fff;
 }
 
+* {
+  scrollbar-color: rgb(255 60 172 / 58%) rgb(8 7 27 / 70%);
+  scrollbar-width: thin;
+}
+
 #root {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
 }

@@ -42,7 +42,7 @@ export default function SystemStatusLayer() {
           <span className="connectivity-notice__indicator" aria-hidden="true" />
           <span className="connectivity-notice__content">
             <strong>Офлайн-режим</strong>
-            <span>Партия и локальный Stockfish доступны.</span>
+            <span>Партия и базовый анализ доступны.</span>
           </span>
         </aside>
       )}

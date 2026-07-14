@@ -71,7 +71,31 @@ h1 {
 }
 
 .board-panel,
-.side-panel > div {
+.status-card,
+.history-card,
+.hint-card,
+.analysis-card,
+.evaluation-card,
+.move-review-card,
+.game-result-card,
+.game-review-card,
+.move-navigator-card,
+.best-move-training-card,
+.learning-journal-card,
+.training-summary-card,
+.opening-card,
+.app-settings-card,
+.game-archive,
+.chess-achievements,
+.material-card,
+.pgn-card,
+.fen-card,
+.workspace-tabs-card,
+.coach-card,
+.ai-coach,
+.collapsible-section,
+.ad-slot,
+.premium-notice {
   border: 1px solid transparent;
   background:
     linear-gradient(145deg, rgb(20 13 50 / 95%), rgb(8 8 29 / 97%)) padding-box,
@@ -87,7 +111,7 @@ h1 {
     0 26px 70px rgb(0 0 0 / 40%),
     0 0 56px rgb(255 60 172 / 14%),
     0 0 38px rgb(0 229 255 / 10%);
-  animation: surface-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: surface-enter var(--motion-medium) var(--ease-out) both;
 }
 
 .board-panel::before {
@@ -107,7 +131,16 @@ h1 {
 }
 
 .side-panel > * {
-  animation: surface-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) 70ms both;
+  animation: surface-enter var(--motion-medium) var(--ease-out) 70ms both;
+}
+
+.side-panel > .controls,
+.side-panel > .resign-controls {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .status-card strong,
@@ -147,10 +180,10 @@ button {
     inset 0 1px 0 rgb(255 255 255 / 28%);
   color: var(--color-ink);
   transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease,
-    filter 150ms ease,
-    transform 150ms ease;
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    filter var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
 }
 
 button:hover:not(:disabled) {
@@ -320,7 +353,11 @@ button.secondary {
 }
 
 .workspace-tab.active .workspace-tab-icon {
-  background: rgb(0 229 255 / 18%);
+  border-color: rgb(121 241 255 / 74%);
+  background: linear-gradient(145deg, rgb(255 60 172 / 24%), rgb(0 229 255 / 22%));
+  box-shadow:
+    0 0 0 2px rgb(255 60 172 / 9%),
+    0 0 18px rgb(0 229 255 / 20%);
   color: var(--color-secondary-bright);
 }
 
@@ -400,6 +437,49 @@ button.secondary {
   border-color: var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
+  border-radius: var(--radius-panel);
+}
+
+:is(
+  .status-card,
+  .history-card,
+  .hint-card,
+  .workspace-tabs-card,
+  .coach-card,
+  .ai-coach,
+  .collapsible-section,
+  .ad-slot,
+  .premium-notice,
+  .mode-card
+) {
+  border-radius: var(--radius-panel);
+}
+
+:is(
+  .setting-row,
+  .subscription-row,
+  .consent-row,
+  .game-review-item,
+  .learning-journal-item,
+  .opening-item,
+  .game-archive-item,
+  .game-archive-stats,
+  .chess-achievements-summary,
+  .chess-achievements-grid,
+  .best-move-training-stats,
+  .best-move-training-daily,
+  .training-summary-grid,
+  .fen-output,
+  .pgn-output,
+  .engine-line,
+  .move-review,
+  .game-result,
+  .move-feedback-card,
+  .coach-plan-block,
+  .coach-main-move,
+  .coach-tactic
+) {
+  border-radius: var(--radius-card);
 }
 
 :is(
@@ -752,6 +832,79 @@ button.secondary {
   border-color: rgb(255 60 172 / 48%);
   background: rgb(10 8 31 / 96%);
   box-shadow: var(--shadow-card);
+}
+
+.consent-kicker {
+  border-color: rgb(255 207 74 / 48%);
+  color: #ffe59b;
+}
+
+.consent-banner strong {
+  color: var(--color-text);
+}
+
+.consent-banner p {
+  color: var(--color-text-muted);
+}
+
+.consent-actions button {
+  border-color: var(--color-border);
+  border-radius: var(--radius-pill);
+  background: rgb(14 10 37 / 88%);
+  box-shadow: none;
+  color: var(--color-text-muted);
+}
+
+.consent-actions .consent-primary {
+  border-color: rgb(121 241 255 / 72%);
+  background: linear-gradient(135deg, var(--color-secondary), #7cdbff);
+  box-shadow: 0 8px 22px rgb(0 229 255 / 20%);
+  color: var(--color-ink);
+}
+
+.consent-actions .consent-muted {
+  color: var(--color-text-subtle);
+}
+
+.game-session-recovery {
+  border-color: rgb(255 207 74 / 42%);
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, rgb(255 207 74 / 9%), rgb(255 60 172 / 7%));
+  color: #ffe59b;
+}
+
+.ad-slot-disabled {
+  border-color: rgb(168 154 191 / 26%);
+  background: rgb(10 8 31 / 78%);
+}
+
+.error-boundary-page {
+  background:
+    radial-gradient(circle at 12% 8%, rgb(255 60 172 / 22%), transparent 34rem),
+    radial-gradient(circle at 88% 10%, rgb(0 229 255 / 16%), transparent 30rem),
+    var(--color-bg);
+  color: var(--color-text);
+}
+
+.error-boundary-card {
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background:
+    linear-gradient(145deg, rgb(20 13 50 / 96%), rgb(8 8 29 / 98%)) padding-box,
+    linear-gradient(135deg, rgb(255 60 172 / 66%), rgb(255 138 61 / 28%), rgb(0 229 255 / 42%)) border-box;
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+}
+
+.error-boundary-label,
+.error-boundary-card p {
+  color: var(--color-text-muted);
+}
+
+.error-boundary-message {
+  border-color: var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-elevated);
+  color: #ffe59b;
 }
 
 @keyframes surface-enter {

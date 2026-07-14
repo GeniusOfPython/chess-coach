@@ -23,12 +23,12 @@ export default class ErrorBoundary extends Component<Props, State> {
       errorMessage:
         error instanceof Error
           ? error.message
-          : "Неизвестная ошибка приложения",
+          : "Что-то пошло не так",
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Ошибка приложения:", error);
+    console.error("Критическая ошибка:", error);
     console.error("React stack:", errorInfo.componentStack);
   }
 
@@ -53,12 +53,12 @@ export default class ErrorBoundary extends Component<Props, State> {
             Шахматный помощник
           </span>
 
-          <h1>Приложение столкнулось с ошибкой</h1>
+          <h1>Не удалось продолжить работу</h1>
 
           <p>
             Скорее всего, сломалось состояние партии, импорт PGN/FEN или
             промежуточные сохранённые данные. Можно перезагрузить страницу
-            или сбросить локальные данные приложения.
+            или очистить сохранённые данные.
           </p>
 
           {this.state.errorMessage && (
@@ -77,7 +77,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               className="secondary"
               onClick={this.handleResetLocalData}
             >
-              Сбросить локальные данные
+              Очистить сохранённые данные
             </button>
           </div>
         </section>

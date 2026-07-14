@@ -1,28 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
-    <linearGradient id="bg" x1="18" y1="12" x2="110" y2="118" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8B5CF6"/>
-      <stop offset="0.52" stop-color="#4F46E5"/>
-      <stop offset="1" stop-color="#06B6D4"/>
+    <linearGradient id="frame" x1="8" y1="6" x2="120" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF3CAC"/>
+      <stop offset="0.48" stop-color="#D946EF"/>
+      <stop offset="1" stop-color="#00E5FF"/>
     </linearGradient>
-    <linearGradient id="piece" x1="44" y1="24" x2="85" y2="105" gradientUnits="userSpaceOnUse">
+    <linearGradient id="sun" x1="64" y1="15" x2="64" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFCF4A"/>
+      <stop offset="0.55" stop-color="#FF8A3D"/>
+      <stop offset="1" stop-color="#FF3CAC"/>
+    </linearGradient>
+    <linearGradient id="piece" x1="42" y1="31" x2="86" y2="112" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFFFFF"/>
-      <stop offset="0.6" stop-color="#E0E7FF"/>
-      <stop offset="1" stop-color="#A5F3FC"/>
+      <stop offset="0.62" stop-color="#FFD6F2"/>
+      <stop offset="1" stop-color="#79F1FF"/>
     </linearGradient>
-    <filter id="shadow" x="20" y="12" width="88" height="108" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#16123F" flood-opacity="0.42"/>
-    </filter>
+    <clipPath id="sun-clip">
+      <circle cx="64" cy="48" r="34"/>
+    </clipPath>
   </defs>
-  <rect width="128" height="128" rx="30" fill="#080A18"/>
-  <rect x="5" y="5" width="118" height="118" rx="26" fill="url(#bg)"/>
-  <circle cx="103" cy="26" r="28" fill="#67E8F9" fill-opacity="0.20"/>
-  <circle cx="22" cy="105" r="32" fill="#FB7185" fill-opacity="0.18"/>
-  <g filter="url(#shadow)" fill="url(#piece)">
-    <path d="M35 106h58v-8c0-8-6-14-14-14H49c-8 0-14 6-14 14v8Z"/>
-    <path d="M48 81h32c-5-12-5-23 5-35 4-5 5-11 3-16-3-9-12-15-23-15-10 0-19 7-21 16-1 5 1 11 5 15 9 11 8 23-1 35Z"/>
-    <circle cx="65" cy="28" r="12"/>
+  <rect width="128" height="128" rx="30" fill="#050617"/>
+  <rect x="5" y="5" width="118" height="118" rx="26" fill="url(#frame)"/>
+  <rect x="9" y="9" width="110" height="110" rx="22" fill="#090821"/>
+  <g clip-path="url(#sun-clip)">
+    <circle cx="64" cy="48" r="34" fill="url(#sun)"/>
+    <path d="M26 44h76M26 53h76M26 63h76M26 74h76" stroke="#090821" stroke-width="4"/>
   </g>
-  <path d="M43 59h43" stroke="#312E81" stroke-width="7" stroke-linecap="round"/>
-  <path d="M34 108h60" stroke="#FDE68A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M17 91h94M27 81h74M39 71h50" stroke="#00E5FF" stroke-opacity="0.32" stroke-width="1.5"/>
+  <path d="M64 72 19 112M64 72l45 40M64 72 43 112M64 72l21 40" stroke="#FF3CAC" stroke-opacity="0.28" stroke-width="1.5"/>
+  <g fill="url(#piece)" stroke="#090821" stroke-width="3" stroke-linejoin="round" paint-order="stroke fill">
+    <path d="M34 109h60v-8c0-8-6-14-14-14H48c-8 0-14 6-14 14v8Z"/>
+    <path d="M47 84h34c-6-12-6-23 5-36 4-5 5-11 3-17-3-9-13-15-25-15-11 0-20 7-23 16-1 6 1 12 5 17 10 11 9 23 1 35Z"/>
+    <circle cx="64" cy="29" r="12"/>
+  </g>
+  <path d="M42 61h44" stroke="#4B155F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M32 111h64" stroke="#FFCF4A" stroke-width="4" stroke-linecap="round"/>
 </svg>

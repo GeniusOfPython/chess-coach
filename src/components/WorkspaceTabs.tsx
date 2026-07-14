@@ -1,4 +1,5 @@
 import { toggleWorkspace } from "../game/workspaceNavigation";
+import WorkspaceIcon, { type WorkspaceIconName } from "./WorkspaceIcon";
 
 export type WorkspaceId = "coach" | "game" | "tools";
 
@@ -6,7 +7,7 @@ type WorkspaceTab = {
   id: WorkspaceId;
   title: string;
   shortTitle: string;
-  icon: string;
+  icon: WorkspaceIconName;
   description: string;
 };
 
@@ -15,21 +16,21 @@ const tabs: WorkspaceTab[] = [
     id: "coach",
     title: "Учёба",
     shortTitle: "Учёба",
-    icon: "♟",
+    icon: "study",
     description: "План, лучший ход и тренировка.",
   },
   {
     id: "game",
     title: "Партия",
     shortTitle: "Партия",
-    icon: "◷",
+    icon: "game",
     description: "Итог, материал, оценка и разбор хода.",
   },
   {
     id: "tools",
     title: "Ещё",
     shortTitle: "Ещё",
-    icon: "☰",
+    icon: "more",
     description: "История, PGN/FEN, настройки и журнал.",
   },
 ];
@@ -88,7 +89,7 @@ export default function WorkspaceTabs({
             onClick={() => handleTabChange(tab.id)}
           >
             <span className="workspace-tab-icon" aria-hidden="true">
-              {tab.icon}
+              <WorkspaceIcon name={tab.icon} />
             </span>
             <span className="workspace-tab-title">{tab.title}</span>
             <span className="workspace-tab-short">{tab.shortTitle}</span>

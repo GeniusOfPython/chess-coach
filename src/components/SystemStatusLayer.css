@@ -21,13 +21,13 @@
   width: fit-content;
   max-width: 100%;
   padding: 11px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 13px;
-  background: rgba(22, 27, 25, 0.96);
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28);
-  color: #f6f8f5;
-  backdrop-filter: blur(16px);
-  animation: system-status-notice-in 200ms ease-out;
+  border: 1px solid rgb(255 60 172 / 42%);
+  border-radius: var(--radius-card);
+  background: rgb(10 8 31 / 96%);
+  box-shadow: var(--shadow-card), 0 0 24px rgb(255 60 172 / 10%);
+  color: var(--color-text);
+  backdrop-filter: blur(18px);
+  animation: system-status-notice-in var(--motion-medium) var(--ease-out);
 }
 
 .connectivity-notice__indicator {
@@ -35,13 +35,13 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #d8ae5e;
-  box-shadow: 0 0 0 4px rgba(216, 174, 94, 0.14);
+  background: var(--color-warm);
+  box-shadow: 0 0 0 4px rgb(255 207 74 / 14%), 0 0 14px rgb(255 207 74 / 40%);
 }
 
 .connectivity-notice--restored .connectivity-notice__indicator {
-  background: #79c994;
-  box-shadow: 0 0 0 4px rgba(121, 201, 148, 0.14);
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px rgb(57 245 196 / 14%), 0 0 14px rgb(57 245 196 / 40%);
 }
 
 .connectivity-notice__content {
@@ -56,7 +56,7 @@
 }
 
 .connectivity-notice__content > span {
-  color: rgba(246, 248, 245, 0.66);
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   line-height: 1.35;
 }

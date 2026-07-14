@@ -14,8 +14,8 @@ type Props = {
 };
 
 const placementText: Record<AdPlacement, string> = {
-  sidePanel: "Баннер в правой панели",
-  analysis: "Рекламная вставка в учебном разделе",
+  sidePanel: "Спонсорский материал",
+  analysis: "Рекомендация партнёра",
 };
 
 export default function AdSlot({
@@ -35,13 +35,11 @@ export default function AdSlot({
       >
         <div>
           <span className="ad-slot-label">
-            Реклама отключена
+            Реклама скрыта
           </span>
           <strong>{placementText[placement]}</strong>
           <p>
-            В бесплатной версии здесь будет рекламный блок, но
-            сейчас показ рекламы заблокирован до выбора согласия в
-            приложении.
+            Настройки конфиденциальности можно изменить в разделе «Ещё».
           </p>
         </div>
       </div>
@@ -56,8 +54,7 @@ export default function AdSlot({
         <span className="ad-slot-label">Реклама</span>
         <strong>{placementText[placement]}</strong>
         <p>
-          Здесь будет подключаться рекламный SDK в бесплатной
-          мобильной версии. Тип запроса: {" "}
+          Показ учитывает выбранные настройки конфиденциальности: {" "}
           {isPersonalized
             ? "персонализированная реклама"
             : "неперсонализированная реклама"}

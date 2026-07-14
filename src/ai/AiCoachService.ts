@@ -119,7 +119,7 @@ export class AiCoachService {
 
         throw new AiCoachError(
           publicError === "provider_configuration_error"
-            ? "Сервер ИИ требует настройки"
+            ? "ИИ-тренер пока недоступен"
             : "ИИ-тренер временно недоступен",
           publicError === "provider_configuration_error"
             ? "configuration"

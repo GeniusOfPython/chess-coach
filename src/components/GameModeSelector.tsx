@@ -48,7 +48,7 @@ export default function GameModeSelector({
       <p className="mode-description">
         {mode === "analysis"
           ? "Можно вручную двигать и белые, и чёрные фигуры."
-          : "Игрок ходит белыми, Stockfish отвечает чёрными."}
+          : "Игрок ходит белыми, соперник отвечает чёрными."}
       </p>
     </div>
   );

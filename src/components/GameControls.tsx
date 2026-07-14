@@ -93,7 +93,7 @@ export default function GameControls({
           disabled={isAnalyzing || isGameOver}
         >
           {isAnalyzing
-            ? "Stockfish анализирует…"
+            ? "Идёт расчёт…"
             : "Показать лучший ход"}
         </button>
       )}

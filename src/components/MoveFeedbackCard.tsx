@@ -16,7 +16,7 @@ export default function MoveFeedbackCard({
     <div className="move-feedback-card evaluating" aria-live="polite">
       <div>
         <span className="move-feedback-label">
-          Stockfish оценивает ход…
+          Оцениваем ход…
         </span>
         <strong>{formatMove(review.playedMove)}</strong>
       </div>

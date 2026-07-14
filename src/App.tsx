@@ -592,7 +592,7 @@ function App() {
           showRewardToast({
             kind: "success",
             title: "Лучший ход найден",
-            text: "Отлично: ты увидел идею Stockfish сам.",
+            text: "Отлично: ты самостоятельно нашёл сильнейшее продолжение.",
           });
         } else {
           showRewardToast({
@@ -616,7 +616,7 @@ function App() {
         showRewardToast({
           kind: "success",
           title: "Сильный ход",
-          text: "Ты сыграл вариант, который рекомендовал движок.",
+          text: "Ты сыграл рекомендованный вариант.",
         });
       }
 
@@ -679,7 +679,7 @@ function App() {
         <h1>Шахматный помощник</h1>
 
         <p className="subtitle">
-          Игра против Stockfish и анализ позиции
+          Партии, обучение и разбор решений
         </p>
       </header>
 
@@ -1002,7 +1002,7 @@ function App() {
                 ) : (
                   <PremiumFeatureNotice
                     featureKey="pgnTools"
-                    description="PGN-инструменты временно отключены через featureAccess."
+                    description="Импорт и экспорт партий доступны в Premium."
                   />
                 )}
 
@@ -1014,7 +1014,7 @@ function App() {
                 ) : (
                   <PremiumFeatureNotice
                     featureKey="fenTools"
-                    description="FEN-инструменты временно отключены через featureAccess."
+                    description="Загрузка и сохранение позиций доступны в Premium."
                   />
                 )}
               </CollapsibleSection>

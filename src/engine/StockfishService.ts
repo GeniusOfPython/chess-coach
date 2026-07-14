@@ -11,7 +11,7 @@ type AnalyzeOptions = {
 
 export class StockfishAnalysisCancelledError extends Error {
   constructor() {
-    super("Анализ Stockfish остановлен");
+    super("Анализ остановлен");
     this.name = "StockfishAnalysisCancelledError";
   }
 }
@@ -55,7 +55,7 @@ export class StockfishService {
     };
 
     this.worker.onerror = () => {
-      this.finishWithError(new Error("Не удалось запустить Stockfish"));
+      this.finishWithError(new Error("Не удалось запустить анализ"));
     };
 
     this.send("uci");
@@ -122,7 +122,7 @@ export class StockfishService {
   private waitForEngine(promise: Promise<void>) {
     return new Promise<void>((resolve, reject) => {
       const timer = window.setTimeout(() => {
-        reject(new Error("Stockfish не готов к работе"));
+        reject(new Error("Анализ пока не готов"));
       }, 5000);
 
       promise.then(() => {
@@ -191,7 +191,7 @@ export class StockfishService {
 
     if (!bestMove || bestMove === "(none)") {
       this.finishWithError(
-        new Error("Stockfish не вернул допустимый ход"),
+        new Error("Не удалось получить допустимый ход"),
       );
       return;
     }
@@ -259,7 +259,7 @@ export class StockfishService {
 
         this.analysisTimer = window.setTimeout(() => {
           this.interruptAnalysis(
-            new Error("Stockfish не ответил вовремя"),
+            new Error("Расчёт занял слишком много времени"),
           );
         }, timeoutMs);
 

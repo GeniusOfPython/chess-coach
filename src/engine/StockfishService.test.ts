@@ -108,7 +108,7 @@ describe("StockfishService", () => {
 
     await flushPromises();
     const rejection = expect(resultPromise).rejects.toThrow(
-      "Stockfish не ответил вовремя",
+      "Расчёт занял слишком много времени",
     );
     await vi.advanceTimersByTimeAsync(50);
 
