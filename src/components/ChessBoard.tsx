@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { Chessboard } from "react-chessboard";
+import { ANALYSIS_LINE_COLORS } from "../theme/analysisPalette";
 
 export type LastMoveSquares = {
   from: string;
@@ -43,11 +44,11 @@ function createLastMoveStyles(
   return {
     [lastMove.from]: {
       background:
-        "radial-gradient(circle, rgba(251, 191, 36, 0.80) 0%, rgba(251, 113, 133, 0.34) 56%, transparent 80%)",
+        "radial-gradient(circle, rgba(255, 207, 74, 0.88) 0%, rgba(255, 138, 61, 0.40) 56%, transparent 80%)",
     },
     [lastMove.to]: {
       background:
-        "radial-gradient(circle, rgba(251, 191, 36, 0.90) 0%, rgba(251, 113, 133, 0.42) 56%, transparent 80%)",
+        "radial-gradient(circle, rgba(255, 207, 74, 0.96) 0%, rgba(255, 60, 172, 0.40) 56%, transparent 80%)",
     },
   };
 }
@@ -64,14 +65,14 @@ function createSelectionStyles({
   if (selectedSquare) {
     styles[selectedSquare] = {
       background:
-        "radial-gradient(circle, rgba(34, 211, 238, 0.88) 0%, rgba(99, 102, 241, 0.44) 58%, transparent 82%)",
+        "radial-gradient(circle, rgba(0, 229, 255, 0.92) 0%, rgba(255, 60, 172, 0.38) 58%, transparent 82%)",
     };
   }
 
   legalMoveSquares.forEach((square) => {
     styles[square] = {
       background:
-        "radial-gradient(circle, rgba(34, 211, 238, 0.88) 0%, rgba(34, 211, 238, 0.40) 23%, transparent 28%)",
+        "radial-gradient(circle, rgba(0, 229, 255, 0.94) 0%, rgba(0, 229, 255, 0.42) 23%, transparent 28%)",
     };
   });
 
@@ -88,7 +89,7 @@ function createCheckStyles(
   return {
     [checkSquare]: {
       background:
-        "radial-gradient(circle, rgba(251, 113, 133, 0.96) 0%, rgba(225, 29, 72, 0.52) 58%, transparent 82%)",
+        "radial-gradient(circle, rgba(255, 71, 120, 0.98) 0%, rgba(157, 23, 77, 0.58) 58%, transparent 82%)",
     },
   };
 }
@@ -131,23 +132,17 @@ export default function ChessBoard({
       array.indexOf(move) === index,
   );
 
-  const arrowColors = [
-    "rgba(34, 211, 238, 0.94)",
-    "rgba(139, 92, 246, 0.88)",
-    "rgba(251, 113, 133, 0.84)",
-  ];
-
   const arrows = showAnalysisArrows
     ? [
-    ...(bestMove
-      ? [createArrow(bestMove, arrowColors[0])]
-      : []),
-    ...uniqueCandidates
-      .slice(0, 2)
-      .map((move, index) =>
-        createArrow(move, arrowColors[index + 1]),
-      ),
-  ]
+        ...(bestMove
+          ? [createArrow(bestMove, ANALYSIS_LINE_COLORS[0])]
+          : []),
+        ...uniqueCandidates
+          .slice(0, 2)
+          .map((move, index) =>
+            createArrow(move, ANALYSIS_LINE_COLORS[index + 1]),
+          ),
+      ]
     : [];
 
   const squareStyles = mergeSquareStyles(
@@ -173,13 +168,13 @@ export default function ChessBoard({
         boardStyle: {
           borderRadius: "14px",
           boxShadow:
-            "0 20px 54px rgba(0, 0, 0, 0.42), 0 0 28px rgba(99, 102, 241, 0.18)",
+            "0 20px 54px rgba(0, 0, 0, 0.48), 0 0 30px rgba(255, 60, 172, 0.18), 0 0 20px rgba(0, 229, 255, 0.12)",
         },
         darkSquareStyle: {
-          backgroundColor: "#5960a8",
+          backgroundColor: "#a855c7",
         },
         lightSquareStyle: {
-          backgroundColor: "#dfe3ff",
+          backgroundColor: "#f6c7e8",
         },
       }}
     />

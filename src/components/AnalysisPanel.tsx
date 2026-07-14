@@ -3,6 +3,7 @@ import type {
   EngineAnalysis,
   EngineLine,
 } from "../types/chess";
+import { ANALYSIS_LINE_COLORS } from "../theme/analysisPalette";
 import { explainEngineMove } from "../utils/explainMove";
 import PremiumFeatureNotice from "./PremiumFeatureNotice";
 
@@ -14,12 +15,6 @@ type Props = {
   error: string;
   canShowExplanations?: boolean;
 };
-
-const lineColors = [
-  "rgb(60, 200, 90)",
-  "rgb(70, 140, 255)",
-  "rgb(255, 170, 40)",
-];
 
 function formatMove(move: string) {
   if (!move || move === "(none)") {
@@ -156,7 +151,9 @@ export default function AnalysisPanel({
                   <strong>
                     <span
                       style={{
-                        color: lineColors[index] ?? lineColors[0],
+                        color:
+                          ANALYSIS_LINE_COLORS[index] ??
+                          ANALYSIS_LINE_COLORS[0],
                         fontSize: "18px",
                         lineHeight: 1,
                         marginRight: "8px",
