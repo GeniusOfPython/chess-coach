@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
+import { aiCoachDevelopmentPlugin } from "./server/viteAiCoachPlugin";
 
 const serviceWorkerVersionPlaceholder = "__BUILD_VERSION__";
 const serviceWorkerManifestPlaceholder = "/* __PRECACHE_MANIFEST__ */";
@@ -79,6 +80,17 @@ function automaticServiceWorkerVersion(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), automaticServiceWorkerVersion()],
+export default defineConfig(({ mode }) => {
+  const environment = loadEnv(mode, process.cwd(), "");
+
+  return {
+    plugins: [
+      react(),
+      aiCoachDevelopmentPlugin({
+        apiKey: environment.OPENAI_API_KEY,
+        model: environment.OPENAI_MODEL,
+      }),
+      automaticServiceWorkerVersion(),
+    ],
+  };
 });
