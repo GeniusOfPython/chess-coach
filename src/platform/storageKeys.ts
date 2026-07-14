@@ -12,7 +12,7 @@ export const settingsStorageKeys = {
   trainingTotalSuccesses: "chess-coach.training-total-successes",
   trainingDailyDate: "chess-coach.training-daily-date",
   trainingDailySuccesses: "chess-coach.training-daily-successes",
-  aiCoachDailyUsage: "chess-coach.ai-coach-daily-usage",
+  aiCoachUsage: "chess-coach.ai-coach-usage",
 } as const;
 
 export const gameSessionStorageKeys = {

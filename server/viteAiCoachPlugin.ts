@@ -2,22 +2,34 @@ import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "node:
 import type { Plugin } from "vite";
 import {
   createAiCoachEndpoint,
+  createCachedCoachProvider,
   createMemoryRateLimiter,
   createOpenAiCoachProvider,
 } from "./aiCoachServer";
+import {
+  combineCoachQuotaConsumers,
+  createMemoryCoachBudget,
+} from "./coachBudget";
+import {
+  createMemoryCoachCostController,
+  type CoachCostSettings,
+} from "./coachCostController";
 
 const maximumDevelopmentBodyBytes = 20_000;
 
 type AiCoachDevelopmentConfig = {
+  enabled?: boolean;
   apiKey?: string;
   model?: string;
+  costSettings?: CoachCostSettings;
 };
 
 export function isAiCoachDevelopmentConfigured({
+  enabled,
   apiKey,
   model,
 }: AiCoachDevelopmentConfig) {
-  return Boolean(apiKey?.trim() && model?.trim());
+  return Boolean(enabled && apiKey?.trim() && model?.trim());
 }
 
 function toWebHeaders(source: IncomingHttpHeaders) {
@@ -72,13 +84,42 @@ async function sendWebResponse(
 }
 
 export function aiCoachDevelopmentPlugin({
+  enabled,
   apiKey,
   model,
+  costSettings,
 }: AiCoachDevelopmentConfig): Plugin {
   return {
     name: "chess-coach-ai-development-endpoint",
     apply: "serve",
     configureServer(server) {
+      const configured = isAiCoachDevelopmentConfigured({
+        enabled,
+        apiKey,
+        model,
+      });
+      const endpoint = configured
+        ? createAiCoachEndpoint({
+            provider: createCachedCoachProvider(
+              createOpenAiCoachProvider({
+                apiKey: apiKey as string,
+                model: model as string,
+                costController: costSettings
+                  ? createMemoryCoachCostController(costSettings)
+                  : undefined,
+              }),
+            ),
+            consumeQuota: combineCoachQuotaConsumers(
+              createMemoryRateLimiter({ limit: 5, windowMs: 60_000 }),
+              createMemoryCoachBudget({
+                resolveTier: () => "premium",
+                premiumMonthlyLimit: 300,
+                globalDailyLimit: 500,
+              }),
+            ),
+          })
+        : null;
+
       server.middlewares.use(async (request, response, next) => {
         const url = new URL(
           request.url ?? "/",
@@ -90,7 +131,7 @@ export function aiCoachDevelopmentPlugin({
           return;
         }
 
-        if (!isAiCoachDevelopmentConfigured({ apiKey, model })) {
+        if (!endpoint) {
           await sendWebResponse(
             response,
             Response.json(
@@ -110,17 +151,6 @@ export function aiCoachDevelopmentPlugin({
             headers: toWebHeaders(request.headers),
             body,
           });
-          const endpoint = createAiCoachEndpoint({
-            provider: createOpenAiCoachProvider({
-              apiKey: apiKey as string,
-              model: model as string,
-            }),
-            consumeQuota: createMemoryRateLimiter({
-              limit: 5,
-              windowMs: 60_000,
-            }),
-          });
-
           await sendWebResponse(
             response,
             await endpoint(webRequest, resolveClientKey(request)),

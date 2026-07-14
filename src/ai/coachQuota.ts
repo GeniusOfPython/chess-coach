@@ -3,64 +3,66 @@ import {
   writeJsonStorageValue,
 } from "../platform/appStorage";
 import { settingsStorageKeys } from "../platform/storageKeys";
+import type { AiCoachQuota } from "../features/featureAccess";
 
-type DailyUsage = {
-  date: string;
+export type AiCoachUsage = {
+  periodKey: string;
   count: number;
 };
 
-function todayKey(now: Date) {
-  return [
+function currentPeriodKey(period: AiCoachQuota["period"], now: Date) {
+  const day = [
     now.getFullYear(),
     String(now.getMonth() + 1).padStart(2, "0"),
     String(now.getDate()).padStart(2, "0"),
   ].join("-");
+
+  return period === "day" ? day : day.slice(0, 7);
 }
 
 export function normalizeAiCoachUsage(
   value: unknown,
+  quota: AiCoachQuota,
   now = new Date(),
-): DailyUsage {
-  const today = todayKey(now);
+): AiCoachUsage {
+  const periodKey = currentPeriodKey(quota.period, now);
 
   if (
     typeof value !== "object" ||
     value === null ||
-    !("date" in value) ||
+    !("periodKey" in value) ||
     !("count" in value) ||
-    value.date !== today ||
+    value.periodKey !== periodKey ||
     typeof value.count !== "number" ||
     !Number.isInteger(value.count) ||
     value.count < 0
   ) {
-    return { date: today, count: 0 };
+    return { periodKey, count: 0 };
   }
 
-  return { date: today, count: value.count };
+  return { periodKey, count: value.count };
 }
 
-export function readAiCoachUsage(now = new Date()) {
+export function readAiCoachUsage(quota: AiCoachQuota, now = new Date()) {
   const stored = readJsonStorageValue<unknown>({
-    key: settingsStorageKeys.aiCoachDailyUsage,
+    key: settingsStorageKeys.aiCoachUsage,
     fallback: null,
   });
 
-  return normalizeAiCoachUsage(stored, now);
+  return normalizeAiCoachUsage(stored, quota, now);
 }
 
-export function recordAiCoachUsage(now = new Date()) {
-  const current = readAiCoachUsage(now);
+export function recordAiCoachUsage(quota: AiCoachQuota, now = new Date()) {
+  const current = readAiCoachUsage(quota, now);
   const next = { ...current, count: current.count + 1 };
 
-  writeJsonStorageValue(settingsStorageKeys.aiCoachDailyUsage, next);
+  writeJsonStorageValue(settingsStorageKeys.aiCoachUsage, next);
   return next;
 }
 
 export function getRemainingAiCoachAdvice(
-  usage: DailyUsage,
-  dailyLimit: number | null,
+  usage: AiCoachUsage,
+  quota: AiCoachQuota,
 ) {
-  return dailyLimit === null
-    ? null
-    : Math.max(0, dailyLimit - usage.count);
+  return Math.max(0, quota.limit - usage.count);
 }

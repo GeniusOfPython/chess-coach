@@ -1,6 +1,12 @@
 export type SubscriptionTier = "free" | "premium";
 
 export const freeAiCoachDailyLimit = 3;
+export const premiumAiCoachMonthlyLimit = 300;
+
+export type AiCoachQuota = {
+  period: "day" | "month";
+  limit: number;
+};
 
 export type PremiumFeatureKey =
   | "moveReview"
@@ -16,7 +22,7 @@ export type FeatureAccess = {
   canUseMoveExplanations: boolean;
   canUsePgnTools: boolean;
   canUseFenTools: boolean;
-  aiCoachDailyLimit: number | null;
+  aiCoachQuota: AiCoachQuota;
 };
 
 export function getFeatureAccess(
@@ -31,7 +37,9 @@ export function getFeatureAccess(
     canUseMoveExplanations: isPremium,
     canUsePgnTools: true,
     canUseFenTools: true,
-    aiCoachDailyLimit: isPremium ? null : freeAiCoachDailyLimit,
+    aiCoachQuota: isPremium
+      ? { period: "month", limit: premiumAiCoachMonthlyLimit }
+      : { period: "day", limit: freeAiCoachDailyLimit },
   };
 }
 
@@ -59,7 +67,7 @@ export function getPremiumFeatureTitle(
   }
 
   if (featureKey === "aiCoach") {
-    return "ИИ-тренер без лимита";
+    return "Расширенная квота ИИ-тренера";
   }
 
   if (featureKey === "fenTools") {

@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AiCoachRequest, AiCoachResponse } from "../src/ai/coachContract";
 import {
+  createCachedCoachProvider,
   createAiCoachEndpoint,
   createMemoryRateLimiter,
   createOpenAiCoachProvider,
 } from "./aiCoachServer";
+import { createMemoryCoachCostController } from "./coachCostController";
 
 const coachRequest = {
   schemaVersion: 1,
@@ -90,6 +92,10 @@ describe("OpenAI Coach provider", () => {
     const fetcher: typeof fetch = vi.fn(async (_input, init) => {
       capturedInit = init;
       return Response.json({
+        usage: {
+          input_tokens: 1_200,
+          output_tokens: 180,
+        },
         output: [{
           type: "message",
           content: [{
@@ -108,10 +114,12 @@ describe("OpenAI Coach provider", () => {
     await expect(provider(coachRequest)).resolves.toEqual(coachResponse);
 
     const body = JSON.parse(String(capturedInit?.body)) as {
+      max_output_tokens: number;
       store: boolean;
       text: { format: { strict: boolean; type: string } };
     };
     expect(body.store).toBe(false);
+    expect(body.max_output_tokens).toBe(450);
     expect(body.text.format).toMatchObject({
       type: "json_schema",
       strict: true,
@@ -119,5 +127,65 @@ describe("OpenAI Coach provider", () => {
     expect(capturedInit?.headers).toMatchObject({
       Authorization: "Bearer server-secret",
     });
+  });
+
+  it("учитывает фактические токены и прекращает вызовы после дневного бюджета", async () => {
+    const fetcher: typeof fetch = vi.fn(async () => Response.json({
+      usage: {
+        input_tokens: 8_000,
+        output_tokens: 400,
+      },
+      output: [{
+        type: "message",
+        content: [{
+          type: "output_text",
+          text: JSON.stringify(coachResponse),
+        }],
+      }],
+    }));
+    const costController = createMemoryCoachCostController({
+      dailyBudgetUsd: 0.01,
+      inputUsdPerMillion: 1,
+      outputUsdPerMillion: 5,
+      reservedInputTokens: 1_000,
+      reservedOutputTokens: 100,
+    });
+    const provider = createOpenAiCoachProvider({
+      apiKey: "server-secret",
+      model: "test-model",
+      fetcher,
+      costController,
+    });
+
+    await expect(provider(coachRequest)).resolves.toEqual(coachResponse);
+    await expect(provider(coachRequest)).rejects.toMatchObject({
+      publicCode: "coach_budget_exhausted",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(costController.getSnapshot()).toMatchObject({
+      inputTokens: 8_000,
+      outputTokens: 400,
+      spentUsd: 0.01,
+    });
+  });
+
+  it("кеширует одинаковую позицию и объединяет параллельные запросы", async () => {
+    let resolveProvider: ((value: AiCoachResponse) => void) | undefined;
+    const provider = vi.fn(() => new Promise<AiCoachResponse>((resolve) => {
+      resolveProvider = resolve;
+    }));
+    const cachedProvider = createCachedCoachProvider(provider);
+
+    const first = cachedProvider(coachRequest);
+    const second = cachedProvider(coachRequest);
+    expect(provider).toHaveBeenCalledTimes(1);
+
+    resolveProvider?.(coachResponse);
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      coachResponse,
+      coachResponse,
+    ]);
+    await expect(cachedProvider(coachRequest)).resolves.toEqual(coachResponse);
+    expect(provider).toHaveBeenCalledTimes(1);
   });
 });

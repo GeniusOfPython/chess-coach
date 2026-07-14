@@ -5,8 +5,13 @@ import {
   type AiCoachRequest,
   type AiCoachResponse,
 } from "../src/ai/coachContract";
+import type {
+  CoachCostController,
+  CoachTokenUsage,
+} from "./coachCostController";
 
 const maximumRequestBytes = 16_384;
+const maximumOutputTokens = 450;
 const movePattern = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
 
 const adviceSchema = {
@@ -46,11 +51,15 @@ const adviceSchema = {
   required: ["schemaVersion", "advice"],
 } as const;
 
-type CoachProvider = (request: AiCoachRequest) => Promise<AiCoachResponse>;
+export type CoachProvider = (request: AiCoachRequest) => Promise<AiCoachResponse>;
+
+export type QuotaReason = "burst" | "daily" | "monthly" | "global";
 
 export type QuotaDecision = {
   allowed: boolean;
   retryAfterSeconds?: number;
+  reason?: QuotaReason;
+  remaining?: number;
 };
 
 export type ConsumeCoachQuota = (
@@ -67,11 +76,18 @@ type OpenAiProviderOptions = {
   model: string;
   timeoutMs?: number;
   fetcher?: typeof fetch;
+  costController?: CoachCostController;
 };
 
 type RateLimitOptions = {
   limit?: number;
   windowMs?: number;
+};
+
+type CacheOptions = {
+  ttlMs?: number;
+  maximumEntries?: number;
+  now?: () => number;
 };
 
 class CoachServerError extends Error {
@@ -232,7 +248,10 @@ export function createAiCoachEndpoint({
         const retryAfter = Math.max(1, Math.ceil(quota.retryAfterSeconds ?? 60));
 
         return jsonResponse(
-          { error: "rate_limited" },
+          {
+            error: "rate_limited",
+            reason: quota.reason ?? "burst",
+          },
           429,
           { "Retry-After": String(retryAfter) },
         );
@@ -274,19 +293,54 @@ function extractOutputText(value: unknown) {
   return null;
 }
 
+function extractTokenUsage(value: unknown): CoachTokenUsage | undefined {
+  if (!isRecord(value) || !isRecord(value.usage)) {
+    return undefined;
+  }
+
+  const inputTokens = value.usage.input_tokens;
+  const outputTokens = value.usage.output_tokens;
+
+  if (
+    typeof inputTokens !== "number" ||
+    !Number.isFinite(inputTokens) ||
+    inputTokens < 0 ||
+    typeof outputTokens !== "number" ||
+    !Number.isFinite(outputTokens) ||
+    outputTokens < 0
+  ) {
+    return undefined;
+  }
+
+  return { inputTokens, outputTokens };
+}
+
 export function createOpenAiCoachProvider({
   apiKey,
   model,
   timeoutMs = 12_000,
   fetcher = fetch,
+  costController,
 }: OpenAiProviderOptions): CoachProvider {
   if (!apiKey || !model) {
     throw new Error("OPENAI_API_KEY and OPENAI_MODEL are required");
   }
 
   return async (request) => {
+    const reservationId = costController?.tryStart();
+
+    if (costController && !reservationId) {
+      throw new CoachServerError(
+        "AI Coach daily cost budget exhausted",
+        503,
+        "coach_budget_exhausted",
+      );
+    }
+
     const controller = new AbortController();
     const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+    let providerResponded = false;
+    let costSettled = false;
 
     try {
       const response = await fetcher("https://api.openai.com/v1/responses", {
@@ -298,6 +352,7 @@ export function createOpenAiCoachProvider({
         body: JSON.stringify({
           model,
           store: false,
+          max_output_tokens: maximumOutputTokens,
           instructions: [
             "Ты русскоязычный шахматный тренер.",
             "Stockfish уже выбрал лучший ход: не предлагай вместо него другой.",
@@ -316,8 +371,14 @@ export function createOpenAiCoachProvider({
         }),
         signal: controller.signal,
       });
+      providerResponded = true;
 
       if (!response.ok) {
+        if (reservationId) {
+          costController?.complete(reservationId);
+          costSettled = true;
+        }
+
         throw new CoachServerError(
           "OpenAI request failed",
           response.status === 429 ? 429 : 503,
@@ -325,7 +386,17 @@ export function createOpenAiCoachProvider({
         );
       }
 
-      const outputText = extractOutputText(await response.json());
+      const responseBody = await response.json() as unknown;
+
+      if (reservationId) {
+        costController?.complete(
+          reservationId,
+          extractTokenUsage(responseBody),
+        );
+        costSettled = true;
+      }
+
+      const outputText = extractOutputText(responseBody);
 
       if (!outputText) {
         throw new CoachServerError("Empty OpenAI response", 503, "coach_unavailable");
@@ -343,6 +414,14 @@ export function createOpenAiCoachProvider({
 
       throw new CoachServerError("Invalid OpenAI response", 503, "coach_unavailable");
     } finally {
+      if (reservationId && !costSettled) {
+        if (providerResponded) {
+          costController?.complete(reservationId);
+        } else {
+          costController?.cancel(reservationId);
+        }
+      }
+
       globalThis.clearTimeout(timer);
     }
   };
@@ -364,6 +443,7 @@ export function createMemoryRateLimiter({
     if (bucket.count >= limit) {
       return {
         allowed: false,
+        reason: "burst",
         retryAfterSeconds: Math.ceil((bucket.resetsAt - now) / 1_000),
       };
     }
@@ -371,5 +451,61 @@ export function createMemoryRateLimiter({
     bucket.count += 1;
     buckets.set(clientKey, bucket);
     return { allowed: true };
+  };
+}
+
+export function createCachedCoachProvider(
+  provider: CoachProvider,
+  {
+    ttlMs = 60 * 60 * 1_000,
+    maximumEntries = 250,
+    now = Date.now,
+  }: CacheOptions = {},
+): CoachProvider {
+  const responses = new Map<
+    string,
+    { expiresAt: number; response: AiCoachResponse }
+  >();
+  const pending = new Map<string, Promise<AiCoachResponse>>();
+
+  return async (request) => {
+    const cacheKey = JSON.stringify(request);
+    const currentTime = now();
+    const cached = responses.get(cacheKey);
+
+    if (cached && cached.expiresAt > currentTime) {
+      return cached.response;
+    }
+
+    responses.delete(cacheKey);
+    const existingRequest = pending.get(cacheKey);
+
+    if (existingRequest) {
+      return existingRequest;
+    }
+
+    const providerRequest = provider(request)
+      .then((response) => {
+        responses.set(cacheKey, {
+          response,
+          expiresAt: now() + ttlMs,
+        });
+
+        while (responses.size > maximumEntries) {
+          const oldestKey = responses.keys().next().value;
+
+          if (typeof oldestKey !== "string") {
+            break;
+          }
+
+          responses.delete(oldestKey);
+        }
+
+        return response;
+      })
+      .finally(() => pending.delete(cacheKey));
+
+    pending.set(cacheKey, providerRequest);
+    return providerRequest;
   };
 }

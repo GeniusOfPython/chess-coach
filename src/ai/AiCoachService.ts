@@ -8,6 +8,7 @@ export type AiCoachErrorCode =
   | "cancelled"
   | "timeout"
   | "rate_limited"
+  | "quota_exhausted"
   | "unavailable"
   | "invalid_response";
 
@@ -71,9 +72,23 @@ export class AiCoachService {
       });
 
       if (response.status === 429) {
+        let quotaReason: unknown;
+
+        try {
+          const body = await response.json() as { reason?: unknown };
+          quotaReason = body.reason;
+        } catch {
+          quotaReason = null;
+        }
+
+        const quotaExhausted =
+          quotaReason === "daily" || quotaReason === "monthly";
+
         throw new AiCoachError(
-          "Лимит ИИ-подсказок временно исчерпан",
-          "rate_limited",
+          quotaExhausted
+            ? "Квота ИИ-подсказок исчерпана"
+            : "Лимит ИИ-подсказок временно исчерпан",
+          quotaExhausted ? "quota_exhausted" : "rate_limited",
         );
       }
 

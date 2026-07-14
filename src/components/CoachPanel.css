@@ -226,6 +226,7 @@
 
 .ai-coach-heading > div {
   display: grid;
+  min-width: 0;
   gap: 5px;
 }
 
@@ -236,13 +237,17 @@
 }
 
 .ai-coach-plan {
-  flex: none;
+  flex: 0 1 auto;
+  max-width: 100%;
   padding: 5px 9px;
   border: 1px solid rgba(177, 159, 255, 0.3);
   border-radius: 999px;
   color: #d8cfff;
   font-size: 11px;
   font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .ai-coach-message,

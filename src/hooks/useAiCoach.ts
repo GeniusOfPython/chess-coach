@@ -6,7 +6,9 @@ import {
   readAiCoachUsage,
   recordAiCoachUsage,
 } from "../ai/coachQuota";
-import type { SubscriptionTier } from "../features/featureAccess";
+import type {
+  AiCoachQuota,
+} from "../features/featureAccess";
 import type { EngineAnalysis } from "../types/chess";
 
 export type AiCoachStatus =
@@ -16,13 +18,12 @@ export type AiCoachStatus =
   | "limited"
   | "error";
 
-export type AiCoachLimitReason = "daily" | "temporary";
+export type AiCoachLimitReason = "quota" | "temporary";
 
 type Options = {
   position: string;
   analysis: EngineAnalysis | null;
-  subscriptionTier: SubscriptionTier;
-  dailyLimit: number | null;
+  quota: AiCoachQuota;
   isOnline: boolean;
   enabled: boolean;
 };
@@ -50,8 +51,7 @@ function errorMessage(error: unknown) {
 export function useAiCoach({
   position,
   analysis,
-  subscriptionTier,
-  dailyLimit,
+  quota,
   isOnline,
   enabled,
 }: Options) {
@@ -61,8 +61,10 @@ export function useAiCoach({
   const [advice, setAdvice] = useState<AiCoachAdvice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [limitReason, setLimitReason] = useState<AiCoachLimitReason | null>(null);
-  const [usage, setUsage] = useState(readAiCoachUsage);
-  const remaining = getRemainingAiCoachAdvice(usage, dailyLimit);
+  const [usage, setUsage] = useState(() => readAiCoachUsage(quota));
+  const remaining = getRemainingAiCoachAdvice(usage, quota);
+  const quotaLimit = quota.limit;
+  const quotaPeriod = quota.period;
 
   useEffect(() => {
     activeRequestRef.current?.abort();
@@ -75,13 +77,20 @@ export function useAiCoach({
 
   useEffect(() => () => activeRequestRef.current?.abort(), []);
 
+  useEffect(() => {
+    setUsage(readAiCoachUsage({
+      limit: quotaLimit,
+      period: quotaPeriod,
+    }));
+  }, [quotaLimit, quotaPeriod]);
+
   async function requestAdvice() {
     if (!enabled || !isOnline || !analysis || status === "loading") {
       return;
     }
 
-    if (remaining !== null && remaining <= 0) {
-      setLimitReason("daily");
+    if (remaining <= 0) {
+      setLimitReason("quota");
       setStatus("limited");
       return;
     }
@@ -104,9 +113,7 @@ export function useAiCoach({
         return;
       }
 
-      if (subscriptionTier === "free") {
-        setUsage(recordAiCoachUsage());
-      }
+      setUsage(recordAiCoachUsage(quota));
 
       setAdvice(result);
       setStatus("success");
@@ -117,9 +124,12 @@ export function useAiCoach({
 
       if (
         requestError instanceof AiCoachError &&
-        requestError.code === "rate_limited"
+        (requestError.code === "rate_limited" ||
+          requestError.code === "quota_exhausted")
       ) {
-        setLimitReason("temporary");
+        setLimitReason(
+          requestError.code === "quota_exhausted" ? "quota" : "temporary",
+        );
         setStatus("limited");
         return;
       }

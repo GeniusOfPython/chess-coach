@@ -51,6 +51,19 @@ describe("AiCoachService", () => {
     } satisfies Partial<AiCoachError>);
   });
 
+  it("отличает пользовательскую квоту от временного rate limit", async () => {
+    const service = new AiCoachService({
+      fetcher: async () => Response.json(
+        { error: "rate_limited", reason: "monthly" },
+        { status: 429 },
+      ),
+    });
+
+    await expect(service.getAdvice(request)).rejects.toMatchObject({
+      code: "quota_exhausted",
+    } satisfies Partial<AiCoachError>);
+  });
+
   it("не пропускает ответ вне контракта", async () => {
     const service = new AiCoachService({
       fetcher: async () => Response.json({ advice: {} }),

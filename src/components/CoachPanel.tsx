@@ -30,8 +30,7 @@ export default function CoachPanel({
   const aiCoach = useAiCoach({
     position,
     analysis,
-    subscriptionTier,
-    dailyLimit: access.aiCoachDailyLimit,
+    quota: access.aiCoachQuota,
     isOnline: networkStatus === "online",
     enabled: aiCoachEnabled,
   });
@@ -129,10 +128,17 @@ export default function CoachPanel({
             <strong id="ai-coach-title">Объяснение идеи позиции</strong>
           </div>
 
-          <span className="ai-coach-plan">
-            {subscriptionTier === "premium"
-              ? "Premium · без дневного лимита"
-              : `Free · осталось ${aiCoach.remaining ?? 0} из ${access.aiCoachDailyLimit}`}
+          <span
+            className="ai-coach-plan"
+            aria-label={`Осталось ${aiCoach.remaining} из ${access.aiCoachQuota.limit} ${
+              access.aiCoachQuota.period === "day" ? "сегодня" : "в этом месяце"
+            }`}
+            title={`Осталось ${aiCoach.remaining} из ${access.aiCoachQuota.limit}`}
+          >
+            {subscriptionTier === "premium" ? "Premium" : "Free"}
+            {` · ${aiCoach.remaining}/${access.aiCoachQuota.limit} · ${
+              access.aiCoachQuota.period === "day" ? "сегодня" : "месяц"
+            }`}
           </span>
         </div>
 
@@ -204,12 +210,17 @@ export default function CoachPanel({
 
         {aiCoach.status === "limited" && (
           <div className="ai-coach-limit" role="status">
-            {aiCoach.limitReason === "daily" ? (
+            {aiCoach.limitReason === "quota" ? (
               <>
-                <strong>Бесплатные советы на сегодня закончились</strong>
+                <strong>
+                  {subscriptionTier === "premium"
+                    ? "Месячная квота ИИ-советов закончилась"
+                    : "Бесплатные советы на сегодня закончились"}
+                </strong>
                 <p>
-                  Продолжай использовать локальный план Stockfish. В Premium
-                  дневного лимита Free не будет.
+                  Продолжай использовать локальный план Stockfish.
+                  {subscriptionTier === "free" &&
+                    " В Premium доступна расширенная месячная квота."}
                 </p>
               </>
             ) : (

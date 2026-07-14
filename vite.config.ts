@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import { aiCoachDevelopmentPlugin } from "./server/viteAiCoachPlugin";
+import { resolveCoachCostSettings } from "./server/coachCostController";
 
 const serviceWorkerVersionPlaceholder = "__BUILD_VERSION__";
 const serviceWorkerManifestPlaceholder = "/* __PRECACHE_MANIFEST__ */";
@@ -87,8 +88,10 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       aiCoachDevelopmentPlugin({
+        enabled: environment.AI_COACH_SERVER_ENABLED === "true",
         apiKey: environment.OPENAI_API_KEY,
         model: environment.OPENAI_MODEL,
+        costSettings: resolveCoachCostSettings(environment),
       }),
       automaticServiceWorkerVersion(),
     ],
