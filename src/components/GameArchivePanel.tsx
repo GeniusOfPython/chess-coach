@@ -1,5 +1,6 @@
 import type { ArchivedGame } from "../game/gameArchive";
 import { getBotLevel } from "../types/bot";
+import { buildGameArchiveStats } from "../game/gameArchiveStats";
 import "./GameArchivePanel.css";
 
 type Props = {
@@ -40,8 +41,54 @@ export default function GameArchivePanel({
     );
   }
 
+  const stats = buildGameArchiveStats(games);
+
   return (
     <div className="game-archive">
+      {stats.botGames > 0 && (
+        <section className="game-archive-stats" aria-label="Статистика против бота">
+          <div className="game-archive-stat-grid">
+            <div>
+              <span>Против бота</span>
+              <strong>{stats.botGames}</strong>
+              <small>{`${stats.wins} побед · ${stats.draws} ничьих`}</small>
+            </div>
+            <div>
+              <span>Набрано очков</span>
+              <strong>{stats.scorePercent}%</strong>
+              <small>ничья считается за ½</small>
+            </div>
+            <div>
+              <span>Серия побед</span>
+              <strong>{stats.currentWinStreak}</strong>
+              <small>лучший результат: {stats.bestWinStreak}</small>
+            </div>
+          </div>
+
+          <div className="game-archive-form">
+            <span>Последние партии</span>
+            <div aria-label="Форма последних партий">
+              {stats.recentForm.map((outcome, index) => (
+                <span
+                  className={`game-archive-form-dot ${outcome}`}
+                  title={outcomeLabels[outcome]}
+                  aria-label={outcomeLabels[outcome]}
+                  key={`${outcome}-${index}`}
+                >
+                  {outcome === "win" ? "В" : outcome === "draw" ? "Н" : "П"}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {stats.strongestDefeatedLevel && (
+            <p className="game-archive-best-level">
+              Самый сильный побеждённый бот — {getBotLevel(stats.strongestDefeatedLevel).title}.
+            </p>
+          )}
+        </section>
+      )}
+
       <div className="game-archive-heading">
         <span>Сохранено партий: {games.length}</span>
         <button type="button" onClick={onClear}>Очистить архив</button>
