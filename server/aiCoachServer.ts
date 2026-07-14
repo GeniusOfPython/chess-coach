@@ -9,6 +9,10 @@ import type {
   CoachCostController,
   CoachTokenUsage,
 } from "./coachCostController";
+import {
+  createAiCoachQuotaHeaders,
+  type AiCoachServerQuota,
+} from "../src/ai/coachQuotaProtocol";
 
 const maximumRequestBytes = 16_384;
 const maximumOutputTokens = 450;
@@ -23,21 +27,19 @@ const adviceSchema = {
       type: "object",
       additionalProperties: false,
       properties: {
-        headline: { type: "string", minLength: 1, maxLength: 120 },
-        explanation: { type: "string", minLength: 1, maxLength: 700 },
+        headline: { type: "string" },
+        explanation: { type: "string" },
         focusPoints: {
           type: "array",
-          minItems: 1,
-          maxItems: 3,
-          items: { type: "string", minLength: 1, maxLength: 180 },
+          items: { type: "string" },
         },
         warning: {
           anyOf: [
-            { type: "string", minLength: 1, maxLength: 240 },
+            { type: "string" },
             { type: "null" },
           ],
         },
-        question: { type: "string", minLength: 1, maxLength: 240 },
+        question: { type: "string" },
       },
       required: [
         "headline",
@@ -60,6 +62,9 @@ export type QuotaDecision = {
   retryAfterSeconds?: number;
   reason?: QuotaReason;
   remaining?: number;
+  quota?: AiCoachServerQuota;
+  commit?: () => Promise<void> | void;
+  release?: () => Promise<void> | void;
 };
 
 export type ConsumeCoachQuota = (
@@ -253,12 +258,25 @@ export function createAiCoachEndpoint({
             reason: quota.reason ?? "burst",
           },
           429,
-          { "Retry-After": String(retryAfter) },
+          {
+            "Retry-After": String(retryAfter),
+            ...(quota.quota ? createAiCoachQuotaHeaders(quota.quota) : {}),
+          },
         );
       }
 
-      const response = parseAiCoachResponse(await provider(coachRequest));
-      return jsonResponse(response, 200);
+      try {
+        const response = parseAiCoachResponse(await provider(coachRequest));
+        await quota.commit?.();
+        return jsonResponse(
+          response,
+          200,
+          quota.quota ? createAiCoachQuotaHeaders(quota.quota) : undefined,
+        );
+      } catch (error) {
+        await quota.release?.();
+        throw error;
+      }
     } catch (error) {
       if (error instanceof CoachServerError) {
         return jsonResponse({ error: error.publicCode }, error.status);
@@ -379,10 +397,20 @@ export function createOpenAiCoachProvider({
           costSettled = true;
         }
 
+        const providerConfigurationError =
+          response.status === 400 ||
+          response.status === 401 ||
+          response.status === 403 ||
+          response.status === 404;
+
         throw new CoachServerError(
           "OpenAI request failed",
           response.status === 429 ? 429 : 503,
-          response.status === 429 ? "provider_rate_limited" : "coach_unavailable",
+          response.status === 429
+            ? "provider_rate_limited"
+            : providerConfigurationError
+              ? "provider_configuration_error"
+              : "coach_unavailable",
         );
       }
 

@@ -9,6 +9,7 @@ import {
 import type {
   AiCoachQuota,
 } from "../features/featureAccess";
+import type { AiCoachServerQuota } from "../ai/coachQuotaProtocol";
 import type { EngineAnalysis } from "../types/chess";
 
 export type AiCoachStatus =
@@ -45,6 +46,10 @@ function errorMessage(error: unknown) {
     return "Ответ не прошёл проверку. Запроси объяснение ещё раз.";
   }
 
+  if (error.code === "configuration") {
+    return "Сервер ИИ не принял ключ, модель или параметры запроса. Проверь .env.local и перезапусти приложение.";
+  }
+
   return "ИИ-тренер временно недоступен. План Stockfish продолжает работать.";
 }
 
@@ -62,7 +67,9 @@ export function useAiCoach({
   const [error, setError] = useState<string | null>(null);
   const [limitReason, setLimitReason] = useState<AiCoachLimitReason | null>(null);
   const [usage, setUsage] = useState(() => readAiCoachUsage(quota));
-  const remaining = getRemainingAiCoachAdvice(usage, quota);
+  const [serverQuota, setServerQuota] = useState<AiCoachServerQuota | null>(null);
+  const remaining = serverQuota?.remaining ??
+    getRemainingAiCoachAdvice(usage, quota);
   const quotaLimit = quota.limit;
   const quotaPeriod = quota.period;
 
@@ -73,6 +80,7 @@ export function useAiCoach({
     setAdvice(null);
     setError(null);
     setLimitReason(null);
+    setServerQuota(null);
   }, [position, analysis?.bestMove]);
 
   useEffect(() => () => activeRequestRef.current?.abort(), []);
@@ -113,9 +121,13 @@ export function useAiCoach({
         return;
       }
 
-      setUsage(recordAiCoachUsage(quota));
+      if (result.quota) {
+        setServerQuota(result.quota);
+      } else {
+        setUsage(recordAiCoachUsage(quota));
+      }
 
-      setAdvice(result);
+      setAdvice(result.advice);
       setStatus("success");
     } catch (requestError) {
       if (controller.signal.aborted) {
@@ -127,6 +139,9 @@ export function useAiCoach({
         (requestError.code === "rate_limited" ||
           requestError.code === "quota_exhausted")
       ) {
+        if (requestError.quota) {
+          setServerQuota(requestError.quota);
+        }
         setLimitReason(
           requestError.code === "quota_exhausted" ? "quota" : "temporary",
         );
@@ -148,6 +163,7 @@ export function useAiCoach({
     advice,
     error,
     remaining,
+    serverQuota,
     limitReason,
     requestAdvice,
   };

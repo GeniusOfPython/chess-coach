@@ -18,4 +18,5 @@ export const settingsStorageKeys = {
 export const gameSessionStorageKeys = {
   currentPgn: "chess-coach.current-pgn",
   botGameStarted: "chess-coach.bot-game-started",
+  gameArchive: "chess-coach.game-archive",
 } as const;

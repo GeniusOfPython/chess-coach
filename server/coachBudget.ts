@@ -115,6 +115,12 @@ export function createMemoryCoachBudget({
       return {
         allowed: false,
         reason: isPremium ? "monthly" : "daily",
+        quota: {
+          tier,
+          period: isPremium ? "month" : "day",
+          limit: clientLimit,
+          remaining: 0,
+        },
         retryAfterSeconds: retryAfterSeconds(
           clientCounter.resetsAt,
           currentTime,
@@ -126,10 +132,29 @@ export function createMemoryCoachBudget({
     clientCounter.count += 1;
     counters.set(globalKey, globalCounter);
     counters.set(clientKeyWithPeriod, clientCounter);
+    let finalized = false;
 
     return {
       allowed: true,
       remaining: clientLimit - clientCounter.count,
+      quota: {
+        tier,
+        period: isPremium ? "month" : "day",
+        limit: clientLimit,
+        remaining: clientLimit - clientCounter.count,
+      },
+      commit() {
+        finalized = true;
+      },
+      release() {
+        if (finalized) {
+          return;
+        }
+
+        finalized = true;
+        globalCounter.count = Math.max(0, globalCounter.count - 1);
+        clientCounter.count = Math.max(0, clientCounter.count - 1);
+      },
     };
   };
 }
@@ -139,15 +164,33 @@ export function combineCoachQuotaConsumers(
 ): ConsumeCoachQuota {
   return async (clientKey) => {
     let lastDecision: QuotaDecision = { allowed: true };
+    const acceptedDecisions: QuotaDecision[] = [];
 
     for (const consumer of consumers) {
       lastDecision = await consumer(clientKey);
 
       if (!lastDecision.allowed) {
+        await Promise.all(
+          acceptedDecisions.map((decision) => decision.release?.()),
+        );
         return lastDecision;
       }
+
+      acceptedDecisions.push(lastDecision);
     }
 
-    return lastDecision;
+    return {
+      ...lastDecision,
+      async commit() {
+        await Promise.all(
+          acceptedDecisions.map((decision) => decision.commit?.()),
+        );
+      },
+      async release() {
+        await Promise.all(
+          acceptedDecisions.map((decision) => decision.release?.()),
+        );
+      },
+    };
   };
 }

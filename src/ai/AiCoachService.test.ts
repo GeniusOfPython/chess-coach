@@ -36,9 +36,32 @@ describe("AiCoachService", () => {
       fetcher: async () => Response.json(validResponse),
     });
 
-    await expect(service.getAdvice(request)).resolves.toEqual(
-      validResponse.advice,
-    );
+    await expect(service.getAdvice(request)).resolves.toEqual({
+      advice: validResponse.advice,
+      quota: null,
+    });
+  });
+
+  it("читает серверную квоту из проверенных заголовков", async () => {
+    const service = new AiCoachService({
+      fetcher: async () => Response.json(validResponse, {
+        headers: {
+          "X-AI-Coach-Quota-Tier": "premium",
+          "X-AI-Coach-Quota-Period": "month",
+          "X-AI-Coach-Quota-Limit": "300",
+          "X-AI-Coach-Quota-Remaining": "299",
+        },
+      }),
+    });
+
+    await expect(service.getAdvice(request)).resolves.toMatchObject({
+      quota: {
+        tier: "premium",
+        period: "month",
+        limit: 300,
+        remaining: 299,
+      },
+    });
   });
 
   it("преобразует rate limit в доменную ошибку", async () => {
@@ -64,6 +87,33 @@ describe("AiCoachService", () => {
     } satisfies Partial<AiCoachError>);
   });
 
+  it("передаёт актуальный остаток вместе с ошибкой квоты", async () => {
+    const service = new AiCoachService({
+      fetcher: async () => Response.json(
+        { error: "rate_limited", reason: "daily" },
+        {
+          status: 429,
+          headers: {
+            "X-AI-Coach-Quota-Tier": "free",
+            "X-AI-Coach-Quota-Period": "day",
+            "X-AI-Coach-Quota-Limit": "3",
+            "X-AI-Coach-Quota-Remaining": "0",
+          },
+        },
+      ),
+    });
+
+    await expect(service.getAdvice(request)).rejects.toMatchObject({
+      code: "quota_exhausted",
+      quota: {
+        tier: "free",
+        period: "day",
+        remaining: 0,
+        limit: 3,
+      },
+    } satisfies Partial<AiCoachError>);
+  });
+
   it("не пропускает ответ вне контракта", async () => {
     const service = new AiCoachService({
       fetcher: async () => Response.json({ advice: {} }),
@@ -71,6 +121,19 @@ describe("AiCoachService", () => {
 
     await expect(service.getAdvice(request)).rejects.toMatchObject({
       code: "invalid_response",
+    } satisfies Partial<AiCoachError>);
+  });
+
+  it("отличает ошибку настройки провайдера от временного сбоя", async () => {
+    const service = new AiCoachService({
+      fetcher: async () => Response.json(
+        { error: "provider_configuration_error" },
+        { status: 503 },
+      ),
+    });
+
+    await expect(service.getAdvice(request)).rejects.toMatchObject({
+      code: "configuration",
     } satisfies Partial<AiCoachError>);
   });
 });

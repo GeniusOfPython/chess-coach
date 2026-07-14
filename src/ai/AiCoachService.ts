@@ -3,27 +3,40 @@ import {
   type AiCoachAdvice,
   type AiCoachRequest,
 } from "./coachContract";
+import {
+  parseAiCoachQuotaHeaders,
+  type AiCoachServerQuota,
+} from "./coachQuotaProtocol";
 
 export type AiCoachErrorCode =
   | "cancelled"
   | "timeout"
   | "rate_limited"
   | "quota_exhausted"
+  | "configuration"
   | "unavailable"
   | "invalid_response";
 
 export class AiCoachError extends Error {
   readonly code: AiCoachErrorCode;
+  readonly quota: AiCoachServerQuota | null;
 
   constructor(
     message: string,
     code: AiCoachErrorCode,
+    quota: AiCoachServerQuota | null = null,
   ) {
     super(message);
     this.name = "AiCoachError";
     this.code = code;
+    this.quota = quota;
   }
 }
+
+export type AiCoachAdviceResult = {
+  advice: AiCoachAdvice;
+  quota: AiCoachServerQuota | null;
+};
 
 type Fetcher = (
   input: RequestInfo | URL,
@@ -52,7 +65,7 @@ export class AiCoachService {
   async getAdvice(
     request: AiCoachRequest,
     externalSignal?: AbortSignal,
-  ): Promise<AiCoachAdvice> {
+  ): Promise<AiCoachAdviceResult> {
     const controller = new AbortController();
     let timedOut = false;
     const abortRequest = () => controller.abort();
@@ -70,6 +83,7 @@ export class AiCoachService {
         body: JSON.stringify(request),
         signal: controller.signal,
       });
+      const serverQuota = parseAiCoachQuotaHeaders(response.headers);
 
       if (response.status === 429) {
         let quotaReason: unknown;
@@ -89,18 +103,35 @@ export class AiCoachService {
             ? "Квота ИИ-подсказок исчерпана"
             : "Лимит ИИ-подсказок временно исчерпан",
           quotaExhausted ? "quota_exhausted" : "rate_limited",
+          serverQuota,
         );
       }
 
       if (!response.ok) {
+        let publicError: unknown;
+
+        try {
+          const body = await response.json() as { error?: unknown };
+          publicError = body.error;
+        } catch {
+          publicError = null;
+        }
+
         throw new AiCoachError(
-          "ИИ-тренер временно недоступен",
-          "unavailable",
+          publicError === "provider_configuration_error"
+            ? "Сервер ИИ требует настройки"
+            : "ИИ-тренер временно недоступен",
+          publicError === "provider_configuration_error"
+            ? "configuration"
+            : "unavailable",
         );
       }
 
       try {
-        return parseAiCoachResponse(await response.json()).advice;
+        return {
+          advice: parseAiCoachResponse(await response.json()).advice,
+          quota: serverQuota,
+        };
       } catch (error) {
         if (error instanceof AiCoachError) {
           throw error;

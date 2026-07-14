@@ -4,6 +4,7 @@ import { detectTacticalMotifs } from "../analysis/tacticalMotifs";
 import { getFeatureAccess, type SubscriptionTier } from "../features/featureAccess";
 import { useAiCoach } from "../hooks/useAiCoach";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { getAiCoachAction } from "../ai/coachUiState";
 
 type Props = {
   analysis: EngineAnalysis | null;
@@ -57,6 +58,19 @@ export default function CoachPanel({
     position,
     analysis.bestMove,
   );
+  const displayedTier = aiCoach.serverQuota?.tier ?? subscriptionTier;
+  const displayedQuota = aiCoach.serverQuota ?? {
+    tier: subscriptionTier,
+    period: access.aiCoachQuota.period,
+    limit: access.aiCoachQuota.limit,
+    remaining: aiCoach.remaining,
+  };
+  const aiCoachAction = getAiCoachAction({
+    enabled: aiCoachEnabled,
+    isOnline: networkStatus === "online",
+    status: aiCoach.status,
+    remaining: aiCoach.remaining,
+  });
 
   return (
     <div className={`coach-card coach-priority-${plan.priority}`}>
@@ -130,14 +144,14 @@ export default function CoachPanel({
 
           <span
             className="ai-coach-plan"
-            aria-label={`Осталось ${aiCoach.remaining} из ${access.aiCoachQuota.limit} ${
-              access.aiCoachQuota.period === "day" ? "сегодня" : "в этом месяце"
+            aria-label={`Осталось ${displayedQuota.remaining} из ${displayedQuota.limit} ${
+              displayedQuota.period === "day" ? "сегодня" : "в этом месяце"
             }`}
-            title={`Осталось ${aiCoach.remaining} из ${access.aiCoachQuota.limit}`}
+            title={`Осталось ${displayedQuota.remaining} из ${displayedQuota.limit}`}
           >
-            {subscriptionTier === "premium" ? "Premium" : "Free"}
-            {` · ${aiCoach.remaining}/${access.aiCoachQuota.limit} · ${
-              access.aiCoachQuota.period === "day" ? "сегодня" : "месяц"
+            {displayedTier === "premium" ? "Premium" : "Free"}
+            {` · ${displayedQuota.remaining}/${displayedQuota.limit} · ${
+              displayedQuota.period === "day" ? "сегодня" : "месяц"
             }`}
           </span>
         </div>
@@ -157,20 +171,10 @@ export default function CoachPanel({
         )}
 
         {aiCoachEnabled && networkStatus === "online" && aiCoach.status === "idle" && (
-          <>
-            <p className="ai-coach-message">
-              ИИ объяснит уже рассчитанный ход Stockfish простым языком и
-              задаст один учебный вопрос.
-            </p>
-
-            <button
-              type="button"
-              className="ai-coach-action"
-              onClick={() => void aiCoach.requestAdvice()}
-            >
-              Спросить ИИ-тренера
-            </button>
-          </>
+          <p className="ai-coach-message">
+            ИИ объяснит уже рассчитанный ход Stockfish простым языком и
+            задаст один учебный вопрос.
+          </p>
         )}
 
         {aiCoach.status === "loading" && (
@@ -202,9 +206,6 @@ export default function CoachPanel({
         {aiCoach.status === "error" && (
           <div className="ai-coach-error" role="alert">
             <p>{aiCoach.error}</p>
-            <button type="button" onClick={() => void aiCoach.requestAdvice()}>
-              Повторить
-            </button>
           </div>
         )}
 
@@ -213,13 +214,13 @@ export default function CoachPanel({
             {aiCoach.limitReason === "quota" ? (
               <>
                 <strong>
-                  {subscriptionTier === "premium"
+                  {displayedTier === "premium"
                     ? "Месячная квота ИИ-советов закончилась"
                     : "Бесплатные советы на сегодня закончились"}
                 </strong>
                 <p>
                   Продолжай использовать локальный план Stockfish.
-                  {subscriptionTier === "free" &&
+                  {displayedTier === "free" &&
                     " В Premium доступна расширенная месячная квота."}
                 </p>
               </>
@@ -233,6 +234,17 @@ export default function CoachPanel({
               </>
             )}
           </div>
+        )}
+
+        {aiCoachAction && (
+          <button
+            type="button"
+            className="ai-coach-action"
+            disabled={aiCoachAction.disabled}
+            onClick={() => void aiCoach.requestAdvice()}
+          >
+            {aiCoachAction.label}
+          </button>
         )}
       </section>
     </div>

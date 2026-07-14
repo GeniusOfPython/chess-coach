@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Color, Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
@@ -14,6 +14,7 @@ import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
 import CoachPanel from "./components/CoachPanel";
 import GameResultPanel from "./components/GameResultPanel";
+import GameArchivePanel from "./components/GameArchivePanel";
 import GameReviewPanel, {
   type GameReviewItem,
 } from "./components/GameReviewPanel";
@@ -55,6 +56,12 @@ import { useLearningJournal } from "./hooks/useLearningJournal";
 import { useBestMoveTraining } from "./hooks/useBestMoveTraining";
 import { useBotTurn } from "./hooks/useBotTurn";
 import { useMoveReview } from "./hooks/useMoveReview";
+import { useGameArchive } from "./hooks/useGameArchive";
+import {
+  createArchivedGame,
+  type ArchivedGame,
+} from "./game/gameArchive";
+import { getGameResultInfo } from "./game/gameResult";
 import { createGameLifecycleActions } from "./game/gameLifecycle";
 import type { GameMode } from "./game/gameTypes";
 import {
@@ -157,6 +164,14 @@ function App() {
     reset: clearGameReview,
   } = useGameReview();
 
+  const {
+    games: archivedGames,
+    addGame: addArchivedGame,
+    removeGame: removeArchivedGame,
+    clearGames: clearArchivedGames,
+  } = useGameArchive();
+  const archivedPositionRef = useRef<string | null>(null);
+
 
   const { message: rewardToast, showRewardToast } = useRewardToast();
 
@@ -214,6 +229,40 @@ function App() {
   useEffect(() => {
     writeStorageValue(gameSessionStorageKeys.currentPgn, getPgn());
   }, [position, history.length, getPgn]);
+
+  useEffect(() => {
+    if (!game.isGameOver() || history.length === 0) {
+      archivedPositionRef.current = null;
+      return;
+    }
+
+    const pgn = getPgn();
+
+    if (!pgn || archivedPositionRef.current === pgn) {
+      return;
+    }
+
+    const resultInfo = getGameResultInfo(game);
+    archivedPositionRef.current = pgn;
+    addArchivedGame(createArchivedGame({
+      pgn,
+      mode: gameMode,
+      playerSide,
+      botLevelId,
+      result: resultInfo.result,
+      winner: resultInfo.winner,
+      halfMoves: history.length,
+    }));
+  }, [
+    addArchivedGame,
+    botLevelId,
+    game,
+    gameMode,
+    getPgn,
+    history.length,
+    playerSide,
+    position,
+  ]);
 
   const boardOrientation =
     gameMode === "bot" && playerSide === "b"
@@ -352,6 +401,14 @@ function App() {
 
   function handleResetTrainingStats() {
     resetTrainingStats();
+  }
+
+  function handleOpenArchivedGame(archivedGame: ArchivedGame) {
+    archivedPositionRef.current = archivedGame.pgn;
+
+    if (handleImportPgn(archivedGame.pgn)) {
+      setActiveWorkspace("game");
+    }
   }
 
   async function handleStartBestMoveTraining() {
@@ -783,6 +840,19 @@ function App() {
                 />
 
                 <MoveHistory history={history} />
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Архив партий"
+                description="Завершённые партии сохраняются автоматически"
+                storageKey="chess-coach.section.game-archive"
+              >
+                <GameArchivePanel
+                  games={archivedGames}
+                  onOpen={handleOpenArchivedGame}
+                  onRemove={removeArchivedGame}
+                  onClear={clearArchivedGames}
+                />
               </CollapsibleSection>
 
               <CollapsibleSection

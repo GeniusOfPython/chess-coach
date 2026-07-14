@@ -62,4 +62,40 @@ describe("AI Coach server budget", () => {
       reason: "burst",
     });
   });
+
+  it("возвращает резерв при ошибке провайдера", async () => {
+    const consume = createMemoryCoachBudget({
+      resolveTier: () => "free",
+      freeDailyLimit: 1,
+      now: () => new Date("2026-07-14T12:00:00Z"),
+    });
+    const reservation = await consume("free-user");
+
+    expect(reservation.quota).toMatchObject({ remaining: 0, limit: 1 });
+    await reservation.release?.();
+
+    expect(await consume("free-user")).toMatchObject({
+      allowed: true,
+      remaining: 0,
+    });
+  });
+
+  it("освобождает ранние резервы, если следующий ограничитель отказал", async () => {
+    let released = 0;
+    const consume = combineCoachQuotaConsumers(
+      () => ({
+        allowed: true,
+        release: () => {
+          released += 1;
+        },
+      }),
+      () => ({ allowed: false, reason: "burst" }),
+    );
+
+    await expect(consume("client")).resolves.toMatchObject({
+      allowed: false,
+      reason: "burst",
+    });
+    expect(released).toBe(1);
+  });
 });

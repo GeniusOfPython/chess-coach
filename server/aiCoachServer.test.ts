@@ -59,6 +59,47 @@ describe("AI Coach endpoint", () => {
     expect(provider).toHaveBeenCalledWith(coachRequest);
   });
 
+  it("возвращает серверную квоту и подтверждает успешное списание", async () => {
+    const commit = vi.fn();
+    const release = vi.fn();
+    const endpoint = createAiCoachEndpoint({
+      provider: async () => coachResponse,
+      consumeQuota: () => ({
+        allowed: true,
+        quota: {
+          tier: "premium",
+          period: "month",
+          limit: 300,
+          remaining: 299,
+        },
+        commit,
+        release,
+      }),
+    });
+
+    const response = await endpoint(post(coachRequest), "client-1");
+
+    expect(response.headers.get("X-AI-Coach-Quota-Remaining")).toBe("299");
+    expect(response.headers.get("X-AI-Coach-Quota-Tier")).toBe("premium");
+    expect(commit).toHaveBeenCalledOnce();
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it("возвращает резерв квоты при ошибке провайдера", async () => {
+    const commit = vi.fn();
+    const release = vi.fn();
+    const endpoint = createAiCoachEndpoint({
+      provider: async () => {
+        throw new Error("provider failed");
+      },
+      consumeQuota: () => ({ allowed: true, commit, release }),
+    });
+
+    expect((await endpoint(post(coachRequest), "client-1")).status).toBe(503);
+    expect(release).toHaveBeenCalledOnce();
+    expect(commit).not.toHaveBeenCalled();
+  });
+
   it("отклоняет некорректный контракт до вызова провайдера", async () => {
     const provider = vi.fn(async () => coachResponse);
     const endpoint = createAiCoachEndpoint({
@@ -124,8 +165,33 @@ describe("OpenAI Coach provider", () => {
       type: "json_schema",
       strict: true,
     });
+    expect(JSON.stringify(body.text.format)).not.toMatch(
+      /minLength|maxLength|minItems|maxItems/,
+    );
     expect(capturedInit?.headers).toMatchObject({
       Authorization: "Bearer server-secret",
+    });
+  });
+
+  it("возвращает безопасную ошибку конфигурации без текста провайдера", async () => {
+    const provider = createOpenAiCoachProvider({
+      apiKey: "invalid-secret",
+      model: "invalid-model",
+      fetcher: async () => Response.json(
+        { error: { message: "sensitive provider details" } },
+        { status: 400 },
+      ),
+    });
+    const endpoint = createAiCoachEndpoint({
+      provider,
+      consumeQuota: () => ({ allowed: true }),
+    });
+
+    const response = await endpoint(post(coachRequest));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "provider_configuration_error",
     });
   });
 
