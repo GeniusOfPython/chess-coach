@@ -1,0 +1,7 @@
+Удалить перед проверкой обновления:
+
+public/sw.js
+
+Service worker теперь генерируется из src/platform/serviceWorkerTemplate.js
+во время production-сборки. Старый public/sw.js может перезаписать актуальный
+precache и вернуть проблему со слетевшими офлайн-стилями.

@@ -1,0 +1,563 @@
+/* Aurora theme: visual tokens live in index.css, component layout stays local. */
+
+.app {
+  position: relative;
+}
+
+.header {
+  position: relative;
+  isolation: isolate;
+  min-height: 64px;
+  padding-left: 82px;
+}
+
+.header::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 22%), transparent 42%),
+    linear-gradient(135deg, var(--color-primary), #6366f1 45%, var(--color-secondary));
+  box-shadow:
+    0 18px 42px rgb(88 80 236 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 32%);
+  color: #fff;
+  font-size: 40px;
+  line-height: 1;
+  text-shadow: 0 5px 18px rgb(20 15 70 / 48%);
+  content: "♞";
+  animation: brand-mark-float 5s ease-in-out infinite;
+}
+
+.brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 22%), transparent 42%),
+    linear-gradient(135deg, var(--color-primary), #6366f1 45%, var(--color-secondary));
+  box-shadow:
+    0 18px 42px rgb(88 80 236 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 32%);
+  color: #fff;
+  font-size: 40px;
+  line-height: 1;
+  text-shadow: 0 5px 18px rgb(20 15 70 / 48%);
+  animation: brand-mark-float 5s ease-in-out infinite;
+}
+
+.brand-mark::after {
+  position: absolute;
+  inset: -50% auto -50% -70%;
+  width: 36%;
+  transform: rotate(20deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 34%), transparent);
+  content: "";
+  animation: brand-mark-shine 6s ease-in-out infinite;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.eyebrow {
+  color: var(--color-secondary-bright);
+}
+
+h1 {
+  width: fit-content;
+  background: linear-gradient(105deg, #fff 8%, #d9d6ff 42%, #82ebff 100%);
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.035em;
+  text-shadow: 0 12px 44px rgb(99 102 241 / 15%);
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+}
+
+.board-panel,
+.side-panel > div {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(145deg, rgb(20 26 52 / 94%), rgb(12 16 35 / 96%)) padding-box,
+    linear-gradient(135deg, rgb(139 92 246 / 65%), rgb(34 211 238 / 32%), rgb(251 113 133 / 32%)) border-box;
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+  backdrop-filter: blur(18px);
+}
+
+.board-panel {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 26px 70px rgb(0 0 0 / 40%),
+    0 0 55px rgb(99 102 241 / 18%);
+  animation: surface-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.board-panel::before {
+  position: absolute;
+  inset: -100px auto auto -90px;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: rgb(34 211 238 / 9%);
+  filter: blur(30px);
+  pointer-events: none;
+  content: "";
+}
+
+.status-label {
+  color: var(--color-text-subtle);
+}
+
+.side-panel > * {
+  animation: surface-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) 70ms both;
+}
+
+.status-card strong,
+.history-card h2,
+.analysis-card strong,
+.evaluation-card strong,
+.move-review-card strong {
+  color: var(--color-text);
+}
+
+.active-game-indicator {
+  color: var(--color-secondary-bright);
+}
+
+.active-game-dot {
+  background: var(--color-secondary);
+  box-shadow: 0 0 0 4px rgb(34 211 238 / 16%);
+}
+
+.turn-indicator-player {
+  color: #a5f3fc;
+  background: rgb(34 211 238 / 10%);
+}
+
+.turn-indicator-bot {
+  color: #ddd6fe;
+  background: rgb(139 92 246 / 12%);
+}
+
+button {
+  border-color: rgb(139 92 246 / 62%);
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  box-shadow: 0 8px 20px rgb(99 102 241 / 18%);
+  color: #fff;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    filter 150ms ease,
+    transform 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.1) saturate(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgb(99 102 241 / 28%);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgb(34 211 238 / 52%);
+  outline-offset: 3px;
+}
+
+button.secondary {
+  border-color: var(--color-border);
+  background: rgb(21 28 57 / 74%);
+  box-shadow: none;
+  color: var(--color-text);
+}
+
+.setup-start-button {
+  border-color: rgb(255 226 128 / 78%);
+  background: linear-gradient(120deg, #ffb35c 0%, #fb7185 48%, #c084fc 100%);
+  box-shadow:
+    0 14px 34px rgb(251 113 133 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 36%);
+  color: #170d27;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 22%);
+}
+
+.setup-start-button:hover:not(:disabled) {
+  box-shadow:
+    0 17px 42px rgb(251 113 133 / 38%),
+    inset 0 1px 0 rgb(255 255 255 / 44%);
+}
+
+.mode-button {
+  border-color: var(--color-border);
+  background: rgb(11 16 36 / 72%);
+  box-shadow: none;
+  color: var(--color-text-muted);
+}
+
+.mode-button.active {
+  border-color: rgb(34 211 238 / 60%);
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  box-shadow: 0 10px 24px rgb(99 102 241 / 24%);
+  color: #fff;
+}
+
+.mode-description,
+.hint-card p,
+.variation p,
+.explanation li,
+.evaluation-description,
+.move-review p,
+.move-review-explanation li,
+.engine-line-evaluation {
+  color: var(--color-text-muted);
+}
+
+.bot-level-select {
+  border-color: var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.bot-level-select:focus {
+  border-color: var(--color-secondary);
+}
+
+.analysis-row,
+.moves li {
+  border-color: var(--color-border);
+}
+
+.engine-line,
+.move-review,
+.game-result,
+.move-feedback-card,
+.coach-plan-block,
+.coach-main-move,
+.coach-tactic {
+  border-color: var(--color-border);
+  background: rgb(12 17 38 / 66%);
+}
+
+.engine-line.primary {
+  border-color: var(--color-secondary);
+  box-shadow: inset 3px 0 0 var(--color-secondary);
+}
+
+.move-review.good,
+.move-feedback-card.positive {
+  border-color: rgb(45 212 191 / 66%);
+}
+
+.move-review.warning,
+.move-feedback-card.warning {
+  border-color: rgb(251 191 36 / 70%);
+}
+
+.error-message {
+  color: #fda4af;
+}
+
+.resign-controls .resign-action {
+  border-color: rgb(251 113 133 / 42%);
+  color: #fecdd3;
+}
+
+.resign-controls .resign-confirm {
+  border-color: rgb(251 113 133 / 72%);
+  background: linear-gradient(135deg, #be123c, #e11d48);
+  color: #fff;
+}
+
+.workspace-tabs-card {
+  border-color: rgb(139 92 246 / 34%);
+  background: linear-gradient(145deg, rgb(24 29 59 / 94%), rgb(11 15 34 / 96%));
+}
+
+.workspace-tab {
+  border-color: var(--color-border);
+  background: rgb(8 12 29 / 72%);
+  color: var(--color-text-muted);
+}
+
+.workspace-tab:hover {
+  border-color: rgb(34 211 238 / 44%);
+}
+
+.workspace-tab.active {
+  border-color: rgb(34 211 238 / 55%);
+  background: linear-gradient(135deg, rgb(99 102 241 / 42%), rgb(34 211 238 / 18%));
+  color: #fff;
+}
+
+.workspace-tab.active .workspace-tab-icon {
+  background: rgb(34 211 238 / 18%);
+  color: var(--color-secondary-bright);
+}
+
+.workspace-tabs-description {
+  color: var(--color-text-subtle);
+}
+
+.collapsible-section {
+  border-color: var(--color-border);
+  background: rgb(10 14 32 / 82%);
+}
+
+.collapsible-heading strong {
+  color: var(--color-text);
+}
+
+.collapsible-heading span,
+.collapsible-chevron {
+  color: var(--color-text-subtle);
+}
+
+.collapsible-chevron {
+  border-color: var(--color-border);
+  background: rgb(139 92 246 / 8%);
+}
+
+.collapsible-content > * {
+  border-color: var(--color-border);
+  background: rgb(17 22 47 / 72%);
+}
+
+.game-session-card.active::before {
+  width: 4px;
+  background: linear-gradient(to bottom, var(--color-secondary), var(--color-primary));
+  box-shadow: 0 0 18px rgb(34 211 238 / 42%);
+}
+
+.coach-card {
+  border-color: rgb(139 92 246 / 48%);
+  background:
+    radial-gradient(circle at top right, rgb(34 211 238 / 12%), transparent 46%),
+    linear-gradient(135deg, rgb(42 31 91 / 90%), rgb(15 20 45 / 96%));
+  box-shadow: 0 18px 46px rgb(0 0 0 / 28%);
+}
+
+.coach-card-empty {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.coach-card-header strong,
+.coach-main-move strong,
+.coach-plan-block li,
+.coach-line-preview p {
+  color: var(--color-text);
+}
+
+.coach-meta-row span {
+  border-color: rgb(34 211 238 / 18%);
+  background: rgb(34 211 238 / 8%);
+  color: #c8f7ff;
+}
+
+.coach-tactics {
+  border-color: rgb(251 191 36 / 30%);
+  background: rgb(76 45 15 / 22%);
+}
+
+.ai-coach {
+  border-color: rgb(167 139 250 / 42%);
+  background:
+    radial-gradient(circle at top right, rgb(34 211 238 / 10%), transparent 45%),
+    linear-gradient(135deg, rgb(64 45 123 / 38%), rgb(10 14 34 / 62%));
+}
+
+.game-result-button {
+  background: linear-gradient(135deg, var(--color-secondary), #3b82f6);
+  color: #06121d;
+}
+
+:is(
+  .analysis-card,
+  .evaluation-card,
+  .move-review-card,
+  .game-result-card,
+  .game-review-card,
+  .move-navigator-card,
+  .best-move-training-card,
+  .learning-journal-card,
+  .training-summary-card,
+  .opening-card,
+  .app-settings-card,
+  .game-archive,
+  .chess-achievements,
+  .material-card,
+  .pgn-card,
+  .fen-card
+) {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+:is(
+  .setting-row,
+  .subscription-row,
+  .consent-row,
+  .game-review-item,
+  .learning-journal-item,
+  .opening-item,
+  .game-archive-item,
+  .game-archive-stats,
+  .chess-achievements-summary,
+  .chess-achievements-grid,
+  .best-move-training-stats,
+  .best-move-training-daily,
+  .training-summary-grid,
+  .fen-output,
+  .pgn-output
+) {
+  border-color: var(--color-border);
+  background: rgb(12 17 38 / 64%);
+}
+
+:is(.fen-input, .pgn-input, .data-backup-input) {
+  border-color: var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.ad-slot {
+  border-color: rgb(139 92 246 / 44%);
+  background: linear-gradient(135deg, rgb(139 92 246 / 11%), rgb(12 17 38 / 88%));
+}
+
+.ad-slot-label {
+  border-color: rgb(34 211 238 / 32%);
+  color: var(--color-secondary-bright);
+}
+
+.bot-fair-play-notice {
+  border-color: rgb(34 211 238 / 32%);
+  background: rgb(34 211 238 / 8%);
+}
+
+.premium-notice {
+  border-color: rgb(251 191 36 / 34%);
+  background: linear-gradient(135deg, rgb(251 191 36 / 10%), rgb(139 92 246 / 10%));
+}
+
+.consent-banner,
+.pwa-update-notice {
+  border-color: rgb(139 92 246 / 48%);
+  background: rgb(12 17 38 / 94%);
+  box-shadow: var(--shadow-card);
+}
+
+@keyframes surface-enter {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes brand-mark-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-4px) rotate(1deg);
+  }
+}
+
+@keyframes brand-mark-shine {
+  0%,
+  58% {
+    transform: translateX(0) rotate(20deg);
+    opacity: 0;
+  }
+
+  68% {
+    opacity: 1;
+  }
+
+  84%,
+  100% {
+    transform: translateX(420%) rotate(20deg);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .header {
+    min-height: 44px;
+    padding-left: 56px;
+  }
+
+  .header::before {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 28px;
+  }
+
+  .brand-heading {
+    gap: 11px;
+  }
+
+  .brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 28px;
+  }
+
+  .workspace-tabs-card {
+    border-color: rgb(139 92 246 / 44%);
+    background: rgb(10 13 31 / 92%);
+    box-shadow:
+      0 18px 44px rgb(0 0 0 / 50%),
+      0 0 28px rgb(99 102 241 / 14%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

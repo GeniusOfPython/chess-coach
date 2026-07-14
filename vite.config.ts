@@ -1,22 +1,18 @@
-import { createHash } from "node:crypto";
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import { aiCoachDevelopmentPlugin } from "./server/viteAiCoachPlugin";
 import { resolveCoachCostSettings } from "./server/coachCostController";
+import {
+  buildServiceWorker,
+  type ServiceWorkerBuildFile,
+} from "./server/serviceWorkerBuild";
 
-const serviceWorkerVersionPlaceholder = "__BUILD_VERSION__";
-const serviceWorkerManifestPlaceholder = "/* __PRECACHE_MANIFEST__ */";
-
-function normalizeBuildPath(path: string) {
-  return path.replaceAll("\\", "/");
-}
-
-async function collectBuildFiles(
+async function collectPublicFiles(
   directory: string,
   relativeDirectory = "",
-): Promise<string[]> {
+): Promise<ServiceWorkerBuildFile[]> {
   const entries = await readdir(resolve(directory, relativeDirectory), {
     withFileTypes: true,
   });
@@ -24,63 +20,69 @@ async function collectBuildFiles(
     const relativePath = join(relativeDirectory, entry.name);
 
     if (entry.isDirectory()) {
-      return collectBuildFiles(directory, relativePath);
+      return collectPublicFiles(directory, relativePath);
     }
 
-    return relativePath === "sw.js" ? [] : [relativePath];
+    return [{
+      path: relativePath,
+      content: await readFile(resolve(directory, relativePath)),
+    }];
   }));
 
-  return files.flat().sort();
+  return files.flat();
 }
 
 function automaticServiceWorkerVersion(): Plugin {
+  let rootDirectory = "";
+  let publicDirectory: string | false = false;
   let outputDirectory = "";
 
   return {
     name: "chess-coach-service-worker-version",
     apply: "build",
     configResolved(config) {
+      rootDirectory = config.root;
+      publicDirectory = config.publicDir;
       outputDirectory = resolve(config.root, config.build.outDir);
     },
-    async closeBundle() {
-      const serviceWorkerPath = resolve(outputDirectory, "sw.js");
-      const serviceWorker = await readFile(serviceWorkerPath, "utf8");
-
-      if (
-        !serviceWorker.includes(serviceWorkerVersionPlaceholder) ||
-        !serviceWorker.includes(serviceWorkerManifestPlaceholder)
-      ) {
-        throw new Error("Service worker не подготовлен к production-сборке");
-      }
-
-      const hash = createHash("sha256");
-      const buildFiles = await collectBuildFiles(outputDirectory);
-      hash.update(serviceWorker);
-
-      for (const relativePath of buildFiles) {
-        hash.update(normalizeBuildPath(relativePath));
-        hash.update(await readFile(resolve(outputDirectory, relativePath)));
-      }
-
-      const buildVersion = hash.digest("hex").slice(0, 12);
-      const precacheManifest = buildFiles.map(
-        (relativePath) => `/${normalizeBuildPath(relativePath)}`,
+    async buildStart() {
+      await rm(resolve(outputDirectory, "sw.js"), { force: true });
+    },
+    async generateBundle(_options, bundle) {
+      const bundleFiles: ServiceWorkerBuildFile[] = Object.values(bundle).map(
+        (output) => ({
+          path: output.fileName,
+          content: output.type === "chunk" ? output.code : output.source,
+        }),
       );
-
-      await writeFile(
-        serviceWorkerPath,
-        serviceWorker
-          .replace(serviceWorkerVersionPlaceholder, buildVersion)
-          .replace(
-            serviceWorkerManifestPlaceholder,
-            JSON.stringify(precacheManifest).slice(1, -1),
-          ),
+      const publicFiles = publicDirectory
+        ? await collectPublicFiles(publicDirectory)
+        : [];
+      const template = await readFile(
+        resolve(rootDirectory, "src/platform/serviceWorkerTemplate.js"),
+        "utf8",
       );
+      const serviceWorker = buildServiceWorker({
+        template,
+        files: [
+          ...bundleFiles,
+          ...publicFiles,
+          {
+            path: "index.html",
+            content: await readFile(resolve(rootDirectory, "index.html")),
+          },
+        ],
+      });
+
+      this.emitFile({
+        type: "asset",
+        fileName: "sw.js",
+        source: serviceWorker.source,
+      });
     },
   };
 }
 
-// https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const environment = loadEnv(mode, process.cwd(), "");
 

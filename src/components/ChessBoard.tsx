@@ -43,11 +43,11 @@ function createLastMoveStyles(
   return {
     [lastMove.from]: {
       background:
-        "radial-gradient(circle, rgba(255, 224, 102, 0.72) 0%, rgba(255, 224, 102, 0.32) 55%, transparent 78%)",
+        "radial-gradient(circle, rgba(251, 191, 36, 0.80) 0%, rgba(251, 113, 133, 0.34) 56%, transparent 80%)",
     },
     [lastMove.to]: {
       background:
-        "radial-gradient(circle, rgba(255, 224, 102, 0.82) 0%, rgba(255, 224, 102, 0.38) 55%, transparent 78%)",
+        "radial-gradient(circle, rgba(251, 191, 36, 0.90) 0%, rgba(251, 113, 133, 0.42) 56%, transparent 80%)",
     },
   };
 }
@@ -64,14 +64,14 @@ function createSelectionStyles({
   if (selectedSquare) {
     styles[selectedSquare] = {
       background:
-        "radial-gradient(circle, rgba(70, 140, 255, 0.74) 0%, rgba(70, 140, 255, 0.34) 58%, transparent 80%)",
+        "radial-gradient(circle, rgba(34, 211, 238, 0.88) 0%, rgba(99, 102, 241, 0.44) 58%, transparent 82%)",
     };
   }
 
   legalMoveSquares.forEach((square) => {
     styles[square] = {
       background:
-        "radial-gradient(circle, rgba(60, 200, 90, 0.82) 0%, rgba(60, 200, 90, 0.36) 23%, transparent 27%)",
+        "radial-gradient(circle, rgba(34, 211, 238, 0.88) 0%, rgba(34, 211, 238, 0.40) 23%, transparent 28%)",
     };
   });
 
@@ -88,7 +88,7 @@ function createCheckStyles(
   return {
     [checkSquare]: {
       background:
-        "radial-gradient(circle, rgba(255, 82, 82, 0.9) 0%, rgba(255, 82, 82, 0.48) 58%, transparent 82%)",
+        "radial-gradient(circle, rgba(251, 113, 133, 0.96) 0%, rgba(225, 29, 72, 0.52) 58%, transparent 82%)",
     },
   };
 }
@@ -132,9 +132,9 @@ export default function ChessBoard({
   );
 
   const arrowColors = [
-    "rgba(60, 200, 90, 0.90)",
-    "rgba(70, 140, 255, 0.82)",
-    "rgba(255, 170, 40, 0.78)",
+    "rgba(34, 211, 238, 0.94)",
+    "rgba(139, 92, 246, 0.88)",
+    "rgba(251, 113, 133, 0.84)",
   ];
 
   const arrows = showAnalysisArrows
@@ -171,14 +171,15 @@ export default function ChessBoard({
         arrows,
         squareStyles,
         boardStyle: {
-          borderRadius: "10px",
-          boxShadow: "0 14px 40px rgba(0,0,0,.3)",
+          borderRadius: "14px",
+          boxShadow:
+            "0 20px 54px rgba(0, 0, 0, 0.42), 0 0 28px rgba(99, 102, 241, 0.18)",
         },
         darkSquareStyle: {
-          backgroundColor: "#657a61",
+          backgroundColor: "#5960a8",
         },
         lightSquareStyle: {
-          backgroundColor: "#d7ddc8",
+          backgroundColor: "#dfe3ff",
         },
       }}
     />

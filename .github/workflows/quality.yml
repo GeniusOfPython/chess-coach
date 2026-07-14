@@ -33,3 +33,6 @@ jobs:
 
       - name: Run quality gate
         run: npm run check
+
+      - name: Verify PWA build artifacts
+        run: node scripts/verify-build.mjs

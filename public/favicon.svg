@@ -1,7 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="28" fill="#121613"/>
-  <path d="M37 104h54v-9c0-6-5-11-11-11H48c-6 0-11 5-11 11v9Z" fill="#e8eee7"/>
-  <path d="M49 82h30c-4-11-5-23 5-34 4-4 5-10 3-15-3-8-11-13-20-13-10 0-18 6-20 15-1 5 0 10 4 14 9 10 7 23-2 33Z" fill="#839376"/>
-  <circle cx="64" cy="32" r="11" fill="#e8eee7"/>
-  <path d="M43 60h42" stroke="#121613" stroke-width="7" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="bg" x1="18" y1="12" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="0.52" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="piece" x1="44" y1="24" x2="85" y2="105" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.6" stop-color="#E0E7FF"/>
+      <stop offset="1" stop-color="#A5F3FC"/>
+    </linearGradient>
+    <filter id="shadow" x="20" y="12" width="88" height="108" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#16123F" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="#080A18"/>
+  <rect x="5" y="5" width="118" height="118" rx="26" fill="url(#bg)"/>
+  <circle cx="103" cy="26" r="28" fill="#67E8F9" fill-opacity="0.20"/>
+  <circle cx="22" cy="105" r="32" fill="#FB7185" fill-opacity="0.18"/>
+  <g filter="url(#shadow)" fill="url(#piece)">
+    <path d="M35 106h58v-8c0-8-6-14-14-14H49c-8 0-14 6-14 14v8Z"/>
+    <path d="M48 81h32c-5-12-5-23 5-35 4-5 5-11 3-16-3-9-12-15-23-15-10 0-19 7-21 16-1 5 1 11 5 15 9 11 8 23-1 35Z"/>
+    <circle cx="65" cy="28" r="12"/>
+  </g>
+  <path d="M43 59h43" stroke="#312E81" stroke-width="7" stroke-linecap="round"/>
+  <path d="M34 108h60" stroke="#FDE68A" stroke-width="4" stroke-linecap="round"/>
 </svg>
