@@ -65,6 +65,12 @@ h1 {
   gap: 14px;
 }
 
+.workspace-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
 .status-card,
 .history-card,
 .hint-card {
@@ -152,6 +158,59 @@ h1 {
   gap: 10px;
 }
 
+.resign-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.resign-controls .resign-action {
+  grid-column: 1 / -1;
+  border-color: #6a4c4c;
+  color: #d7b5b5;
+}
+
+.resign-controls .resign-confirm {
+  border-color: #8e4d4d;
+  background: #713f3f;
+  color: #fff0f0;
+}
+
+.setup-start-button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 4px;
+  border-color: #f8dfa0;
+  background: linear-gradient(135deg, #f4d98e 0%, #d9ae4f 100%);
+  box-shadow:
+    0 8px 22px rgb(217 174 79 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 34%);
+  color: #1b1508;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition:
+    filter 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.setup-start-button:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 28px rgb(217 174 79 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 40%);
+}
+
+.setup-start-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.setup-start-button:focus-visible {
+  outline: 3px solid rgb(248 223 160 / 42%);
+  outline-offset: 3px;
+}
+
 button {
   min-height: 46px;
   border: 1px solid #839376;
@@ -219,6 +278,12 @@ button:disabled {
 
   .history-card,
   .hint-card {
+    grid-column: 1 / -1;
+  }
+
+  .workspace-tabs-card,
+  .workspace-panel,
+  .side-panel > .collapsible-section {
     grid-column: 1 / -1;
   }
 }
