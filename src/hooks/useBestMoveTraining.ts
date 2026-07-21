@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { BestMoveTrainingTask } from "../components/BestMoveTrainingPanel";
+import type { BestMoveTrainingContext, BestMoveTrainingTask } from "../components/BestMoveTrainingPanel";
 
 export const initialBestMoveTrainingTask: BestMoveTrainingTask = {
   status: "idle",
@@ -8,6 +8,7 @@ export const initialBestMoveTrainingTask: BestMoveTrainingTask = {
   playedMove: null,
   error: null,
   hintLevel: 0,
+  context: null,
 };
 
 export function revealNextTrainingHint(task: BestMoveTrainingTask) {
@@ -36,12 +37,17 @@ export function useBestMoveTraining() {
     setTask({ ...initialBestMoveTrainingTask, error });
   }
 
-  function readyTask(positionFen: string, bestMove: string) {
+  function readyTask(
+    positionFen: string,
+    bestMove: string,
+    context: BestMoveTrainingContext | null = null,
+  ) {
     setTask({
       ...initialBestMoveTrainingTask,
       status: "ready",
       positionFen,
       bestMove,
+      context,
     });
   }
 

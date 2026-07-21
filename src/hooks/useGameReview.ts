@@ -30,7 +30,7 @@ export function useGameReview() {
         const beforeScore = getWhiteEvaluation(before, side);
         const afterScore = after ? getWhiteEvaluation(after, getTurnFromFen(afterFen)) : null;
         const loss = afterScore === null ? null : Math.max(0, side === "w" ? beforeScore - afterScore : afterScore - beforeScore);
-        reviewed.push({ id: `${index}-${beforeFen}-${playedMove}`, positionIndex: index, moveNumber: getFullMoveNumber(beforeFen), side, playedMove, bestMove: before.bestMove, verdict: getVerdict({ matchedBestMove, evaluationLoss: matchedBestMove ? 0 : loss }), evaluationLoss: matchedBestMove ? 0 : loss });
+        reviewed.push({ id: `${index}-${beforeFen}-${playedMove}`, positionFen: beforeFen, positionIndex: index, moveNumber: getFullMoveNumber(beforeFen), side, playedMove, bestMove: before.bestMove, verdict: getVerdict({ matchedBestMove, evaluationLoss: matchedBestMove ? 0 : loss }), evaluationLoss: matchedBestMove ? 0 : loss });
         setItems([...reviewed]); setProgress(index + 1);
       }
       setStatus("done");

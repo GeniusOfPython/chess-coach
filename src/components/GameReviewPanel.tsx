@@ -1,6 +1,7 @@
 import type { Color } from "chess.js";
 import type { MoveReviewVerdict } from "./MoveReviewPanel";
 import LoadingSkeleton from "./LoadingSkeleton";
+import { selectPrimaryReviewItem } from "../analysis/learningCycle";
 
 export type GameReviewStatus =
   | "idle"
@@ -10,6 +11,7 @@ export type GameReviewStatus =
 
 export type GameReviewItem = {
   id: string;
+  positionFen: string;
   positionIndex: number;
   moveNumber: number;
   side: Color;
@@ -30,6 +32,7 @@ type Props = {
   onRun: () => void;
   onClear: () => void;
   onSelectPosition: (item: GameReviewItem) => void;
+  onPracticeMainMistake: (item: GameReviewItem) => void;
 };
 
 const verdictLabels: Record<MoveReviewVerdict, string> = {
@@ -82,6 +85,7 @@ export default function GameReviewPanel({
   onRun,
   onClear,
   onSelectPosition,
+  onPracticeMainMistake,
 }: Props) {
   const mistakes = getCount(items, "mistake");
   const blunders = getCount(items, "blunder");
@@ -92,6 +96,7 @@ export default function GameReviewPanel({
       item.verdict === "mistake" ||
       item.verdict === "blunder",
   );
+  const primaryItem = selectPrimaryReviewItem(items);
 
   const progressPercent = total > 0
     ? Math.min(100, Math.round((progress / total) * 100))
@@ -176,35 +181,62 @@ export default function GameReviewPanel({
               Серьёзных ошибок в просмотренных ходах не найдено.
             </p>
           ) : (
-            <div className="game-review-list">
-              {keyMoments.slice(0, 8).map((item) => (
-                <button
-                  type="button"
-                  className={`game-review-item ${item.verdict}`}
-                  key={item.id}
-                  onClick={() => onSelectPosition(item)}
-                >
-                  <div className="game-review-item-top">
-                    <strong>
-                      {item.moveNumber}. {getSideLabel(item.side)}
-                    </strong>
-                    <span>{verdictLabels[item.verdict]}</span>
+            <>
+              {primaryItem && (
+                <section className={`game-review-primary ${primaryItem.verdict}`}>
+                  <div className="game-review-primary-kicker">
+                    <span>Главная ошибка партии</span>
+                    <b>{verdictLabels[primaryItem.verdict]}</b>
                   </div>
 
-                  <div className="game-review-moves">
-                    <span>Сыграно</span>
-                    <b>{formatMove(item.playedMove)}</b>
+                  <strong>
+                    Ход {primaryItem.moveNumber}: {formatMove(primaryItem.playedMove)}
+                  </strong>
+                  <p>
+                    Это главный момент для исправления: потеря оценки — {formatLoss(primaryItem.evaluationLoss)}.
+                    Вернись в позицию и найди более сильное решение самостоятельно.
+                  </p>
 
-                    <span>Лучше было</span>
-                    <b>{formatMove(item.bestMove)}</b>
+                  <button
+                    type="button"
+                    className="game-review-practice"
+                    onClick={() => onPracticeMainMistake(primaryItem)}
+                  >
+                    Исправить главную ошибку
+                  </button>
+                </section>
+              )}
 
-                    <span>Потеря</span>
-                    <b>{formatLoss(item.evaluationLoss)}</b>
-                  </div>
-                  <span className="game-review-open">Показать позицию на доске</span>
-                </button>
-              ))}
-            </div>
+              <div className="game-review-list">
+                {keyMoments.slice(0, 8).map((item) => (
+                  <button
+                    type="button"
+                    className={`game-review-item ${item.verdict}`}
+                    key={item.id}
+                    onClick={() => onSelectPosition(item)}
+                  >
+                    <div className="game-review-item-top">
+                      <strong>
+                        {item.moveNumber}. {getSideLabel(item.side)}
+                      </strong>
+                      <span>{verdictLabels[item.verdict]}</span>
+                    </div>
+
+                    <div className="game-review-moves">
+                      <span>Сыграно</span>
+                      <b>{formatMove(item.playedMove)}</b>
+
+                      <span>Лучше было</span>
+                      <b>{formatMove(item.bestMove)}</b>
+
+                      <span>Потеря</span>
+                      <b>{formatLoss(item.evaluationLoss)}</b>
+                    </div>
+                    <span className="game-review-open">Показать позицию на доске</span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           <button

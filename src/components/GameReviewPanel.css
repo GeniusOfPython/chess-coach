@@ -73,6 +73,62 @@
   gap: 12px;
 }
 
+.game-review-primary {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgb(255 60 172 / 62%);
+  border-radius: var(--radius-card, 18px);
+  background:
+    radial-gradient(circle at top right, rgb(0 229 255 / 13%), transparent 42%),
+    linear-gradient(145deg, rgb(255 60 172 / 18%), rgb(10 8 31 / 92%));
+  box-shadow: 0 14px 36px rgb(255 60 172 / 14%);
+}
+
+.game-review-primary-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #ffb8e8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.game-review-primary-kicker b {
+  padding: 5px 9px;
+  border: 1px solid rgb(255 138 61 / 48%);
+  border-radius: 999px;
+  color: #ffd2b8;
+  background: rgb(255 138 61 / 12%);
+}
+
+.game-review-primary p {
+  margin: 0;
+  color: var(--color-text-muted, #c7bdd8);
+  line-height: 1.5;
+}
+
+.game-review-practice,
+.training-retry-button {
+  min-height: 48px;
+  border: 1px solid rgb(255 255 255 / 58%);
+  border-radius: var(--radius-button, 14px);
+  background: linear-gradient(105deg, #ff3cac, #d946ef 42%, #00e5ff 100%);
+  box-shadow: 0 10px 28px rgb(255 60 172 / 28%), 0 0 22px rgb(0 229 255 / 14%);
+  color: #10051d;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.game-review-practice:hover,
+.training-retry-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
 .game-review-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

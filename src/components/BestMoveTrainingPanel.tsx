@@ -1,3 +1,4 @@
+import type { Color } from "chess.js";
 import { explainEngineMove } from "../utils/explainMove";
 
 export type BestMoveTrainingStatus =
@@ -14,6 +15,15 @@ export type BestMoveTrainingTask = {
   playedMove: string | null;
   error: string | null;
   hintLevel: number;
+  context: BestMoveTrainingContext | null;
+};
+
+export type BestMoveTrainingContext = {
+  kind: "review";
+  moveNumber: number;
+  side: Color;
+  playedMove: string;
+  verdict: "inaccuracy" | "mistake" | "blunder";
 };
 
 export type BestMoveTrainingStats = {
@@ -32,6 +42,7 @@ type Props = {
   onStart: () => void;
   onRevealHint: () => void;
   onReset: () => void;
+  onRetry: () => void;
   onResetStats: () => void;
 };
 
@@ -132,6 +143,7 @@ export default function BestMoveTrainingPanel({
   onStart,
   onRevealHint,
   onReset,
+  onRetry,
   onResetStats,
 }: Props) {
   const explanations =
@@ -140,11 +152,14 @@ export default function BestMoveTrainingPanel({
       : [];
 
   const visibleHints = getVisibleHints(task);
+  const isReviewTask = task.context?.kind === "review";
 
   return (
     <div className="best-move-training-card">
       <div className="best-move-training-heading">
-        <span className="status-label">Тренировка лучшего хода</span>
+        <span className="status-label">
+          {isReviewTask ? "Исправление главной ошибки" : "Тренировка лучшего хода"}
+        </span>
 
         {stats.totalAttempts > 0 && (
           <button
@@ -156,6 +171,14 @@ export default function BestMoveTrainingPanel({
           </button>
         )}
       </div>
+
+      {task.context && (
+        <div className="learning-cycle-steps" aria-label="Этапы исправления ошибки">
+          <div className="complete"><span>1</span><b>Ошибка найдена</b></div>
+          <div className={task.status === "success" ? "complete" : "active"}><span>2</span><b>Решение повторено</b></div>
+          <div className={task.status === "success" ? "complete" : "pending"}><span>3</span><b>Навык проверен</b></div>
+        </div>
+      )}
 
       <div className="best-move-training-stats" aria-label="Статистика тренировки">
         <div>
@@ -192,6 +215,13 @@ export default function BestMoveTrainingPanel({
       <div className={`best-move-training ${task.status}`}>
         <strong>{getStatusText(task)}</strong>
 
+        {task.context && task.status !== "success" && (
+          <p className="best-move-training-origin">
+            В партии на {task.context.moveNumber}-м ходу было сыграно {formatMove(task.context.playedMove)}.
+            Найди ход, который исправляет эту ошибку.
+          </p>
+        )}
+
         {stats.currentStreak >= 3 && task.status !== "fail" && (
           <p className="best-move-training-streak-note">
             Хорошая серия: {stats.currentStreak} лучших ходов подряд. Продолжай без подсказок, чтобы закрепить навык.
@@ -222,10 +252,17 @@ export default function BestMoveTrainingPanel({
         )}
 
         {task.status === "success" && (
-          <div className="best-move-training-result">
-            <span>Твой ход</span>
-            <b>{formatMove(task.playedMove)}</b>
-          </div>
+          <>
+            <div className="best-move-training-result">
+              <span>Твой ход</span>
+              <b>{formatMove(task.playedMove)}</b>
+            </div>
+            {task.context && (
+              <p className="best-move-training-verified">
+                Главная ошибка исправлена. Позиция решена самостоятельно, навык засчитан в прогресс.
+              </p>
+            )}
+          </>
         )}
 
         {task.status === "fail" && (
@@ -253,16 +290,26 @@ export default function BestMoveTrainingPanel({
         )}
 
         <div className="best-move-training-actions">
-          <button
-            type="button"
-            className="secondary"
-            disabled={!canStart || task.status === "preparing"}
-            onClick={onStart}
-          >
-            {task.status === "idle"
-              ? "Начать тренировку"
-              : "Новая задача из позиции"}
-          </button>
+          {task.status === "fail" && task.context ? (
+            <button
+              type="button"
+              className="training-retry-button"
+              onClick={onRetry}
+            >
+              Попробовать эту позицию ещё раз
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="secondary"
+              disabled={!canStart || task.status === "preparing"}
+              onClick={onStart}
+            >
+              {task.status === "idle"
+                ? "Начать тренировку"
+                : "Новая задача из позиции"}
+            </button>
+          )}
 
           {task.status === "ready" && (
             <button

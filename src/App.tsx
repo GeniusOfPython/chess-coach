@@ -344,7 +344,8 @@ function App() {
   ]);
 
   const boardOrientation =
-    gameMode === "bot" && playerSide === "b"
+    bestMoveTrainingTask.context?.side === "b" ||
+    (gameMode === "bot" && playerSide === "b")
       ? "black"
       : "white";
   const isActiveBotGame = isBotFairPlayActive({
@@ -563,6 +564,43 @@ function App() {
     }
 
     readyBestMoveTraining(trainingFen, trainingAnalysis.bestMove);
+  }
+
+  function handlePracticeMainMistake(item: GameReviewItem) {
+    if (!item.bestMove || !handleImportFen(item.positionFen)) {
+      showRewardToast({
+        kind: "warning",
+        title: "Позиция недоступна",
+        text: "Не удалось открыть позицию для тренировки.",
+      });
+      return;
+    }
+
+    readyBestMoveTraining(item.positionFen, item.bestMove, {
+      kind: "review",
+      moveNumber: item.moveNumber,
+      side: item.side,
+      playedMove: item.playedMove,
+      verdict: item.verdict === "blunder" || item.verdict === "mistake"
+        ? item.verdict
+        : "inaccuracy",
+    });
+    setActiveWorkspace("coach");
+    showRewardToast({
+      kind: "success",
+      title: "Главная ошибка найдена",
+      text: "Позиция возвращена на доску. Найди исправление без подсказки.",
+    });
+  }
+
+  function handleRetryBestMoveTraining() {
+    const { positionFen, bestMove, context } = bestMoveTrainingTask;
+
+    if (!positionFen || !bestMove || !handleImportFen(positionFen)) {
+      return;
+    }
+
+    readyBestMoveTraining(positionFen, bestMove, context);
   }
 
   function handleRevealBestMoveHint() {
@@ -912,6 +950,7 @@ function App() {
                     onStart={handleStartBestMoveTraining}
                     onRevealHint={handleRevealBestMoveHint}
                     onReset={resetBestMoveTraining}
+                    onRetry={handleRetryBestMoveTraining}
                     onResetStats={handleResetTrainingStats}
                   />
                 </>
@@ -938,6 +977,7 @@ function App() {
                 onRun={handleRunGameReview}
                 onClear={clearGameReview}
                 onSelectPosition={handleSelectReviewedPosition}
+                onPracticeMainMistake={handlePracticeMainMistake}
               />
 
               {gameMode === "analysis" && access.canUseMoveReview ? (
