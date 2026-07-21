@@ -129,7 +129,7 @@ export class AiCoachService {
 
       try {
         return {
-          advice: parseAiCoachResponse(await response.json()).advice,
+          advice: parseAiCoachResponse(await response.json(), request).advice,
           quota: serverQuota,
         };
       } catch (error) {

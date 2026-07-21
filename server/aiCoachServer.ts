@@ -1,10 +1,10 @@
-import { Chess } from "chess.js";
 import {
   aiCoachContractVersion,
   parseAiCoachResponse,
   type AiCoachRequest,
   type AiCoachResponse,
 } from "../src/ai/coachContract";
+import { parseVerifiedChessFacts } from "../src/analysis/verifiedChessFacts";
 import type {
   CoachCostController,
   CoachTokenUsage,
@@ -16,7 +16,6 @@ import {
 
 const maximumRequestBytes = 16_384;
 const maximumOutputTokens = 450;
-const movePattern = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
 
 const adviceSchema = {
   type: "object",
@@ -40,6 +39,23 @@ const adviceSchema = {
           ],
         },
         question: { type: "string" },
+        grounding: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            factIds: {
+              type: "array",
+              items: { type: "string" },
+            },
+            variationId: {
+              anyOf: [
+                { type: "string" },
+                { type: "null" },
+              ],
+            },
+          },
+          required: ["factIds", "variationId"],
+        },
       },
       required: [
         "headline",
@@ -47,6 +63,7 @@ const adviceSchema = {
         "focusPoints",
         "warning",
         "question",
+        "grounding",
       ],
     },
   },
@@ -111,78 +128,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isNullableFiniteNumber(value: unknown) {
-  return value === null || (typeof value === "number" && Number.isFinite(value));
-}
-
-function isEngineLine(value: unknown) {
-  return isRecord(value) &&
-    typeof value.rank === "number" &&
-    Number.isInteger(value.rank) &&
-    value.rank >= 1 &&
-    Array.isArray(value.variation) &&
-    value.variation.length <= 8 &&
-    value.variation.every(
-      (move) => typeof move === "string" && movePattern.test(move),
-    );
-}
-
 export function parseAiCoachRequest(value: unknown): AiCoachRequest {
   if (
     !isRecord(value) ||
     value.schemaVersion !== aiCoachContractVersion ||
     value.locale !== "ru" ||
-    !isRecord(value.position) ||
-    !isRecord(value.engine)
+    !isRecord(value.facts)
   ) {
     throw new CoachServerError("Invalid request contract", 400, "invalid_request");
   }
 
-  const { position, engine } = value;
-
-  if (
-    typeof position.fen !== "string" ||
-    position.fen.length > 100 ||
-    (position.sideToMove !== "white" && position.sideToMove !== "black") ||
-    typeof position.fullMoveNumber !== "number" ||
-    !Number.isInteger(position.fullMoveNumber) ||
-    position.fullMoveNumber < 1 ||
-    typeof engine.bestMove !== "string" ||
-    !movePattern.test(engine.bestMove) ||
-    !isNullableFiniteNumber(engine.evaluation) ||
-    !isNullableFiniteNumber(engine.mate) ||
-    typeof engine.depth !== "number" ||
-    !Number.isInteger(engine.depth) ||
-    engine.depth < 0 ||
-    engine.depth > 100 ||
-    !Array.isArray(engine.lines) ||
-    engine.lines.length > 3 ||
-    !engine.lines.every(isEngineLine)
-  ) {
-    throw new CoachServerError("Invalid request fields", 400, "invalid_request");
-  }
-
-  let game: Chess;
-
   try {
-    game = new Chess(position.fen);
+    return {
+      schemaVersion: aiCoachContractVersion,
+      locale: "ru",
+      facts: parseVerifiedChessFacts(value.facts),
+    };
   } catch {
-    throw new CoachServerError("Invalid FEN", 400, "invalid_request");
+    throw new CoachServerError("Invalid verified facts", 400, "invalid_request");
   }
-
-  const normalizedFen = game.fen();
-  const normalizedFullMove = Number(normalizedFen.split(" ")[5]);
-  const normalizedSide = game.turn() === "w" ? "white" : "black";
-
-  if (
-    position.fen !== normalizedFen ||
-    position.sideToMove !== normalizedSide ||
-    position.fullMoveNumber !== normalizedFullMove
-  ) {
-    throw new CoachServerError("Inconsistent position", 400, "invalid_request");
-  }
-
-  return value as AiCoachRequest;
 }
 
 function jsonResponse(
@@ -266,7 +230,10 @@ export function createAiCoachEndpoint({
       }
 
       try {
-        const response = parseAiCoachResponse(await provider(coachRequest));
+        const response = parseAiCoachResponse(
+          await provider(coachRequest),
+          coachRequest,
+        );
         await quota.commit?.();
         return jsonResponse(
           response,
@@ -374,6 +341,8 @@ export function createOpenAiCoachProvider({
           instructions: [
             "Ты русскоязычный шахматный тренер.",
             "Шахматный расчёт уже определил лучший ход: не предлагай вместо него другой.",
+            "Каждое шахматное утверждение основывай только на facts и укажи использованные factIds в grounding.",
+            "Не придумывай ходы и варианты. variationId может ссылаться только на один из переданных проверенных вариантов.",
             "Объясняй позицию кратко и понятно, без markdown и лишней терминологии.",
             "Не утверждай, что видишь данные, которых нет во входном JSON.",
           ].join(" "),
@@ -430,7 +399,7 @@ export function createOpenAiCoachProvider({
         throw new CoachServerError("Empty OpenAI response", 503, "coach_unavailable");
       }
 
-      return parseAiCoachResponse(JSON.parse(outputText) as unknown);
+      return parseAiCoachResponse(JSON.parse(outputText) as unknown, request);
     } catch (error) {
       if (error instanceof CoachServerError) {
         throw error;

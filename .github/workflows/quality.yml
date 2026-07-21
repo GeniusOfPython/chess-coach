@@ -34,5 +34,8 @@ jobs:
       - name: Run quality gate
         run: npm run check
 
+      - name: Run AI Coach factual eval
+        run: npm run eval:ai-coach
+
       - name: Verify PWA build artifacts
         run: node scripts/verify-build.mjs

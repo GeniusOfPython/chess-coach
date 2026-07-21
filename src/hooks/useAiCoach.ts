@@ -10,7 +10,7 @@ import type {
   AiCoachQuota,
 } from "../features/featureAccess";
 import type { AiCoachServerQuota } from "../ai/coachQuotaProtocol";
-import type { EngineAnalysis } from "../types/chess";
+import type { VerifiedChessFacts } from "../analysis/verifiedChessFacts";
 
 export type AiCoachStatus =
   | "idle"
@@ -22,8 +22,7 @@ export type AiCoachStatus =
 export type AiCoachLimitReason = "quota" | "temporary";
 
 type Options = {
-  position: string;
-  analysis: EngineAnalysis | null;
+  facts: VerifiedChessFacts | null;
   quota: AiCoachQuota;
   isOnline: boolean;
   enabled: boolean;
@@ -54,8 +53,7 @@ function errorMessage(error: unknown) {
 }
 
 export function useAiCoach({
-  position,
-  analysis,
+  facts,
   quota,
   isOnline,
   enabled,
@@ -81,7 +79,7 @@ export function useAiCoach({
     setError(null);
     setLimitReason(null);
     setServerQuota(null);
-  }, [position, analysis?.bestMove]);
+  }, [facts?.position.fen, facts?.recommendation.bestMove]);
 
   useEffect(() => () => activeRequestRef.current?.abort(), []);
 
@@ -93,7 +91,7 @@ export function useAiCoach({
   }, [quotaLimit, quotaPeriod]);
 
   async function requestAdvice() {
-    if (!enabled || !isOnline || !analysis || status === "loading") {
+    if (!enabled || !isOnline || !facts || status === "loading") {
       return;
     }
 
@@ -113,7 +111,7 @@ export function useAiCoach({
     try {
       serviceRef.current ??= new AiCoachService();
       const result = await serviceRef.current.getAdvice(
-        createAiCoachRequest({ fen: position, analysis }),
+        createAiCoachRequest(facts),
         controller.signal,
       );
 

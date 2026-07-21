@@ -1,6 +1,7 @@
+import { useMemo } from "react";
 import type { EngineAnalysis } from "../types/chess";
 import { buildCoachPlan } from "../analysis/coachPlan";
-import { detectTacticalMotifs } from "../analysis/tacticalMotifs";
+import { createVerifiedChessFacts } from "../analysis/verifiedChessFacts";
 import { getFeatureAccess, type SubscriptionTier } from "../features/featureAccess";
 import { useAiCoach } from "../hooks/useAiCoach";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
@@ -21,6 +22,16 @@ const priorityLabels = {
   position: "Позиция",
 };
 
+const motifLabels: Record<string, string> = {
+  "motif.mate": "Матовая угроза",
+  "motif.check": "Шах",
+  "motif.capture": "Взятие материала",
+  "motif.promotion": "Превращение пешки",
+  "motif.fork": "Вилка / двойная угроза",
+  "motif.queen-attack": "Нападение на ферзя",
+  "motif.castle": "Безопасность короля",
+};
+
 export default function CoachPanel({
   analysis,
   position,
@@ -29,15 +40,25 @@ export default function CoachPanel({
   const access = getFeatureAccess(subscriptionTier);
   const networkStatus = useNetworkStatus();
   const aiCoachEnabled = import.meta.env.VITE_AI_COACH_ENABLED === "true";
+  const verifiedFacts = useMemo(() => {
+    if (!analysis) {
+      return null;
+    }
+
+    try {
+      return createVerifiedChessFacts({ fen: position, analysis });
+    } catch {
+      return null;
+    }
+  }, [analysis, position]);
   const aiCoach = useAiCoach({
-    position,
-    analysis,
+    facts: verifiedFacts,
     quota: access.aiCoachQuota,
     isOnline: networkStatus === "online",
     enabled: aiCoachEnabled,
   });
 
-  if (!analysis) {
+  if (!analysis || !verifiedFacts) {
     return (
       <div className="coach-card coach-card-empty">
         <div className="coach-card-header">
@@ -54,11 +75,8 @@ export default function CoachPanel({
     );
   }
 
-  const plan = buildCoachPlan(analysis, position);
-  const tacticalMotifs = detectTacticalMotifs(
-    position,
-    analysis.bestMove,
-  );
+  const plan = buildCoachPlan(verifiedFacts);
+  const tacticalMotifs = verifiedFacts.facts.filter((fact) => fact.category === "motif");
   const displayedTier = aiCoach.serverQuota?.tier ?? subscriptionTier;
   const displayedQuota = aiCoach.serverQuota ?? {
     tier: subscriptionTier,
@@ -98,11 +116,11 @@ export default function CoachPanel({
           <div className="coach-tactics-list">
             {tacticalMotifs.map((motif) => (
               <article
-                className={`coach-tactic coach-tactic-${motif.severity}`}
+                className="coach-tactic coach-tactic-positional"
                 key={motif.id}
               >
-                <strong>{motif.title}</strong>
-                <p>{motif.description}</p>
+                <strong>{motifLabels[motif.id] ?? "Проверенный мотив"}</strong>
+                <p>{motif.text}</p>
               </article>
             ))}
           </div>
@@ -197,6 +215,10 @@ export default function CoachPanel({
             )}
 
             <p className="ai-coach-question">Вопрос: {aiCoach.advice.question}</p>
+
+            <p className="ai-coach-grounding">
+              Ответ сверён с расчётом позиции.
+            </p>
           </div>
         )}
 

@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint src server api vite.config.ts",
     "test": "vitest run",
+    "eval:ai-coach": "vitest run src/ai/evaluation/aiCoachEval.test.ts --reporter=verbose",
     "check": "npm run lint && npm test && npm run build",
     "preview": "vite preview"
   },

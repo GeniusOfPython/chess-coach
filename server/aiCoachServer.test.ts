@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AiCoachRequest, AiCoachResponse } from "../src/ai/coachContract";
+import {
+  createAiCoachRequest,
+  type AiCoachResponse,
+} from "../src/ai/coachContract";
+import { createVerifiedChessFacts } from "../src/analysis/verifiedChessFacts";
 import {
   createCachedCoachProvider,
   createAiCoachEndpoint,
@@ -8,31 +12,38 @@ import {
 } from "./aiCoachServer";
 import { createMemoryCoachCostController } from "./coachCostController";
 
-const coachRequest = {
-  schemaVersion: 1,
-  locale: "ru",
-  position: {
-    fen: "8/8/8/8/8/8/4K3/7k w - - 0 1",
-    sideToMove: "white",
-    fullMoveNumber: 1,
-  },
-  engine: {
+const coachRequest = createAiCoachRequest(createVerifiedChessFacts({
+  fen: "8/8/8/8/8/8/4K3/7k w - - 0 1",
+  analysis: {
+    rank: 1,
     bestMove: "e2e3",
     evaluation: 0,
     mate: null,
     depth: 12,
-    lines: [{ rank: 1, variation: ["e2e3"] }],
+    variation: ["e2e3"],
+    lines: [{
+      rank: 1,
+      bestMove: "e2e3",
+      evaluation: 0,
+      mate: null,
+      depth: 12,
+      variation: ["e2e3"],
+    }],
   },
-} satisfies AiCoachRequest;
+}));
 
 const coachResponse = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   advice: {
     headline: "Активируй короля",
     explanation: "В эндшпиле король должен участвовать в игре.",
     focusPoints: ["Централизация"],
     warning: null,
     question: "К какому полю направить короля?",
+    grounding: {
+      factIds: ["recommendation.best-move"],
+      variationId: "variation.1",
+    },
   },
 } satisfies AiCoachResponse;
 
@@ -107,7 +118,7 @@ describe("AI Coach endpoint", () => {
       consumeQuota: () => ({ allowed: true }),
     });
 
-    const response = await endpoint(post({ ...coachRequest, schemaVersion: 2 }));
+    const response = await endpoint(post({ ...coachRequest, schemaVersion: 1 }));
 
     expect(response.status).toBe(400);
     expect(provider).not.toHaveBeenCalled();
@@ -155,12 +166,15 @@ describe("OpenAI Coach provider", () => {
     await expect(provider(coachRequest)).resolves.toEqual(coachResponse);
 
     const body = JSON.parse(String(capturedInit?.body)) as {
+      instructions: string;
       max_output_tokens: number;
       store: boolean;
       text: { format: { strict: boolean; type: string } };
     };
     expect(body.store).toBe(false);
     expect(body.max_output_tokens).toBe(450);
+    expect(body.instructions).toContain("factIds");
+    expect(body.instructions).toContain("Не придумывай ходы и варианты");
     expect(body.text.format).toMatchObject({
       type: "json_schema",
       strict: true,
