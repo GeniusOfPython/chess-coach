@@ -298,6 +298,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                 )}
                 items={review.items}
                 error={review.error}
+                selectedPositionIndex={game.viewedMoveIndex}
                 disabled={session.isBotThinking || derived.isActiveBotGame}
                 disabledMessage={derived.isActiveBotGame
                   ? "Разбор станет доступен после завершения партии."

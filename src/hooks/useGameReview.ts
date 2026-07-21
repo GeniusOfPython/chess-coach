@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { Color } from "chess.js";
-import type { GameReviewItem, GameReviewStatus } from "../components/GameReviewPanel";
+import type {
+  GameReviewItem,
+  GameReviewStatus,
+} from "../analysis/gameReview";
 import type { EngineAnalysis } from "../types/chess";
 import { getFullMoveNumber, getTurnFromFen, getVerdict, getWhiteEvaluation, isMoveMatchingBestMove } from "../analysis/reviewRules";
 type ReviewMove = { from: string; to: string };
@@ -17,20 +20,50 @@ export function useGameReview() {
     if (total === 0) return;
     setStatus("running"); setItems([]); setProgress(0); setError("");
     const reviewed: GameReviewItem[] = [];
+    const analysisCache = new Map<string, EngineAnalysis | null>();
+    const analyzeFen = async (fen: string, movetime: number) => {
+      if (analysisCache.has(fen)) {
+        return analysisCache.get(fen) ?? null;
+      }
+
+      const result = await calculatePositionAnalysis({
+        fen,
+        isGameOver: false,
+        movetime,
+      });
+      analysisCache.set(fen, result);
+      return result;
+    };
+
     try {
       for (let index = 0; index < total; index += 1) {
         const beforeFen = fenHistory[index]; const afterFen = fenHistory[index + 1]; const move = moveHistory[index];
         if (!beforeFen || !afterFen || !move) { setProgress(index + 1); continue; }
         const side = getTurnFromFen(beforeFen); const playedMove = `${move.from}${move.to}`;
-        if (reviewSide && side !== reviewSide) { setProgress(index + 1); continue; }
-        const before = await calculatePositionAnalysis({ fen: beforeFen, isGameOver: false, movetime: 650 });
+        const before = await analyzeFen(beforeFen, 650);
         if (!before?.bestMove) { setProgress(index + 1); continue; }
-        const after = await calculatePositionAnalysis({ fen: afterFen, isGameOver: false, movetime: 450 });
+        const after = await analyzeFen(afterFen, 450);
         const matchedBestMove = isMoveMatchingBestMove({ playedMove, bestMove: before.bestMove });
         const beforeScore = getWhiteEvaluation(before, side);
         const afterScore = after ? getWhiteEvaluation(after, getTurnFromFen(afterFen)) : null;
         const loss = afterScore === null ? null : Math.max(0, side === "w" ? beforeScore - afterScore : afterScore - beforeScore);
-        reviewed.push({ id: `${index}-${beforeFen}-${playedMove}`, positionFen: beforeFen, positionIndex: index, moveNumber: getFullMoveNumber(beforeFen), side, playedMove, bestMove: before.bestMove, verdict: getVerdict({ matchedBestMove, evaluationLoss: matchedBestMove ? 0 : loss }), evaluationLoss: matchedBestMove ? 0 : loss });
+        reviewed.push({
+          id: `${index}-${beforeFen}-${playedMove}`,
+          positionFen: beforeFen,
+          positionIndex: index,
+          moveNumber: getFullMoveNumber(beforeFen),
+          side,
+          playedMove,
+          bestMove: before.bestMove,
+          verdict: getVerdict({
+            matchedBestMove,
+            evaluationLoss: matchedBestMove ? 0 : loss,
+          }),
+          evaluationBeforeWhite: beforeScore,
+          evaluationAfterWhite: afterScore,
+          evaluationLoss: matchedBestMove ? 0 : loss,
+          isPlayerDecision: !reviewSide || side === reviewSide,
+        });
         setItems([...reviewed]); setProgress(index + 1);
       }
       setStatus("done");

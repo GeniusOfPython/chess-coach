@@ -3,7 +3,7 @@ import {
   getTurnFromFen,
   isMoveMatchingBestMove,
 } from "../analysis/reviewRules";
-import type { GameReviewItem } from "../components/GameReviewPanel";
+import type { GameReviewItem } from "../analysis/gameReview";
 import type { RewardToastMessage } from "../components/RewardToast";
 import type { WorkspaceId } from "../components/WorkspaceTabs";
 import type { GameMode } from "../game/gameTypes";

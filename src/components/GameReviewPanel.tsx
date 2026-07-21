@@ -1,25 +1,14 @@
 import type { Color } from "chess.js";
-import type { MoveReviewVerdict } from "./MoveReviewPanel";
+import type {
+  GameReviewItem,
+  GameReviewStatus,
+} from "../analysis/gameReview";
+import type { MoveReviewVerdict } from "../analysis/reviewTypes";
+import { rankTurningPoints } from "../analysis/reviewTimeline";
 import LoadingSkeleton from "./LoadingSkeleton";
-import { selectPrimaryReviewItem } from "../analysis/learningCycle";
+import GameReviewChart from "./GameReviewChart";
 
-export type GameReviewStatus =
-  | "idle"
-  | "running"
-  | "done"
-  | "error";
-
-export type GameReviewItem = {
-  id: string;
-  positionFen: string;
-  positionIndex: number;
-  moveNumber: number;
-  side: Color;
-  playedMove: string;
-  bestMove: string | null;
-  verdict: MoveReviewVerdict;
-  evaluationLoss: number | null;
-};
+export type { GameReviewItem, GameReviewStatus };
 
 type Props = {
   status: GameReviewStatus;
@@ -29,6 +18,7 @@ type Props = {
   error: string;
   disabled?: boolean;
   disabledMessage?: string;
+  selectedPositionIndex: number;
   onRun: () => void;
   onClear: () => void;
   onSelectPosition: (item: GameReviewItem) => void;
@@ -82,21 +72,29 @@ export default function GameReviewPanel({
   error,
   disabled = false,
   disabledMessage,
+  selectedPositionIndex,
   onRun,
   onClear,
   onSelectPosition,
   onPracticeMainMistake,
 }: Props) {
-  const mistakes = getCount(items, "mistake");
-  const blunders = getCount(items, "blunder");
-  const inaccuracies = getCount(items, "inaccuracy");
-  const keyMoments = items.filter(
+  const playerDecisions = items.filter((item) => item.isPlayerDecision);
+  const mistakes = getCount(playerDecisions, "mistake");
+  const blunders = getCount(playerDecisions, "blunder");
+  const inaccuracies = getCount(playerDecisions, "inaccuracy");
+  const reviewErrors = playerDecisions.filter(
     (item) =>
       item.verdict === "inaccuracy" ||
       item.verdict === "mistake" ||
       item.verdict === "blunder",
   );
-  const primaryItem = selectPrimaryReviewItem(items);
+  const turningPoints = rankTurningPoints(items);
+  const turningPointIds = new Set(
+    turningPoints.map(({ item }) => item.id),
+  );
+  const otherErrors = reviewErrors.filter(
+    (item) => !turningPointIds.has(item.id),
+  );
 
   const progressPercent = total > 0
     ? Math.min(100, Math.round((progress / total) * 100))
@@ -176,67 +174,101 @@ export default function GameReviewPanel({
             </div>
           </div>
 
-          {keyMoments.length === 0 ? (
+          <GameReviewChart
+            items={items}
+            turningPoints={turningPoints}
+            selectedPositionIndex={selectedPositionIndex}
+            onSelectPosition={onSelectPosition}
+          />
+
+          {turningPoints.length === 0 ? (
             <p className="game-review-empty">
               Серьёзных ошибок в просмотренных ходах не найдено.
             </p>
           ) : (
-            <>
-              {primaryItem && (
-                <section className={`game-review-primary ${primaryItem.verdict}`}>
+            <section className="game-review-turning-points">
+              <div className="game-review-section-heading">
+                <span className="status-label">Приоритет тренировки</span>
+                <strong>Ключевые переломные моменты</strong>
+              </div>
+
+              {turningPoints.map(({ item, reason }, index) => (
+                <article
+                  className={`game-review-turning-point ${item.verdict}${
+                    index === 0 ? " primary" : ""
+                  }${
+                    selectedPositionIndex === item.positionIndex ? " active" : ""
+                  }`}
+                  key={item.id}
+                >
                   <div className="game-review-primary-kicker">
-                    <span>Главная ошибка партии</span>
-                    <b>{verdictLabels[primaryItem.verdict]}</b>
+                    <span>{index === 0 ? "Главный момент" : `Момент ${index + 1}`}</span>
+                    <b>{verdictLabels[item.verdict]}</b>
                   </div>
 
-                  <strong>
-                    Ход {primaryItem.moveNumber}: {formatMove(primaryItem.playedMove)}
-                  </strong>
-                  <p>
-                    Это главный момент для исправления: потеря оценки — {formatLoss(primaryItem.evaluationLoss)}.
-                    Вернись в позицию и найди более сильное решение самостоятельно.
-                  </p>
+                  <div className="game-review-turning-title">
+                    <strong>
+                      Ход {item.moveNumber} · {getSideLabel(item.side)}
+                    </strong>
+                    <span>{reason}</span>
+                  </div>
 
-                  <button
-                    type="button"
-                    className="game-review-practice"
-                    onClick={() => onPracticeMainMistake(primaryItem)}
-                  >
-                    Исправить главную ошибку
-                  </button>
-                </section>
-              )}
+                  <div className="game-review-moves">
+                    <span>Сыграно</span>
+                    <b>{formatMove(item.playedMove)}</b>
 
-              <div className="game-review-list">
-                {keyMoments.slice(0, 8).map((item) => (
-                  <button
-                    type="button"
-                    className={`game-review-item ${item.verdict}`}
-                    key={item.id}
-                    onClick={() => onSelectPosition(item)}
-                  >
-                    <div className="game-review-item-top">
-                      <strong>
-                        {item.moveNumber}. {getSideLabel(item.side)}
-                      </strong>
-                      <span>{verdictLabels[item.verdict]}</span>
-                    </div>
+                    <span>Сильнее</span>
+                    <b>{formatMove(item.bestMove)}</b>
 
-                    <div className="game-review-moves">
-                      <span>Сыграно</span>
-                      <b>{formatMove(item.playedMove)}</b>
+                    <span>Потеря</span>
+                    <b>{formatLoss(item.evaluationLoss)}</b>
+                  </div>
 
-                      <span>Лучше было</span>
-                      <b>{formatMove(item.bestMove)}</b>
+                  <div className="game-review-turning-actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => onSelectPosition(item)}
+                    >
+                      Показать на доске
+                    </button>
+                    <button
+                      type="button"
+                      className="game-review-practice"
+                      onClick={() => onPracticeMainMistake(item)}
+                    >
+                      Тренировать
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
 
-                      <span>Потеря</span>
-                      <b>{formatLoss(item.evaluationLoss)}</b>
-                    </div>
-                    <span className="game-review-open">Показать позицию на доске</span>
-                  </button>
-                ))}
-              </div>
-            </>
+          {otherErrors.length > 0 && (
+            <div className="game-review-list">
+              <span className="status-label">Остальные ошибки</span>
+              {otherErrors.slice(0, 5).map((item) => (
+                <button
+                  type="button"
+                  className={`game-review-item ${item.verdict}${
+                    selectedPositionIndex === item.positionIndex ? " active" : ""
+                  }`}
+                  key={item.id}
+                  onClick={() => onSelectPosition(item)}
+                >
+                  <div className="game-review-item-top">
+                    <strong>
+                      Ход {item.moveNumber} · {getSideLabel(item.side)}
+                    </strong>
+                    <span>{verdictLabels[item.verdict]}</span>
+                  </div>
+                  <span className="game-review-open">
+                    {formatMove(item.playedMove)} · потеря {formatLoss(item.evaluationLoss)}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
 
           <button
