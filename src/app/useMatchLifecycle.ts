@@ -15,6 +15,7 @@ import type { BotGameTermination, GameMode } from "../game/gameTypes";
 import { useChessAchievements } from "../hooks/useChessAchievements";
 import { useGameArchive } from "../hooks/useGameArchive";
 import { triggerSuccessHaptic } from "../platform/nativeBridge";
+import { trackProductEvent } from "../platform/analytics/analyticsClient";
 import type { BotLevelId } from "../types/bot";
 
 type UseMatchLifecycleOptions = {
@@ -32,6 +33,28 @@ type UseMatchLifecycleOptions = {
   setActiveWorkspace: (workspace: WorkspaceId | null) => void;
   showRewardToast: (message: Omit<RewardToastMessage, "id">) => void;
 };
+
+function getPlayerOutcome({
+  gameMode,
+  playerSide,
+  winner,
+}: {
+  gameMode: GameMode;
+  playerSide: Color;
+  winner: "white" | "black" | "draw" | null;
+}) {
+  if (winner === "draw") {
+    return "draw" as const;
+  }
+
+  if (gameMode !== "bot" || winner === null) {
+    return "not_applicable" as const;
+  }
+
+  return winner === (playerSide === "w" ? "white" : "black")
+    ? "win" as const
+    : "loss" as const;
+}
 
 export function useMatchLifecycle({
   game,
@@ -96,6 +119,16 @@ export function useMatchLifecycle({
       winner: resultInfo.winner,
       halfMoves: historyLength,
     }));
+    trackProductEvent("game_completed", {
+      mode: gameMode,
+      playerOutcome: getPlayerOutcome({
+        gameMode,
+        playerSide,
+        winner: resultInfo.winner,
+      }),
+      halfMoves: historyLength,
+      termination: gameTermination ? "resignation" : "natural",
+    });
   }, [
     addArchivedGame,
     botLevelId,

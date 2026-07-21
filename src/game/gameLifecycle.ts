@@ -70,12 +70,13 @@ export function createGameLifecycleActions({
   }
 
   function handleStartBotGame() {
-    if (isBotThinking || gameMode !== "bot") return;
+    if (isBotThinking || gameMode !== "bot") return false;
 
     newGame();
     setSelectedSquare(null);
     startBotSession();
     clearTransientState({ clearJournal: true });
+    return true;
   }
 
   function handleUndoMove() {

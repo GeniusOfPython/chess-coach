@@ -55,7 +55,7 @@ describe("createGameLifecycleActions", () => {
     const dependencies = createDependencies();
     const actions = createGameLifecycleActions(dependencies);
 
-    actions.handleStartBotGame();
+    expect(actions.handleStartBotGame()).toBe(true);
 
     expect(dependencies.newGame).toHaveBeenCalledOnce();
     expect(dependencies.startBotSession).toHaveBeenCalledOnce();
@@ -66,7 +66,7 @@ describe("createGameLifecycleActions", () => {
     const dependencies = createDependencies({ isBotThinking: true });
     const actions = createGameLifecycleActions(dependencies);
 
-    actions.handleStartBotGame();
+    expect(actions.handleStartBotGame()).toBe(false);
 
     expect(dependencies.newGame).not.toHaveBeenCalled();
     expect(dependencies.startBotSession).not.toHaveBeenCalled();

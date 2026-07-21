@@ -23,6 +23,7 @@ import {
   triggerSuccessHaptic,
   triggerWarningHaptic,
 } from "../platform/nativeBridge";
+import { trackProductEvent } from "../platform/analytics/analyticsClient";
 import type { EngineAnalysis } from "../types/chess";
 
 type ReviewMove = { from: string; to: string };
@@ -226,12 +227,30 @@ export function useLearningFlow({
       return;
     }
 
-    await runReview({
+    const totalPositions = Math.min(
+      lastMoveHistory.length,
+      Math.max(0, fenHistory.length - 1),
+      24,
+    );
+
+    if (totalPositions === 0) {
+      return;
+    }
+
+    trackProductEvent("review_started", {
+      mode: gameMode,
+      totalPositions,
+    });
+    const result = await runReview({
       fenHistory,
       moveHistory: lastMoveHistory,
       calculatePositionAnalysis: calculateGameReviewAnalysis,
       reviewSide: gameMode === "bot" ? playerSide : undefined,
     });
+
+    if (result) {
+      trackProductEvent("review_finished", result);
+    }
   }
 
   function selectReviewedPosition(item: GameReviewItem) {
@@ -270,6 +289,10 @@ export function useLearningFlow({
     }
 
     readyTask(trainingFen, trainingAnalysis.bestMove);
+    trackProductEvent("training_started", {
+      source: "current_position",
+      sequenceTotal: 1,
+    });
   }
 
   function startReviewTraining(items: GameReviewItem[]) {
@@ -291,6 +314,10 @@ export function useLearningFlow({
       item.bestMove,
       getTrainingContext(item, 1, queue.items.length),
     );
+    trackProductEvent("training_started", {
+      source: "game_review",
+      sequenceTotal: queue.items.length,
+    });
     setActiveWorkspace("coach");
     showRewardToast({
       kind: "success",
@@ -343,6 +370,18 @@ export function useLearningFlow({
     readyTask(positionFen, bestMove, context);
   }
 
+  function revealBestMoveHint() {
+    if (task.status !== "ready") {
+      return;
+    }
+
+    trackProductEvent("training_hint_revealed", {
+      source: task.context ? "game_review" : "current_position",
+      hintLevel: Math.min(task.hintLevel + 1, 3),
+    });
+    revealHint();
+  }
+
   function completePlayerMove({
     playedMove,
     positionBeforeMove,
@@ -375,6 +414,24 @@ export function useLearningFlow({
       completeTask(playedMove, trainingSolved);
       const sequencePosition = task.context?.sequenceIndex ?? 1;
       const sequenceTotal = task.context?.sequenceTotal ?? 1;
+      const trainingSource = task.context
+        ? "game_review" as const
+        : "current_position" as const;
+
+      trackProductEvent("training_attempted", {
+        source: trainingSource,
+        solved: trainingSolved,
+        hintLevel: task.hintLevel,
+        sequenceIndex: sequencePosition,
+        sequenceTotal,
+      });
+
+      if (trainingSolved && sequencePosition === sequenceTotal) {
+        trackProductEvent("training_sequence_completed", {
+          source: trainingSource,
+          sequenceTotal,
+        });
+      }
 
       showRewardToast(trainingSolved
         ? {
@@ -442,7 +499,7 @@ export function useLearningFlow({
       practiceReviewSequence,
       continueReviewTraining,
       retryBestMoveTraining,
-      revealBestMoveHint: revealHint,
+      revealBestMoveHint,
       completePlayerMove,
     },
     lifecycle: {

@@ -56,6 +56,7 @@ export default function CoachPanel({
     quota: access.aiCoachQuota,
     isOnline: networkStatus === "online",
     enabled: aiCoachEnabled,
+    tier: access.tier,
   });
 
   if (!analysis || !verifiedFacts) {

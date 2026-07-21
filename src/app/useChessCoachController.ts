@@ -29,6 +29,7 @@ import {
 } from "../platform/nativeBridge";
 import { useLearningFlow } from "./useLearningFlow";
 import { useMatchLifecycle } from "./useMatchLifecycle";
+import { trackProductEvent } from "../platform/analytics/analyticsClient";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
@@ -198,7 +199,7 @@ export function useChessCoachController() {
 
   const {
     handleNewGame,
-    handleStartBotGame,
+    handleStartBotGame: startBotGame,
     handleUndoMove,
     handleModeChange,
     handlePlayerSideChange,
@@ -225,6 +226,18 @@ export function useChessCoachController() {
     clearAnalysis,
     clearGameTermination,
   });
+
+  function handleStartBotGame() {
+    if (!startBotGame()) {
+      return;
+    }
+
+    trackProductEvent("game_started", {
+      mode: "bot",
+      playerSide,
+      botLevel: botLevelId,
+    });
+  }
 
   const match = useMatchLifecycle({
     game,

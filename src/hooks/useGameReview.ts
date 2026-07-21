@@ -38,6 +38,15 @@ type RunReviewOptions = {
   reviewSide?: Color;
 };
 
+export type GameReviewRunResult = {
+  outcome: "completed" | "paused" | "error";
+  processedPositions: number;
+  totalPositions: number;
+  reviewItems: number;
+  cacheHits: number;
+  resumed: boolean;
+};
+
 function throwIfAborted(signal: AbortSignal) {
   if (signal.aborted) {
     throw new DOMException("Обзор остановлен", "AbortError");
@@ -95,7 +104,9 @@ export function useGameReview() {
     const controller = new AbortController();
     const reviewed = checkpoint ? [...checkpoint.items] : [];
     const startIndex = checkpoint?.nextIndex ?? 0;
+    const resumed = startIndex > 0;
     let cacheHits = 0;
+    let processedPositions = startIndex;
 
     activeControllerRef.current?.abort();
     activeControllerRef.current = controller;
@@ -140,6 +151,7 @@ export function useGameReview() {
         const move = moveHistory[index];
 
         if (!beforeFen || !afterFen || !move) {
+          processedPositions = index + 1;
           setProgress(index + 1);
           saveReviewCheckpoint({
             signature,
@@ -193,6 +205,7 @@ export function useGameReview() {
         }
 
         setItems([...reviewed]);
+        processedPositions = index + 1;
         setProgress(index + 1);
         saveReviewCheckpoint({
           signature,
@@ -205,12 +218,27 @@ export function useGameReview() {
       clearReviewCheckpoint();
       setStatus("done");
       setRestoredProgress(false);
+      return {
+        outcome: "completed",
+        processedPositions,
+        totalPositions: total,
+        reviewItems: reviewed.length,
+        cacheHits,
+        resumed,
+      } satisfies GameReviewRunResult;
     } catch (reviewError) {
       if (controller.signal.aborted) {
         if (activeControllerRef.current === controller) {
           setStatus("paused");
         }
-        return;
+        return {
+          outcome: "paused",
+          processedPositions,
+          totalPositions: total,
+          reviewItems: reviewed.length,
+          cacheHits,
+          resumed,
+        } satisfies GameReviewRunResult;
       }
 
       setStatus("error");
@@ -219,6 +247,14 @@ export function useGameReview() {
           ? reviewError.message
           : "Не удалось разобрать партию.",
       );
+      return {
+        outcome: "error",
+        processedPositions,
+        totalPositions: total,
+        reviewItems: reviewed.length,
+        cacheHits,
+        resumed,
+      } satisfies GameReviewRunResult;
     } finally {
       if (activeControllerRef.current === controller) {
         activeControllerRef.current = null;

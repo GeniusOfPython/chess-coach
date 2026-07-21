@@ -11,6 +11,9 @@ import type {
 } from "../features/featureAccess";
 import type { AiCoachServerQuota } from "../ai/coachQuotaProtocol";
 import type { VerifiedChessFacts } from "../analysis/verifiedChessFacts";
+import type { SubscriptionTier } from "../features/featureAccess";
+import { trackProductEvent } from "../platform/analytics/analyticsClient";
+import type { ProductEventProperties } from "../platform/analytics/productEvents";
 
 export type AiCoachStatus =
   | "idle"
@@ -26,7 +29,18 @@ type Options = {
   quota: AiCoachQuota;
   isOnline: boolean;
   enabled: boolean;
+  tier: SubscriptionTier;
 };
+
+function getAiCoachAnalyticsOutcome(
+  error: unknown,
+): ProductEventProperties["ai_coach_finished"]["outcome"] | null {
+  if (!(error instanceof AiCoachError) || error.code === "cancelled") {
+    return error instanceof AiCoachError ? null : "unavailable";
+  }
+
+  return error.code;
+}
 
 function errorMessage(error: unknown) {
   if (!(error instanceof AiCoachError)) {
@@ -57,6 +71,7 @@ export function useAiCoach({
   quota,
   isOnline,
   enabled,
+  tier,
 }: Options) {
   const serviceRef = useRef<AiCoachService | null>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
@@ -107,6 +122,10 @@ export function useAiCoach({
     setStatus("loading");
     setError(null);
     setLimitReason(null);
+    trackProductEvent("ai_coach_requested", {
+      tier,
+      remainingBeforeRequest: remaining,
+    });
 
     try {
       serviceRef.current ??= new AiCoachService();
@@ -127,6 +146,10 @@ export function useAiCoach({
 
       setAdvice(result.advice);
       setStatus("success");
+      trackProductEvent("ai_coach_finished", {
+        tier,
+        outcome: "success",
+      });
     } catch (requestError) {
       if (controller.signal.aborted) {
         return;
@@ -144,11 +167,23 @@ export function useAiCoach({
           requestError.code === "quota_exhausted" ? "quota" : "temporary",
         );
         setStatus("limited");
+        trackProductEvent("ai_coach_finished", {
+          tier,
+          outcome: requestError.code,
+        });
         return;
       }
 
       setError(errorMessage(requestError));
       setStatus("error");
+      const analyticsOutcome = getAiCoachAnalyticsOutcome(requestError);
+
+      if (analyticsOutcome) {
+        trackProductEvent("ai_coach_finished", {
+          tier,
+          outcome: analyticsOutcome,
+        });
+      }
     } finally {
       if (activeRequestRef.current === controller) {
         activeRequestRef.current = null;
