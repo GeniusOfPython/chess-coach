@@ -1,42 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { Chess, type Color, type Square } from "chess.js";
-import type { GameReviewItem } from "../components/GameReviewPanel";
 import { useChessGame } from "../hooks/useChessGame";
 import { useEngineAnalysis } from "../hooks/useEngineAnalysis";
 import { useAppPreferences } from "../hooks/useAppPreferences";
 import {
   getTurnFromFen,
   getWhiteEvaluation,
-  isMoveMatchingBestMove,
 } from "../analysis/reviewRules";
 import { getFeatureAccess } from "../features/featureAccess";
 import type { AdsConsentStatus } from "../features/consent";
 import { isNativeMobileShell } from "../platform/mobile";
 import { writeStorageValue } from "../platform/appStorage";
 import { gameSessionStorageKeys } from "../platform/storageKeys";
-import { useTrainingProgress } from "../hooks/useTrainingProgress";
-import { useGameReview } from "../hooks/useGameReview";
 import { useRewardToast } from "../hooks/useRewardToast";
 import { useGameSession } from "../hooks/useGameSession";
 import {
   isBotTurn,
   isPlayerTurn as getIsPlayerTurn,
 } from "../game/gameFlowRules";
-import { useLearningJournal } from "../hooks/useLearningJournal";
-import { useBestMoveTraining } from "../hooks/useBestMoveTraining";
 import { useBotTurn } from "../hooks/useBotTurn";
-import { useMoveReview } from "../hooks/useMoveReview";
-import { useGameArchive } from "../hooks/useGameArchive";
-import {
-  createArchivedGame,
-  type ArchivedGame,
-} from "../game/gameArchive";
-import {
-  getGameResultInfo,
-  getTerminatedGameResultInfo,
-} from "../game/gameResult";
-import { useChessAchievements } from "../hooks/useChessAchievements";
-import { detectChessAchievements } from "../features/chessAchievements";
 import { isBotFairPlayActive } from "../game/fairPlayRules";
 import { createGameLifecycleActions } from "../game/gameLifecycle";
 import type { GameMode } from "../game/gameTypes";
@@ -44,9 +26,9 @@ import {
   triggerErrorHaptic,
   triggerLightHaptic,
   triggerMoveHaptic,
-  triggerSuccessHaptic,
-  triggerWarningHaptic,
 } from "../platform/nativeBridge";
+import { useLearningFlow } from "./useLearningFlow";
+import { useMatchLifecycle } from "./useMatchLifecycle";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
@@ -89,65 +71,7 @@ export function useChessCoachController() {
     clearGameTermination,
   } = useGameSession();
 
-  const {
-    task: bestMoveTrainingTask,
-    resetTask: resetBestMoveTraining,
-    prepareTask: prepareBestMoveTraining,
-    failTask: failBestMoveTraining,
-    readyTask: readyBestMoveTraining,
-    revealHint: revealBestMoveTrainingHint,
-    completeTask: completeBestMoveTraining,
-  } = useBestMoveTraining();
-
   const { message: rewardToast, showRewardToast } = useRewardToast();
-
-  const {
-    currentStreak: trainingCurrentStreak,
-    bestStreak: trainingBestStreak,
-    totalAttempts: trainingTotalAttempts,
-    totalSuccesses: trainingTotalSuccesses,
-    dailySuccesses: trainingDailySuccesses,
-    dailyGoal: dailyTrainingGoal,
-    recordAttempt: recordTrainingAttempt,
-    resetStats: resetTrainingStats,
-  } = useTrainingProgress({
-    onDailyGoalReached: () => showRewardToast({
-      kind: "success",
-      title: "Цель дня выполнена",
-      text: "Пять лучших ходов найдены. Можно закончить на хорошем результате или продолжить серию.",
-    }),
-  });
-
-  const {
-    items: learningJournalItems,
-    addItem: addLearningJournalItem,
-    clearItems: clearLearningJournal,
-  } = useLearningJournal();
-
-  const {
-    status: gameReviewStatus,
-    items: gameReviewItems,
-    progress: gameReviewProgress,
-    error: gameReviewError,
-    run: runGameReview,
-    reset: clearGameReview,
-  } = useGameReview();
-
-  const {
-    games: archivedGames,
-    addGame: addArchivedGame,
-    removeGame: removeArchivedGame,
-    clearGames: clearArchivedGames,
-  } = useGameArchive();
-  const archivedPositionRef = useRef<string | null>(null);
-  const celebratedResultRef = useRef<string | null>(null);
-  const achievementPositionRef = useRef<string | null>(null);
-  const [showResultCelebration, setShowResultCelebration] = useState(false);
-
-  const {
-    unlocked: unlockedAchievements,
-    unlock: unlockAchievements,
-  } = useChessAchievements();
 
   const access = getFeatureAccess(subscriptionTier);
   const isNativeApp = isNativeMobileShell();
@@ -163,13 +87,6 @@ export function useChessCoachController() {
     calculatePositionAnalysis,
     clearAnalysis,
   } = useEngineAnalysis();
-
-  const { reviewMove } = useMoveReview({
-    calculatePositionAnalysis,
-    setLastMoveReview,
-    addLearningJournalItem,
-    showRewardToast,
-  });
 
   const {
     game,
@@ -200,100 +117,10 @@ export function useChessCoachController() {
   });
 
   const isMatchFinished = game.isGameOver() || gameTermination !== null;
-  const finalResultInfo = isMatchFinished
-    ? gameTermination
-      ? getTerminatedGameResultInfo(gameTermination)
-      : getGameResultInfo(game)
-    : null;
-  const showInitialBoard = isMatchFinished && isViewingCurrentPosition;
 
   useEffect(() => {
     writeStorageValue(gameSessionStorageKeys.currentPgn, getPgn());
   }, [position, history.length, getPgn]);
-
-  useEffect(() => {
-    if (!isMatchFinished || history.length === 0) {
-      archivedPositionRef.current = null;
-      return;
-    }
-
-    const pgn = getPgn();
-
-    if (!pgn || archivedPositionRef.current === pgn) {
-      return;
-    }
-
-    const resultInfo = gameTermination
-      ? getTerminatedGameResultInfo(gameTermination)
-      : getGameResultInfo(game);
-    archivedPositionRef.current = pgn;
-    addArchivedGame(createArchivedGame({
-      pgn,
-      mode: gameMode,
-      playerSide,
-      botLevelId,
-      result: resultInfo.result,
-      winner: resultInfo.winner,
-      halfMoves: history.length,
-    }));
-  }, [
-    addArchivedGame,
-    botLevelId,
-    game,
-    gameTermination,
-    gameMode,
-    getPgn,
-    history.length,
-    isMatchFinished,
-    playerSide,
-    position,
-  ]);
-
-  useEffect(() => {
-    if (!isMatchFinished || history.length === 0) {
-      achievementPositionRef.current = null;
-      return;
-    }
-
-    const pgn = getPgn();
-
-    if (!pgn || achievementPositionRef.current === pgn) {
-      return;
-    }
-
-    achievementPositionRef.current = pgn;
-    const newlyUnlocked = unlockAchievements(detectChessAchievements({
-      game,
-      mode: gameMode,
-      playerSide,
-    }));
-    const firstAchievement = newlyUnlocked[0];
-
-    if (firstAchievement) {
-      showRewardToast({
-        kind: "success",
-        title: `Достижение: ${firstAchievement.title}`,
-        text: firstAchievement.description,
-      });
-      void triggerSuccessHaptic();
-    }
-  }, [
-    game,
-    gameMode,
-    getPgn,
-    history.length,
-    isMatchFinished,
-    playerSide,
-    position,
-    showRewardToast,
-    unlockAchievements,
-  ]);
-
-  const boardOrientation: "black" | "white" =
-    bestMoveTrainingTask.context?.side === "b" ||
-    (gameMode === "bot" && playerSide === "b")
-      ? "black"
-      : "white";
   const isActiveBotGame = isBotFairPlayActive({
     mode: gameMode,
     started: isBotGameStarted,
@@ -341,6 +168,32 @@ export function useChessCoachController() {
     setIsThinking: setIsBotThinking,
   });
 
+  const learning = useLearningFlow({
+    game,
+    gameMode,
+    playerSide,
+    position,
+    displayedPosition,
+    isViewingCurrentPosition,
+    isBotThinking,
+    isActiveBotGame,
+    fenHistory,
+    lastMoveHistory,
+    analyzePosition,
+    calculatePositionAnalysis,
+    clearAnalysis,
+    setLastMoveReview,
+    setSelectedSquare,
+    setIsBotThinking,
+    setIsBotGameStarted,
+    setGameMode,
+    clearGameTermination,
+    viewMove,
+    loadFen,
+    setActiveWorkspace,
+    showRewardToast,
+  });
+
   const {
     handleNewGame,
     handleStartBotGame,
@@ -364,40 +217,34 @@ export function useChessCoachController() {
     setLastMoveReview,
     setGameMode,
     setPlayerSide,
-    clearLearningJournal,
-    clearGameReview,
-    resetBestMoveTraining,
+    clearLearningJournal: learning.lifecycle.clearJournal,
+    clearGameReview: learning.lifecycle.clearReview,
+    resetBestMoveTraining: learning.lifecycle.resetTraining,
     clearAnalysis,
     clearGameTermination,
   });
 
-  useEffect(() => {
-    if (!isMatchFinished || history.length === 0) {
-      celebratedResultRef.current = null;
-      setShowResultCelebration(false);
-      return;
-    }
+  const match = useMatchLifecycle({
+    game,
+    gameMode,
+    playerSide,
+    botLevelId,
+    historyLength: history.length,
+    position,
+    isViewingCurrentPosition,
+    gameTermination,
+    getPgn,
+    importPgn: handleImportPgn,
+    startNewGame: handleNewGame,
+    setActiveWorkspace,
+    showRewardToast,
+  });
 
-    const pgn = getPgn();
-    const resultKey = `${pgn}|${gameTermination?.result ?? "natural"}`;
-
-    if (!pgn || celebratedResultRef.current === resultKey) {
-      return;
-    }
-
-    celebratedResultRef.current = resultKey;
-    setShowResultCelebration(true);
-  }, [gameTermination, getPgn, history.length, isMatchFinished]);
-
-  function handleOpenResultReview() {
-    setShowResultCelebration(false);
-    setActiveWorkspace("game");
-  }
-
-  function handleResultNewGame() {
-    setShowResultCelebration(false);
-    handleNewGame();
-  }
+  const boardOrientation: "black" | "white" =
+    learning.training.task.context?.side === "b" ||
+    (gameMode === "bot" && playerSide === "b")
+      ? "black"
+      : "white";
 
   function isPlayerTurn() {
     if (isMatchFinished) {
@@ -430,117 +277,6 @@ export function useChessCoachController() {
     return true;
   }
 
-  function handleAnalyzePosition() {
-    if (isActiveBotGame) {
-      return;
-    }
-
-    resetBestMoveTraining();
-
-    void analyzePosition({
-      fen: displayedPosition,
-      turn: getTurnFromFen(displayedPosition),
-      isGameOver: isViewingCurrentPosition && game.isGameOver(),
-    });
-  }
-
-  async function handleRunGameReview() {
-    if (isBotThinking || gameReviewStatus === "running") {
-      return;
-    }
-
-    await runGameReview({
-      fenHistory,
-      moveHistory: lastMoveHistory,
-      calculatePositionAnalysis,
-      reviewSide: gameMode === "bot" ? playerSide : undefined,
-    });
-  }
-
-  function handleSelectReviewedPosition(item: GameReviewItem) {
-    setSelectedSquare(null);
-    clearAnalysis();
-    resetBestMoveTraining();
-    viewMove(item.positionIndex);
-  }
-
-  function handleOpenArchivedGame(archivedGame: ArchivedGame) {
-    archivedPositionRef.current = archivedGame.pgn;
-
-    if (handleImportPgn(archivedGame.pgn)) {
-      setActiveWorkspace("game");
-    }
-  }
-
-  async function handleStartBestMoveTraining() {
-    if (
-      isBotThinking ||
-      isActiveBotGame ||
-      !isViewingCurrentPosition ||
-      game.isGameOver()
-    ) {
-      return;
-    }
-
-    const trainingFen = position;
-
-    setSelectedSquare(null);
-    clearAnalysis();
-    prepareBestMoveTraining(trainingFen);
-
-    const trainingAnalysis = await calculatePositionAnalysis({
-      fen: trainingFen,
-      isGameOver: game.isGameOver(),
-      movetime: 1400,
-    });
-
-    if (!trainingAnalysis?.bestMove) {
-      failBestMoveTraining(
-        "Не удалось подготовить задачу из текущей позиции.",
-      );
-      return;
-    }
-
-    readyBestMoveTraining(trainingFen, trainingAnalysis.bestMove);
-  }
-
-  function handlePracticeMainMistake(item: GameReviewItem) {
-    if (!item.bestMove || !handleImportFen(item.positionFen)) {
-      showRewardToast({
-        kind: "warning",
-        title: "Позиция недоступна",
-        text: "Не удалось открыть позицию для тренировки.",
-      });
-      return;
-    }
-
-    readyBestMoveTraining(item.positionFen, item.bestMove, {
-      kind: "review",
-      moveNumber: item.moveNumber,
-      side: item.side,
-      playedMove: item.playedMove,
-      verdict: item.verdict === "blunder" || item.verdict === "mistake"
-        ? item.verdict
-        : "inaccuracy",
-    });
-    setActiveWorkspace("coach");
-    showRewardToast({
-      kind: "success",
-      title: "Главная ошибка найдена",
-      text: "Позиция возвращена на доску. Найди исправление без подсказки.",
-    });
-  }
-
-  function handleRetryBestMoveTraining() {
-    const { positionFen, bestMove, context } = bestMoveTrainingTask;
-
-    if (!positionFen || !bestMove || !handleImportFen(positionFen)) {
-      return;
-    }
-
-    readyBestMoveTraining(positionFen, bestMove, context);
-  }
-
   function handlePieceDrop(args: {
     sourceSquare: string;
     targetSquare: string | null;
@@ -565,58 +301,14 @@ export function useChessCoachController() {
     if (moveWasMade) {
       void triggerMoveHaptic();
       const positionAfterMove = game.fen();
-      const moveReview = isActiveBotGame
-        ? null
-        : reviewMove({
-            playedMove,
-            positionBeforeMove,
-            positionAfterMove,
-            movingSide,
-            suggestedBestMove,
-            evaluationBeforeWhite,
-          });
-      const matchedBestMove = moveReview?.matchedBestMove ?? false;
-
-      clearGameReview();
-
-      if (
-        bestMoveTrainingTask.status === "ready" &&
-        bestMoveTrainingTask.positionFen === positionBeforeMove
-      ) {
-        const trainingSolved = isMoveMatchingBestMove({
-          playedMove,
-          bestMove: bestMoveTrainingTask.bestMove,
-        });
-
-        recordTrainingAttempt(trainingSolved);
-        completeBestMoveTraining(playedMove, trainingSolved);
-
-        showRewardToast(trainingSolved
-          ? {
-              kind: "success",
-              title: "Лучший ход найден",
-              text: "Отлично: ты самостоятельно нашёл сильнейшее продолжение.",
-            }
-          : {
-              kind: "warning",
-              title: "Почти",
-              text: "Сравни свой ход с лучшим и попробуй понять мотив.",
-            });
-
-        void (trainingSolved
-          ? triggerSuccessHaptic()
-          : triggerWarningHaptic());
-      } else if (bestMoveTrainingTask.status === "ready") {
-        resetBestMoveTraining();
-      }
-
-      if (matchedBestMove && bestMoveTrainingTask.status !== "ready") {
-        showRewardToast({
-          kind: "success",
-          title: "Сильный ход",
-          text: "Ты сыграл рекомендованный вариант.",
-        });
-      }
+      learning.actions.completePlayerMove({
+        playedMove,
+        positionBeforeMove,
+        positionAfterMove,
+        movingSide,
+        suggestedBestMove,
+        evaluationBeforeWhite,
+      });
     }
 
     return moveWasMade;
@@ -683,38 +375,11 @@ export function useChessCoachController() {
       gameTermination,
       terminateBotGame,
     },
-    training: {
-      task: bestMoveTrainingTask,
-      stats: {
-        currentStreak: trainingCurrentStreak,
-        bestStreak: trainingBestStreak,
-        totalAttempts: trainingTotalAttempts,
-        totalSuccesses: trainingTotalSuccesses,
-        dailyGoal: dailyTrainingGoal,
-        dailySuccesses: trainingDailySuccesses,
-      },
-      reset: resetBestMoveTraining,
-      resetStats: resetTrainingStats,
-    },
-    review: {
-      status: gameReviewStatus,
-      items: gameReviewItems,
-      progress: gameReviewProgress,
-      error: gameReviewError,
-      clear: clearGameReview,
-    },
-    journal: {
-      items: learningJournalItems,
-      clear: clearLearningJournal,
-    },
-    archive: {
-      games: archivedGames,
-      remove: removeArchivedGame,
-      clear: clearArchivedGames,
-    },
-    achievements: {
-      unlocked: unlockedAchievements,
-    },
+    training: learning.training,
+    review: learning.review,
+    journal: learning.journal,
+    archive: match.archive,
+    achievements: match.achievements,
     engine: {
       analysis,
       analyzedTurn,
@@ -740,9 +405,9 @@ export function useChessCoachController() {
       viewCurrentMove,
     },
     derived: {
-      isMatchFinished,
-      finalResultInfo,
-      showInitialBoard,
+      isMatchFinished: match.result.isMatchFinished,
+      finalResultInfo: match.result.finalResultInfo,
+      showInitialBoard: match.result.showInitialBoard,
       boardOrientation,
       isActiveBotGame,
       legalMoveSquares,
@@ -754,8 +419,8 @@ export function useChessCoachController() {
     access,
     rewardToast,
     resultCelebration: {
-      visible: showResultCelebration,
-      close: () => setShowResultCelebration(false),
+      visible: match.result.celebrationVisible,
+      close: match.result.closeCelebration,
     },
     botTurn: {
       error: botTurnError,
@@ -769,16 +434,16 @@ export function useChessCoachController() {
       handlePlayerSideChange,
       handleImportFen,
       handleImportPgn,
-      handleOpenResultReview,
-      handleResultNewGame,
-      handleAnalyzePosition,
-      handleRunGameReview,
-      handleSelectReviewedPosition,
-      handleOpenArchivedGame,
-      handleStartBestMoveTraining,
-      handlePracticeMainMistake,
-      handleRetryBestMoveTraining,
-      handleRevealBestMoveHint: revealBestMoveTrainingHint,
+      handleOpenResultReview: match.result.openReview,
+      handleResultNewGame: match.result.startNewGame,
+      handleAnalyzePosition: learning.actions.analyzeCurrentPosition,
+      handleRunGameReview: learning.actions.runGameReview,
+      handleSelectReviewedPosition: learning.actions.selectReviewedPosition,
+      handleOpenArchivedGame: match.archive.open,
+      handleStartBestMoveTraining: learning.actions.startBestMoveTraining,
+      handlePracticeMainMistake: learning.actions.practiceMainMistake,
+      handleRetryBestMoveTraining: learning.actions.retryBestMoveTraining,
+      handleRevealBestMoveHint: learning.actions.revealBestMoveHint,
       handlePieceDrop,
       handleSquareClick,
       handlePrivacyConsentChange,
