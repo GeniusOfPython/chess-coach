@@ -444,6 +444,8 @@ export function useChessCoachController() {
       handleOpenArchivedGame: match.archive.open,
       handleStartBestMoveTraining: learning.actions.startBestMoveTraining,
       handlePracticeMainMistake: learning.actions.practiceMainMistake,
+      handlePracticeReviewSequence: learning.actions.practiceReviewSequence,
+      handleContinueReviewTraining: learning.actions.continueReviewTraining,
       handleRetryBestMoveTraining: learning.actions.retryBestMoveTraining,
       handleRevealBestMoveHint: learning.actions.revealBestMoveHint,
       handlePieceDrop,

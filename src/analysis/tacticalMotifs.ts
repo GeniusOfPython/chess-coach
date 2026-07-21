@@ -188,7 +188,7 @@ export function detectTacticalMotifs(
       motifs.push({
         id: "mate",
         title: "Матовая угроза",
-        description: "Ход сразу ставит мат. Это главный forcing-мотив позиции.",
+        description: "Ход сразу ставит мат. Это главный форсирующий мотив позиции.",
         severity: "forcing",
       });
     } else if (game.inCheck()) {

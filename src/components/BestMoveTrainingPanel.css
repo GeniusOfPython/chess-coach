@@ -85,6 +85,24 @@
   gap: 8px;
 }
 
+.review-training-sequence {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgb(0 229 255 / 38%);
+  border-radius: var(--radius-control, 14px);
+  background: linear-gradient(105deg, rgb(0 229 255 / 9%), rgb(217 70 239 / 9%));
+  color: #bff8ff;
+  font-size: 13px;
+}
+
+.review-training-sequence strong {
+  color: #ffffff;
+  font-size: 15px;
+}
+
 .learning-cycle-steps div {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -140,6 +158,31 @@
   border-radius: var(--radius-card, 12px);
   background: rgb(57 245 196 / 9%);
   color: #b9ffe8 !important;
+}
+
+.best-move-training-insight {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgb(0 229 255 / 30%);
+  border-radius: var(--radius-control, 14px);
+  background: rgb(0 229 255 / 7%);
+}
+
+.best-move-training-insight > span {
+  color: #82efff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.best-move-training-insight strong {
+  color: var(--color-text, #f8f4ff);
+}
+
+.best-move-training-insight p {
+  color: var(--color-text-muted, #c7bdd8);
 }
 
 .training-retry-button {

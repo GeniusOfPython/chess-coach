@@ -1,4 +1,5 @@
 import type { Color } from "chess.js";
+import { buildReviewInsight } from "../analysis/reviewInsight";
 import { explainEngineMove } from "../utils/explainMove";
 
 export type BestMoveTrainingStatus =
@@ -24,6 +25,11 @@ export type BestMoveTrainingContext = {
   side: Color;
   playedMove: string;
   verdict: "inaccuracy" | "mistake" | "blunder";
+  evaluationBeforeWhite: number;
+  evaluationAfterWhite: number | null;
+  evaluationLoss: number | null;
+  sequenceIndex: number;
+  sequenceTotal: number;
 };
 
 export type BestMoveTrainingStats = {
@@ -43,6 +49,7 @@ type Props = {
   onRevealHint: () => void;
   onReset: () => void;
   onRetry: () => void;
+  onNextReviewMoment: () => void;
   onResetStats: () => void;
 };
 
@@ -144,6 +151,7 @@ export default function BestMoveTrainingPanel({
   onRevealHint,
   onReset,
   onRetry,
+  onNextReviewMoment,
   onResetStats,
 }: Props) {
   const explanations =
@@ -153,6 +161,20 @@ export default function BestMoveTrainingPanel({
 
   const visibleHints = getVisibleHints(task);
   const isReviewTask = task.context?.kind === "review";
+  const reviewInsight = task.context && task.positionFen
+    ? buildReviewInsight({
+        positionFen: task.positionFen,
+        side: task.context.side,
+        playedMove: task.context.playedMove,
+        bestMove: task.bestMove,
+        evaluationBeforeWhite: task.context.evaluationBeforeWhite,
+        evaluationAfterWhite: task.context.evaluationAfterWhite,
+        evaluationLoss: task.context.evaluationLoss,
+      })
+    : null;
+  const hasNextReviewMoment = Boolean(
+    task.context && task.context.sequenceIndex < task.context.sequenceTotal,
+  );
 
   return (
     <div className="best-move-training-card">
@@ -173,11 +195,20 @@ export default function BestMoveTrainingPanel({
       </div>
 
       {task.context && (
-        <div className="learning-cycle-steps" aria-label="Этапы исправления ошибки">
-          <div className="complete"><span>1</span><b>Ошибка найдена</b></div>
-          <div className={task.status === "success" ? "complete" : "active"}><span>2</span><b>Решение повторено</b></div>
-          <div className={task.status === "success" ? "complete" : "pending"}><span>3</span><b>Навык проверен</b></div>
-        </div>
+        <>
+          {task.context.sequenceTotal > 1 && (
+            <div className="review-training-sequence" aria-label="Прогресс тренировки переломных моментов">
+              <span>Серия позиций</span>
+              <strong>{task.context.sequenceIndex} / {task.context.sequenceTotal}</strong>
+            </div>
+          )}
+
+          <div className="learning-cycle-steps" aria-label="Этапы исправления ошибки">
+            <div className="complete"><span>1</span><b>Ошибка найдена</b></div>
+            <div className={task.status === "success" ? "complete" : "active"}><span>2</span><b>Решение повторено</b></div>
+            <div className={task.status === "success" ? "complete" : "pending"}><span>3</span><b>Навык проверен</b></div>
+          </div>
+        </>
       )}
 
       <div className="best-move-training-stats" aria-label="Статистика тренировки">
@@ -258,9 +289,23 @@ export default function BestMoveTrainingPanel({
               <b>{formatMove(task.playedMove)}</b>
             </div>
             {task.context && (
-              <p className="best-move-training-verified">
-                Главная ошибка исправлена. Позиция решена самостоятельно, навык засчитан в прогресс.
-              </p>
+              <>
+                <p className="best-move-training-verified">
+                  {hasNextReviewMoment
+                    ? `Момент ${task.context.sequenceIndex} решён. Результат засчитан, следующий момент готов к повторению.`
+                    : task.context.sequenceTotal > 1
+                      ? `Все ${task.context.sequenceTotal} ключевых момента решены. Серия завершена.`
+                      : "Главная ошибка исправлена. Позиция решена самостоятельно, навык засчитан в прогресс."}
+                </p>
+
+                {reviewInsight && (
+                  <div className="best-move-training-insight">
+                    <span>Закреплённый мотив</span>
+                    <strong>{reviewInsight.title}</strong>
+                    <p>{reviewInsight.trainingFocus}</p>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -290,7 +335,15 @@ export default function BestMoveTrainingPanel({
         )}
 
         <div className="best-move-training-actions">
-          {task.status === "fail" && task.context ? (
+          {task.status === "success" && hasNextReviewMoment ? (
+            <button
+              type="button"
+              className="training-retry-button"
+              onClick={onNextReviewMoment}
+            >
+              Следующий переломный момент
+            </button>
+          ) : task.status === "fail" && task.context ? (
             <button
               type="button"
               className="training-retry-button"

@@ -279,6 +279,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                     onRevealHint={actions.handleRevealBestMoveHint}
                     onReset={training.reset}
                     onRetry={actions.handleRetryBestMoveTraining}
+                    onNextReviewMoment={actions.handleContinueReviewTraining}
                     onResetStats={training.resetStats}
                   />
                 </>
@@ -298,15 +299,19 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                 )}
                 items={review.items}
                 error={review.error}
+                restoredProgress={review.restoredProgress}
+                cachedPositions={review.cachedPositions}
                 selectedPositionIndex={game.viewedMoveIndex}
                 disabled={session.isBotThinking || derived.isActiveBotGame}
                 disabledMessage={derived.isActiveBotGame
                   ? "Разбор станет доступен после завершения партии."
                   : undefined}
                 onRun={actions.handleRunGameReview}
+                onPause={review.pause}
                 onClear={review.clear}
                 onSelectPosition={actions.handleSelectReviewedPosition}
                 onPracticeMainMistake={actions.handlePracticeMainMistake}
+                onPracticeSequence={actions.handlePracticeReviewSequence}
               />
 
               {preferences.gameMode === "analysis" && access.canUseMoveReview ? (

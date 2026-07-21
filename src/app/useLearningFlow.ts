@@ -1,9 +1,16 @@
+import { useState } from "react";
 import type { Chess, Color } from "chess.js";
 import {
   getTurnFromFen,
   isMoveMatchingBestMove,
 } from "../analysis/reviewRules";
 import type { GameReviewItem } from "../analysis/gameReview";
+import {
+  advanceReviewTrainingQueue,
+  createReviewTrainingQueue,
+  getCurrentReviewTrainingItem,
+  type ReviewTrainingQueue,
+} from "../analysis/reviewTrainingQueue";
 import type { RewardToastMessage } from "../components/RewardToast";
 import type { WorkspaceId } from "../components/WorkspaceTabs";
 import type { GameMode } from "../game/gameTypes";
@@ -102,6 +109,8 @@ export function useLearningFlow({
   setActiveWorkspace,
   showRewardToast,
 }: UseLearningFlowOptions) {
+  const [reviewTrainingQueue, setReviewTrainingQueue] =
+    useState<ReviewTrainingQueue | null>(null);
   const {
     task,
     resetTask,
@@ -173,12 +182,38 @@ export function useLearningFlow({
     return true;
   }
 
+  function resetTrainingFlow() {
+    setReviewTrainingQueue(null);
+    resetTask();
+  }
+
+  function getTrainingContext(
+    item: GameReviewItem,
+    sequenceIndex: number,
+    sequenceTotal: number,
+  ) {
+    return {
+      kind: "review" as const,
+      moveNumber: item.moveNumber,
+      side: item.side,
+      playedMove: item.playedMove,
+      verdict: item.verdict === "blunder" || item.verdict === "mistake"
+        ? item.verdict
+        : "inaccuracy" as const,
+      evaluationBeforeWhite: item.evaluationBeforeWhite,
+      evaluationAfterWhite: item.evaluationAfterWhite,
+      evaluationLoss: item.evaluationLoss,
+      sequenceIndex,
+      sequenceTotal,
+    };
+  }
+
   function analyzeCurrentPosition() {
     if (isActiveBotGame) {
       return;
     }
 
-    resetTask();
+    resetTrainingFlow();
     void analyzePosition({
       fen: displayedPosition,
       turn: getTurnFromFen(displayedPosition),
@@ -202,7 +237,7 @@ export function useLearningFlow({
   function selectReviewedPosition(item: GameReviewItem) {
     setSelectedSquare(null);
     clearAnalysis();
-    resetTask();
+    resetTrainingFlow();
     viewMove(item.positionIndex);
   }
 
@@ -218,6 +253,7 @@ export function useLearningFlow({
 
     const trainingFen = position;
 
+    setReviewTrainingQueue(null);
     setSelectedSquare(null);
     clearAnalysis();
     prepareTask(trainingFen);
@@ -236,8 +272,11 @@ export function useLearningFlow({
     readyTask(trainingFen, trainingAnalysis.bestMove);
   }
 
-  function practiceMainMistake(item: GameReviewItem) {
-    if (!item.bestMove || !loadTrainingPosition(item.positionFen)) {
+  function startReviewTraining(items: GameReviewItem[]) {
+    const queue = createReviewTrainingQueue(items);
+    const item = getCurrentReviewTrainingItem(queue);
+
+    if (!queue || !item?.bestMove || !loadTrainingPosition(item.positionFen)) {
       showRewardToast({
         kind: "warning",
         title: "Позиция недоступна",
@@ -246,21 +285,52 @@ export function useLearningFlow({
       return;
     }
 
-    readyTask(item.positionFen, item.bestMove, {
-      kind: "review",
-      moveNumber: item.moveNumber,
-      side: item.side,
-      playedMove: item.playedMove,
-      verdict: item.verdict === "blunder" || item.verdict === "mistake"
-        ? item.verdict
-        : "inaccuracy",
-    });
+    setReviewTrainingQueue(queue);
+    readyTask(
+      item.positionFen,
+      item.bestMove,
+      getTrainingContext(item, 1, queue.items.length),
+    );
     setActiveWorkspace("coach");
     showRewardToast({
       kind: "success",
-      title: "Главная ошибка найдена",
-      text: "Позиция возвращена на доску. Найди исправление без подсказки.",
+      title: queue.items.length > 1 ? "Серия тренировок готова" : "Главная ошибка найдена",
+      text: queue.items.length > 1
+        ? `Подготовлено ${queue.items.length} ключевых момента. Начни с первого без подсказки.`
+        : "Позиция возвращена на доску. Найди исправление без подсказки.",
     });
+  }
+
+  function practiceMainMistake(item: GameReviewItem) {
+    startReviewTraining([item]);
+  }
+
+  function practiceReviewSequence(items: GameReviewItem[]) {
+    startReviewTraining(items);
+  }
+
+  function continueReviewTraining() {
+    if (task.status !== "success" || !reviewTrainingQueue) {
+      return;
+    }
+
+    const nextQueue = advanceReviewTrainingQueue(reviewTrainingQueue);
+    const nextItem = getCurrentReviewTrainingItem(nextQueue);
+
+    if (!nextQueue || !nextItem?.bestMove || !loadTrainingPosition(nextItem.positionFen)) {
+      return;
+    }
+
+    setReviewTrainingQueue(nextQueue);
+    readyTask(
+      nextItem.positionFen,
+      nextItem.bestMove,
+      getTrainingContext(
+        nextItem,
+        nextQueue.currentIndex + 1,
+        nextQueue.items.length,
+      ),
+    );
   }
 
   function retryBestMoveTraining() {
@@ -303,11 +373,18 @@ export function useLearningFlow({
 
       recordAttempt(trainingSolved);
       completeTask(playedMove, trainingSolved);
+      const sequencePosition = task.context?.sequenceIndex ?? 1;
+      const sequenceTotal = task.context?.sequenceTotal ?? 1;
+
       showRewardToast(trainingSolved
         ? {
             kind: "success",
-            title: "Лучший ход найден",
-            text: "Отлично: ты самостоятельно нашёл сильнейшее продолжение.",
+            title: sequenceTotal > 1
+              ? `Момент ${sequencePosition} из ${sequenceTotal} решён`
+              : "Лучший ход найден",
+            text: sequenceTotal > 1 && sequencePosition < sequenceTotal
+              ? "Результат сохранён. Перейди к следующей позиции."
+              : "Ты самостоятельно нашёл сильнейшее продолжение.",
           }
         : {
             kind: "warning",
@@ -339,7 +416,7 @@ export function useLearningFlow({
         dailyGoal,
         dailySuccesses,
       },
-      reset: resetTask,
+      reset: resetTrainingFlow,
       resetStats,
     },
     review: {
@@ -362,6 +439,8 @@ export function useLearningFlow({
       selectReviewedPosition,
       startBestMoveTraining,
       practiceMainMistake,
+      practiceReviewSequence,
+      continueReviewTraining,
       retryBestMoveTraining,
       revealBestMoveHint: revealHint,
       completePlayerMove,
@@ -369,7 +448,7 @@ export function useLearningFlow({
     lifecycle: {
       clearJournal,
       clearReview,
-      resetTraining: resetTask,
+      resetTraining: resetTrainingFlow,
     },
   };
 }

@@ -393,6 +393,56 @@
   min-height: 42px;
 }
 
+.game-review-sequence-start {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 16px;
+}
+
+.game-review-insight {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgb(0 229 255 / 26%);
+  border-radius: var(--radius-control, 14px);
+  background:
+    linear-gradient(135deg, rgb(0 229 255 / 7%), rgb(217 70 239 / 7%)),
+    rgb(4 5 20 / 48%);
+}
+
+.game-review-insight > span {
+  color: #82efff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-review-insight > strong {
+  color: var(--color-text, #f8f4ff);
+  font-size: 14px;
+}
+
+.game-review-insight p,
+.game-review-insight ul {
+  margin: 0;
+  color: var(--color-text-muted, #c7bdd8);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.game-review-insight ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+}
+
+.game-review-insight .game-review-focus {
+  padding-top: 7px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+  color: #ffd2ee;
+}
+
 .game-review-practice,
 .training-retry-button {
   border: 1px solid rgb(255 255 255 / 58%);

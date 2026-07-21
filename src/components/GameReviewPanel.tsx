@@ -5,6 +5,7 @@ import type {
 } from "../analysis/gameReview";
 import type { MoveReviewVerdict } from "../analysis/reviewTypes";
 import { rankTurningPoints } from "../analysis/reviewTimeline";
+import { buildReviewInsight } from "../analysis/reviewInsight";
 import LoadingSkeleton from "./LoadingSkeleton";
 import GameReviewChart from "./GameReviewChart";
 
@@ -26,6 +27,7 @@ type Props = {
   onClear: () => void;
   onSelectPosition: (item: GameReviewItem) => void;
   onPracticeMainMistake: (item: GameReviewItem) => void;
+  onPracticeSequence: (items: GameReviewItem[]) => void;
 };
 
 const verdictLabels: Record<MoveReviewVerdict, string> = {
@@ -83,6 +85,7 @@ export default function GameReviewPanel({
   onClear,
   onSelectPosition,
   onPracticeMainMistake,
+  onPracticeSequence,
 }: Props) {
   const playerDecisions = items.filter((item) => item.isPlayerDecision);
   const mistakes = getCount(playerDecisions, "mistake");
@@ -233,8 +236,22 @@ export default function GameReviewPanel({
                 <strong>Ключевые переломные моменты</strong>
               </div>
 
-              {turningPoints.map(({ item, reason }, index) => (
-                <article
+              <button
+                type="button"
+                className="game-review-practice game-review-sequence-start"
+                onClick={() => onPracticeSequence(
+                  turningPoints.map(({ item }) => item),
+                )}
+              >
+                {turningPoints.length === 1
+                  ? "Тренировать ключевой момент"
+                  : `Пройти все моменты · ${turningPoints.length}`}
+              </button>
+
+              {turningPoints.map(({ item, reason }, index) => {
+                const insight = buildReviewInsight(item);
+
+                return <article
                   className={`game-review-turning-point ${item.verdict}${
                     index === 0 ? " primary" : ""
                   }${
@@ -265,6 +282,20 @@ export default function GameReviewPanel({
                     <b>{formatLoss(item.evaluationLoss)}</b>
                   </div>
 
+                  <div className="game-review-insight">
+                    <span>Почему это важно</span>
+                    <strong>{insight.title}</strong>
+                    <p>{insight.summary}</p>
+                    {insight.facts.length > 0 && (
+                      <ul>
+                        {insight.facts.map((fact) => <li key={fact}>{fact}</li>)}
+                      </ul>
+                    )}
+                    <p className="game-review-focus">
+                      <b>Фокус:</b> {insight.trainingFocus}
+                    </p>
+                  </div>
+
                   <div className="game-review-turning-actions">
                     <button
                       type="button"
@@ -275,14 +306,14 @@ export default function GameReviewPanel({
                     </button>
                     <button
                       type="button"
-                      className="game-review-practice"
+                      className="secondary"
                       onClick={() => onPracticeMainMistake(item)}
                     >
-                      Тренировать
+                      Только этот момент
                     </button>
                   </div>
-                </article>
-              ))}
+                </article>;
+              })}
             </section>
           )}
 
