@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Color } from "chess.js";
 import type { GameMode } from "../game/gameTypes";
-import type { WorkspaceId } from "../components/WorkspaceTabs";
+import type { WorkspaceId } from "../game/workspaceNavigation";
 import type { BotLevelId } from "../types/bot";
 import {
   createPrivacyConsent,

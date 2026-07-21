@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Test, lint and build
+    name: Release quality gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -31,11 +31,31 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Run quality gate
-        run: npm run check
+      - name: Install Chromium for smoke E2E
+        run: npx playwright install --with-deps chromium
 
-      - name: Run AI Coach factual eval
-        run: npm run eval:ai-coach
+      - name: Run release quality gate
+        run: npm run check:ci
 
-      - name: Verify PWA build artifacts
-        run: node scripts/verify-build.mjs
+      - name: Upload verified production build
+        if: success()
+        uses: actions/upload-artifact@v6
+        with:
+          name: chess-coach-production-${{ github.sha }}
+          path: |
+            dist
+            quality-gate-report.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: chess-coach-quality-failure-${{ github.run_id }}
+          path: |
+            quality-gate-report.json
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7

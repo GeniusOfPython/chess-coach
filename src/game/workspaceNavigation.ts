@@ -1,4 +1,4 @@
-import type { WorkspaceId } from "../components/WorkspaceTabs";
+export type WorkspaceId = "coach" | "game" | "tools";
 
 export function toggleWorkspace(
   active: WorkspaceId | null,

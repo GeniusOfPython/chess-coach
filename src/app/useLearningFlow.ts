@@ -12,7 +12,7 @@ import {
   type ReviewTrainingQueue,
 } from "../analysis/reviewTrainingQueue";
 import type { RewardToastMessage } from "../components/RewardToast";
-import type { WorkspaceId } from "../components/WorkspaceTabs";
+import type { WorkspaceId } from "../game/workspaceNavigation";
 import type { GameMode } from "../game/gameTypes";
 import { useBestMoveTraining } from "../hooks/useBestMoveTraining";
 import { useGameReview } from "../hooks/useGameReview";

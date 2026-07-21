@@ -49,7 +49,7 @@ for (const file of files) {
   );
 }
 
-const localReferences = [...indexHtml.matchAll(/(?:src|href)="(\/[^"#?]+)[^\"]*"/g)]
+const localReferences = [...indexHtml.matchAll(/(?:src|href)="(\/[^"#?]+)[^"]*"/g)]
   .map((match) => match[1])
   .filter((reference) => reference !== "/")
   .map((reference) => reference.slice(1));

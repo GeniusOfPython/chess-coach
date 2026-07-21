@@ -9,13 +9,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint src server api vite.config.ts",
-    "test": "vitest run",
-    "eval:ai-coach": "vitest run src/ai/evaluation/aiCoachEval.test.ts --reporter=verbose",
-    "check": "npm run lint && npm test && npm run build",
-    "preview": "vite preview",
+    "lint": "oxlint src server api e2e scripts vite.config.ts playwright.config.ts",
+    "test": "vitest run --exclude e2e/**",
     "test:e2e": "playwright test",
-    "test:e2e:install": "playwright install chromium"
+    "test:e2e:install": "playwright install chromium",
+    "eval:ai-coach": "vitest run src/ai/evaluation/aiCoachEval.test.ts --reporter=verbose",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check": "node scripts/run-quality-gate.mjs",
+    "check:ci": "node scripts/run-quality-gate.mjs --with-e2e",
+    "preview": "vite preview"
   },
   "dependencies": {
     "chess.js": "^1.4.0",
@@ -34,8 +36,5 @@
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"
-  },
-  "allowScripts": {
-    "stockfish@18.0.8": true
   }
 }

@@ -1,7 +1,8 @@
-import { toggleWorkspace } from "../game/workspaceNavigation";
+import {
+  toggleWorkspace,
+  type WorkspaceId,
+} from "../game/workspaceNavigation";
 import WorkspaceIcon, { type WorkspaceIconName } from "./WorkspaceIcon";
-
-export type WorkspaceId = "coach" | "game" | "tools";
 
 type WorkspaceTab = {
   id: WorkspaceId;

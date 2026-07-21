@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Chess, Color } from "chess.js";
 import type { RewardToastMessage } from "../components/RewardToast";
-import type { WorkspaceId } from "../components/WorkspaceTabs";
+import type { WorkspaceId } from "../game/workspaceNavigation";
 import { detectChessAchievements } from "../features/chessAchievements";
 import {
   createArchivedGame,
