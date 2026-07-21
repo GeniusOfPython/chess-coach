@@ -1,0 +1,85 @@
+.loading-skeleton {
+  position: relative;
+  display: grid;
+  gap: 13px;
+  overflow: hidden;
+  padding: 14px;
+  border: 1px solid rgb(0 229 255 / 26%);
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at top right, rgb(0 229 255 / 10%), transparent 48%),
+    rgb(10 8 31 / 76%);
+}
+
+.loading-skeleton::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 18%,
+    rgb(255 255 255 / 7%) 42%,
+    rgb(0 229 255 / 9%) 50%,
+    transparent 74%
+  );
+  transform: translateX(-115%);
+  animation: skeleton-scan 1.6s var(--ease-out) infinite;
+  pointer-events: none;
+  content: "";
+}
+
+.loading-skeleton.compact {
+  gap: 10px;
+  padding: 12px;
+}
+
+.loading-skeleton-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.loading-skeleton-orb {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-secondary);
+  box-shadow:
+    0 0 0 4px rgb(0 229 255 / 12%),
+    0 0 18px rgb(0 229 255 / 65%);
+  animation: skeleton-orb 1.2s ease-in-out infinite;
+}
+
+.loading-skeleton-lines {
+  display: grid;
+  gap: 8px;
+}
+
+.loading-skeleton-line {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, rgb(255 60 172 / 20%), rgb(0 229 255 / 16%));
+}
+
+@keyframes skeleton-scan {
+  to {
+    transform: translateX(115%);
+  }
+}
+
+@keyframes skeleton-orb {
+  50% {
+    transform: scale(1.2);
+    box-shadow:
+      0 0 0 7px rgb(0 229 255 / 5%),
+      0 0 24px rgb(0 229 255 / 78%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-skeleton::after,
+  .loading-skeleton-orb {
+    animation: none;
+  }
+}

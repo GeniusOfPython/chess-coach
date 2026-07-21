@@ -1,6 +1,10 @@
 import type { CSSProperties } from "react";
 import { Chessboard } from "react-chessboard";
 import { ANALYSIS_LINE_COLORS } from "../theme/analysisPalette";
+import {
+  getBoardTheme,
+  type BoardThemeId,
+} from "../theme/boardThemes";
 
 export type LastMoveSquares = {
   from: string;
@@ -19,6 +23,7 @@ type Props = {
   legalMoveSquares?: string[];
   checkSquare?: string | null;
   showAnalysisArrows?: boolean;
+  boardTheme?: BoardThemeId;
   onSquareClick?: (square: string) => void;
   onPieceDrop: (args: {
     sourceSquare: string;
@@ -122,9 +127,11 @@ export default function ChessBoard({
   legalMoveSquares = [],
   checkSquare = null,
   showAnalysisArrows = true,
+  boardTheme = "sunset",
   onSquareClick,
   onPieceDrop,
 }: Props) {
+  const selectedTheme = getBoardTheme(boardTheme);
   const uniqueCandidates = candidateMoves.filter(
     (move, index, array) =>
       move &&
@@ -167,14 +174,13 @@ export default function ChessBoard({
         squareStyles,
         boardStyle: {
           borderRadius: "14px",
-          boxShadow:
-            "0 20px 54px rgba(0, 0, 0, 0.48), 0 0 30px rgba(255, 60, 172, 0.18), 0 0 20px rgba(0, 229, 255, 0.12)",
+          boxShadow: selectedTheme.shadow,
         },
         darkSquareStyle: {
-          backgroundColor: "#a855c7",
+          backgroundColor: selectedTheme.darkSquare,
         },
         lightSquareStyle: {
-          backgroundColor: "#f6c7e8",
+          backgroundColor: selectedTheme.lightSquare,
         },
       }}
     />

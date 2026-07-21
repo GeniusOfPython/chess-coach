@@ -1,5 +1,6 @@
 import type { Color } from "chess.js";
 import type { MoveReviewVerdict } from "./MoveReviewPanel";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 export type GameReviewStatus =
   | "idle"
@@ -103,7 +104,7 @@ export default function GameReviewPanel({
           <span className="status-label">Обзор партии</span>
           <p>
             Быстрый разбор партии: находит ключевые ошибки и
-            показывает ключевые ошибки и более сильные продолжения.
+            показывает более сильные продолжения.
           </p>
         </div>
 
@@ -142,6 +143,8 @@ export default function GameReviewPanel({
               style={{ width: `${progressPercent}%` }}
             />
           </div>
+
+          <LoadingSkeleton label="Ищем переломные моменты…" rows={2} compact />
         </div>
       )}
 

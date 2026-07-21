@@ -4,6 +4,7 @@ export const settingsStorageKeys = {
   botLevelId: "chess-coach.bot-level-id",
   compactUi: "chess-coach.compact-ui",
   showAnalysisArrows: "chess-coach.show-analysis-arrows",
+  boardTheme: "chess-coach.board-theme",
   subscriptionTier: "chess-coach.subscription-tier",
   privacyConsent: "chess-coach.privacy-consent",
   activeWorkspace: "chess-coach.active-workspace",

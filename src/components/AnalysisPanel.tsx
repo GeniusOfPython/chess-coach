@@ -6,6 +6,7 @@ import type {
 import { ANALYSIS_LINE_COLORS } from "../theme/analysisPalette";
 import { explainEngineMove } from "../utils/explainMove";
 import PremiumFeatureNotice from "./PremiumFeatureNotice";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 type Props = {
   analysis: EngineAnalysis | null;
@@ -90,9 +91,7 @@ export default function AnalysisPanel({
       )}
 
       {isAnalyzing && (
-        <p className="empty">
-          Рассчитывается лучший вариант…
-        </p>
+        <LoadingSkeleton label="Рассчитывается лучший вариант…" rows={3} />
       )}
 
       {error && (

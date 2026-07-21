@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chess, type Color, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import AnalysisPanel from "./components/AnalysisPanel";
@@ -14,6 +14,7 @@ import FenPanel from "./components/FenPanel";
 import MaterialPanel from "./components/MaterialPanel";
 import CoachPanel from "./components/CoachPanel";
 import GameResultPanel from "./components/GameResultPanel";
+import GameResultCelebration from "./components/GameResultCelebration";
 import GameArchivePanel from "./components/GameArchivePanel";
 import GameReviewPanel, {
   type GameReviewItem,
@@ -84,6 +85,8 @@ import {
 } from "./platform/nativeBridge";
 import "./components/CoachPanel.css";
 import "./components/GameResultPanel.css";
+import "./components/GameResultCelebration.css";
+import "./components/LoadingSkeleton.css";
 import "./components/GameReviewPanel.css";
 import "./components/MoveNavigatorPanel.css";
 import "./components/BestMoveTrainingPanel.css";
@@ -115,6 +118,8 @@ function App() {
     setCompactUi,
     showAnalysisArrows,
     setShowAnalysisArrows,
+    boardTheme,
+    setBoardTheme,
     subscriptionTier,
     setSubscriptionTier,
     privacyConsent,
@@ -187,6 +192,8 @@ function App() {
     clearGames: clearArchivedGames,
   } = useGameArchive();
   const archivedPositionRef = useRef<string | null>(null);
+  const celebratedResultRef = useRef<string | null>(null);
+  const [showResultCelebration, setShowResultCelebration] = useState(false);
   const {
     unlocked: unlockedAchievements,
     unlock: unlockAchievements,
@@ -246,6 +253,11 @@ function App() {
     onPositionChanged: clearAnalysis,
   });
   const isMatchFinished = game.isGameOver() || gameTermination !== null;
+  const finalResultInfo = isMatchFinished
+    ? gameTermination
+      ? getTerminatedGameResultInfo(gameTermination)
+      : getGameResultInfo(game)
+    : null;
   const showInitialBoard = isMatchFinished && isViewingCurrentPosition;
 
 
@@ -411,6 +423,34 @@ function App() {
     clearAnalysis,
     clearGameTermination,
   });
+
+  useEffect(() => {
+    if (!isMatchFinished || history.length === 0) {
+      celebratedResultRef.current = null;
+      setShowResultCelebration(false);
+      return;
+    }
+
+    const pgn = getPgn();
+    const resultKey = `${pgn}|${gameTermination?.result ?? "natural"}`;
+
+    if (!pgn || celebratedResultRef.current === resultKey) {
+      return;
+    }
+
+    celebratedResultRef.current = resultKey;
+    setShowResultCelebration(true);
+  }, [gameTermination, getPgn, history.length, isMatchFinished]);
+
+  function handleOpenResultReview() {
+    setShowResultCelebration(false);
+    setActiveWorkspace("game");
+  }
+
+  function handleResultNewGame() {
+    setShowResultCelebration(false);
+    handleNewGame();
+  }
 
   function isPlayerTurn() {
     if (isMatchFinished) {
@@ -693,6 +733,16 @@ function App() {
 
       <RewardToast message={rewardToast} />
 
+      {showResultCelebration && finalResultInfo && (
+        <GameResultCelebration
+          result={finalResultInfo}
+          historyLength={history.length}
+          onReview={handleOpenResultReview}
+          onNewGame={handleResultNewGame}
+          onClose={() => setShowResultCelebration(false)}
+        />
+      )}
+
       <section className="game-layout">
         <div className="board-panel">
           <ChessBoard
@@ -715,6 +765,7 @@ function App() {
             legalMoveSquares={showInitialBoard ? [] : legalMoveSquares}
             checkSquare={showInitialBoard ? null : displayedCheckSquare}
             showAnalysisArrows={showAnalysisArrows}
+            boardTheme={boardTheme}
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
           />
@@ -908,7 +959,7 @@ function App() {
                 historyLength={history.length}
                 onNewGame={handleNewGame}
                 overrideResult={gameTermination
-                  ? getTerminatedGameResultInfo(gameTermination)
+                  ? finalResultInfo
                   : null}
               />
 
@@ -1028,6 +1079,7 @@ function App() {
                   compactUi={compactUi}
                   showCompactUiSetting={isNativeApp}
                   showAnalysisArrows={showAnalysisArrows}
+                  boardTheme={boardTheme}
                   subscriptionTier={subscriptionTier}
                   privacyConsent={privacyConsent}
                   showMonetizationSettings={showAdvertisingUi}
@@ -1035,6 +1087,7 @@ function App() {
                   onShowAnalysisArrowsChange={
                     setShowAnalysisArrows
                   }
+                  onBoardThemeChange={setBoardTheme}
                   onSubscriptionTierChange={
                     setSubscriptionTier
                   }

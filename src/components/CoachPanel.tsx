@@ -5,6 +5,7 @@ import { getFeatureAccess, type SubscriptionTier } from "../features/featureAcce
 import { useAiCoach } from "../hooks/useAiCoach";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { getAiCoachAction } from "../ai/coachUiState";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 type Props = {
   analysis: EngineAnalysis | null;
@@ -177,10 +178,7 @@ export default function CoachPanel({
         )}
 
         {aiCoach.status === "loading" && (
-          <div className="ai-coach-loading" role="status" aria-live="polite">
-            <span aria-hidden="true" />
-            ИИ разбирает позицию…
-          </div>
+          <LoadingSkeleton label="Готовим персональное объяснение…" rows={3} />
         )}
 
         {aiCoach.status === "success" && aiCoach.advice && (

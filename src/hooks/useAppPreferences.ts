@@ -15,6 +15,10 @@ import {
   writeStorageValue,
 } from "../platform/appStorage";
 import { settingsStorageKeys } from "../platform/storageKeys";
+import {
+  parseBoardThemeId,
+  type BoardThemeId,
+} from "../theme/boardThemes";
 
 function readBoolean(key: string, fallback: boolean) {
   const value = readStorageValue(key);
@@ -56,6 +60,10 @@ function readSubscriptionTier(): SubscriptionTier {
     : "premium";
 }
 
+function readBoardTheme(): BoardThemeId {
+  return parseBoardThemeId(readStorageValue(settingsStorageKeys.boardTheme));
+}
+
 export function useAppPreferences() {
   const [gameMode, setGameMode] = useState<GameMode>(readGameMode);
   const [playerSide, setPlayerSide] = useState<Color>(readPlayerSide);
@@ -67,6 +75,7 @@ export function useAppPreferences() {
   const [showAnalysisArrows, setShowAnalysisArrows] = useState(() =>
     readBoolean(settingsStorageKeys.showAnalysisArrows, true),
   );
+  const [boardTheme, setBoardTheme] = useState<BoardThemeId>(readBoardTheme);
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>(readSubscriptionTier);
   const [privacyConsent, setPrivacyConsent] = useState<PrivacyConsentState>(() =>
     parsePrivacyConsent(readStorageValue(settingsStorageKeys.privacyConsent)),
@@ -78,6 +87,7 @@ export function useAppPreferences() {
   useEffect(() => writeStorageValue(settingsStorageKeys.activeWorkspace, activeWorkspace ?? "none"), [activeWorkspace]);
   useEffect(() => writeStorageValue(settingsStorageKeys.compactUi, String(compactUi)), [compactUi]);
   useEffect(() => writeStorageValue(settingsStorageKeys.showAnalysisArrows, String(showAnalysisArrows)), [showAnalysisArrows]);
+  useEffect(() => writeStorageValue(settingsStorageKeys.boardTheme, boardTheme), [boardTheme]);
   useEffect(() => writeStorageValue(settingsStorageKeys.subscriptionTier, subscriptionTier), [subscriptionTier]);
   useEffect(() => writeJsonStorageValue(settingsStorageKeys.privacyConsent, privacyConsent), [privacyConsent]);
 
@@ -102,6 +112,8 @@ export function useAppPreferences() {
     setCompactUi,
     showAnalysisArrows,
     setShowAnalysisArrows,
+    boardTheme,
+    setBoardTheme,
     subscriptionTier,
     setSubscriptionTier,
     privacyConsent,

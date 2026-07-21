@@ -1,20 +1,27 @@
+import type { CSSProperties } from "react";
 import {
   getAdsConsentLabel,
   type AdsConsentStatus,
   type PrivacyConsentState,
 } from "../features/consent";
 import type { SubscriptionTier } from "../features/featureAccess";
+import {
+  BOARD_THEMES,
+  type BoardThemeId,
+} from "../theme/boardThemes";
 import DataBackupPanel from "./DataBackupPanel";
 
 type Props = {
   compactUi: boolean;
   showCompactUiSetting: boolean;
   showAnalysisArrows: boolean;
+  boardTheme: BoardThemeId;
   subscriptionTier: SubscriptionTier;
   privacyConsent: PrivacyConsentState;
   showMonetizationSettings: boolean;
   onCompactUiChange: (enabled: boolean) => void;
   onShowAnalysisArrowsChange: (enabled: boolean) => void;
+  onBoardThemeChange: (theme: BoardThemeId) => void;
   onSubscriptionTierChange: (tier: SubscriptionTier) => void;
   onPrivacyConsentChange: (status: AdsConsentStatus) => void;
   onPrivacyConsentReset: () => void;
@@ -24,11 +31,13 @@ export default function AppSettingsPanel({
   compactUi,
   showCompactUiSetting,
   showAnalysisArrows,
+  boardTheme,
   subscriptionTier,
   privacyConsent,
   showMonetizationSettings,
   onCompactUiChange,
   onShowAnalysisArrowsChange,
+  onBoardThemeChange,
   onSubscriptionTierChange,
   onPrivacyConsentChange,
   onPrivacyConsentReset,
@@ -76,6 +85,42 @@ export default function AppSettingsPanel({
           />
           <span />
         </label>
+      </div>
+
+      <div className="setting-row setting-row-stack">
+        <div>
+          <strong>Оформление доски</strong>
+          <p>Три контрастные темы в общей ретровейв-палитре.</p>
+        </div>
+
+        <div className="board-theme-options" role="group" aria-label="Оформление доски">
+          {BOARD_THEMES.map((theme) => (
+            <button
+              type="button"
+              className={
+                theme.id === boardTheme
+                  ? "board-theme-option active"
+                  : "board-theme-option"
+              }
+              aria-pressed={theme.id === boardTheme}
+              key={theme.id}
+              onClick={() => onBoardThemeChange(theme.id)}
+            >
+              <span
+                className="board-theme-preview"
+                aria-hidden="true"
+                style={{
+                  "--board-light": theme.previewLight,
+                  "--board-dark": theme.previewDark,
+                } as CSSProperties}
+              />
+              <span>
+                <strong>{theme.name}</strong>
+                <small>{theme.description}</small>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {showMonetizationSettings && (
