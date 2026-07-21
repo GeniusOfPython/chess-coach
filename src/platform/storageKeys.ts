@@ -22,4 +22,6 @@ export const gameSessionStorageKeys = {
   botGameStarted: "chess-coach.bot-game-started",
   gameTermination: "chess-coach.game-termination",
   gameArchive: "chess-coach.game-archive",
+  reviewAnalysisCache: "chess-coach.review-analysis-cache-v1",
+  reviewCheckpoint: "chess-coach.review-checkpoint-v1",
 } as const;

@@ -1,7 +1,12 @@
 import type { Color } from "chess.js";
 import type { MoveReviewVerdict } from "./reviewTypes";
 
-export type GameReviewStatus = "idle" | "running" | "done" | "error";
+export type GameReviewStatus =
+  | "idle"
+  | "running"
+  | "paused"
+  | "done"
+  | "error";
 
 export type GameReviewItem = {
   id: string;
@@ -17,4 +22,3 @@ export type GameReviewItem = {
   evaluationLoss: number | null;
   isPlayerDecision: boolean;
 };
-

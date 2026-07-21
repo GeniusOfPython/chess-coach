@@ -85,6 +85,7 @@ export function useChessCoachController() {
     analyzePosition,
     calculateBotMove,
     calculatePositionAnalysis,
+    calculateGameReviewAnalysis,
     clearAnalysis,
   } = useEngineAnalysis();
 
@@ -181,6 +182,7 @@ export function useChessCoachController() {
     lastMoveHistory,
     analyzePosition,
     calculatePositionAnalysis,
+    calculateGameReviewAnalysis,
     clearAnalysis,
     setLastMoveReview,
     setSelectedSquare,

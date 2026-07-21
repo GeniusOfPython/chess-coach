@@ -16,10 +16,13 @@ type Props = {
   total: number;
   items: GameReviewItem[];
   error: string;
+  restoredProgress: boolean;
+  cachedPositions: number;
   disabled?: boolean;
   disabledMessage?: string;
   selectedPositionIndex: number;
   onRun: () => void;
+  onPause: () => void;
   onClear: () => void;
   onSelectPosition: (item: GameReviewItem) => void;
   onPracticeMainMistake: (item: GameReviewItem) => void;
@@ -70,10 +73,13 @@ export default function GameReviewPanel({
   total,
   items,
   error,
+  restoredProgress,
+  cachedPositions,
   disabled = false,
   disabledMessage,
   selectedPositionIndex,
   onRun,
+  onPause,
   onClear,
   onSelectPosition,
   onPracticeMainMistake,
@@ -111,14 +117,26 @@ export default function GameReviewPanel({
           </p>
         </div>
 
-        <button
-          type="button"
-          className="secondary compact-action"
-          disabled={disabled || status === "running" || total === 0}
-          onClick={onRun}
-        >
-          {status === "running" ? "Идёт обзор…" : "Разобрать"}
-        </button>
+        <div className="game-review-header-actions">
+          {status === "running" ? (
+            <button
+              type="button"
+              className="secondary compact-action game-review-stop"
+              onClick={onPause}
+            >
+              Остановить
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="secondary compact-action"
+              disabled={disabled || total === 0}
+              onClick={onRun}
+            >
+              {status === "paused" ? "Продолжить" : "Разобрать"}
+            </button>
+          )}
+        </div>
       </div>
 
       {total === 0 && (
@@ -134,7 +152,7 @@ export default function GameReviewPanel({
       {status === "running" && (
         <div className="game-review-progress">
           <div className="game-review-progress-row">
-            <span>Анализ ходов</span>
+            <span>{restoredProgress ? "Обзор продолжен" : "Анализ ходов"}</span>
             <strong>
               {progress} / {total}
             </strong>
@@ -148,6 +166,29 @@ export default function GameReviewPanel({
           </div>
 
           <LoadingSkeleton label="Ищем переломные моменты…" rows={2} compact />
+
+          <div className="game-review-progress-meta">
+            <span>Прогресс сохраняется автоматически</span>
+            {cachedPositions > 0 && (
+              <span>Готовых оценок использовано: {cachedPositions}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {status === "paused" && (
+        <div className="game-review-paused">
+          <strong>Обзор остановлен на ходе {progress} из {total}</strong>
+          <span>
+            Результаты сохранены. Продолжение начнётся со следующей позиции.
+          </span>
+          <button
+            type="button"
+            className="secondary compact-action"
+            onClick={onClear}
+          >
+            Сбросить прогресс
+          </button>
         </div>
       )}
 

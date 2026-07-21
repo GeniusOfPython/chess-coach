@@ -27,6 +27,11 @@ export function useEngineAnalysis() {
     [],
   );
 
+  const gameReviewEngine = useMemo(
+    () => new StockfishService(),
+    [],
+  );
+
   const [analysis, setAnalysis] =
     useState<EngineAnalysis | null>(null);
 
@@ -43,8 +48,9 @@ export function useEngineAnalysis() {
       analysisEngine.destroy();
       botEngine.destroy();
       reviewEngine.destroy();
+      gameReviewEngine.destroy();
     };
-  }, [analysisEngine, botEngine, reviewEngine]);
+  }, [analysisEngine, botEngine, gameReviewEngine, reviewEngine]);
 
   const clearAnalysis = useCallback(() => {
     analysisEngine.stop();
@@ -183,6 +189,45 @@ export function useEngineAnalysis() {
     [reviewEngine],
   );
 
+  const calculateGameReviewAnalysis = useCallback(
+    async ({
+      fen,
+      isGameOver,
+      movetime = 900,
+      timeoutMs = movetime + 1800,
+      signal,
+    }: {
+      fen: string;
+      isGameOver: boolean;
+      movetime?: number;
+      timeoutMs?: number;
+      signal?: AbortSignal;
+    }) => {
+      if (isGameOver || signal?.aborted) return null;
+
+      const stop = () => gameReviewEngine.stop();
+      signal?.addEventListener("abort", stop, { once: true });
+
+      try {
+        return await gameReviewEngine.analyze(fen, {
+          movetime,
+          multiPv: 1,
+          timeoutMs,
+        });
+      } catch (error) {
+        if (isStockfishAnalysisCancelledError(error) || signal?.aborted) {
+          return null;
+        }
+
+        console.error("Ошибка обзора позиции:", error);
+        return null;
+      } finally {
+        signal?.removeEventListener("abort", stop);
+      }
+    },
+    [gameReviewEngine],
+  );
+
   return {
     analysis,
     analyzedTurn,
@@ -192,6 +237,7 @@ export function useEngineAnalysis() {
     calculateBestMove,
     calculateBotMove,
     calculatePositionAnalysis,
+    calculateGameReviewAnalysis,
     clearAnalysis,
   };
 }

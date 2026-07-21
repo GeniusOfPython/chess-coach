@@ -32,6 +32,14 @@ type CalculatePositionAnalysis = (options: {
   movetime?: number;
 }) => Promise<EngineAnalysis | null>;
 
+type CalculateGameReviewAnalysis = (options: {
+  fen: string;
+  isGameOver: boolean;
+  movetime?: number;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+}) => Promise<EngineAnalysis | null>;
+
 type CompletedPlayerMove = {
   playedMove: string;
   positionBeforeMove: string;
@@ -54,6 +62,7 @@ type UseLearningFlowOptions = {
   lastMoveHistory: ReviewMove[];
   analyzePosition: AnalyzePosition;
   calculatePositionAnalysis: CalculatePositionAnalysis;
+  calculateGameReviewAnalysis: CalculateGameReviewAnalysis;
   clearAnalysis: () => void;
   setLastMoveReview: Parameters<typeof useMoveReview>[0]["setLastMoveReview"];
   setSelectedSquare: (square: string | null) => void;
@@ -80,6 +89,7 @@ export function useLearningFlow({
   lastMoveHistory,
   analyzePosition,
   calculatePositionAnalysis,
+  calculateGameReviewAnalysis,
   clearAnalysis,
   setLastMoveReview,
   setSelectedSquare,
@@ -127,7 +137,10 @@ export function useLearningFlow({
     items: reviewItems,
     progress: reviewProgress,
     error: reviewError,
+    restoredProgress: reviewRestoredProgress,
+    cachedPositions: reviewCachedPositions,
     run: runReview,
+    pause: pauseReview,
     reset: clearReview,
   } = useGameReview();
   const { reviewMove } = useMoveReview({
@@ -181,7 +194,7 @@ export function useLearningFlow({
     await runReview({
       fenHistory,
       moveHistory: lastMoveHistory,
-      calculatePositionAnalysis,
+      calculatePositionAnalysis: calculateGameReviewAnalysis,
       reviewSide: gameMode === "bot" ? playerSide : undefined,
     });
   }
@@ -334,6 +347,9 @@ export function useLearningFlow({
       items: reviewItems,
       progress: reviewProgress,
       error: reviewError,
+      restoredProgress: reviewRestoredProgress,
+      cachedPositions: reviewCachedPositions,
+      pause: pauseReview,
       clear: clearReview,
     },
     journal: {
