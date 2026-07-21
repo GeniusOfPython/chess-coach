@@ -82,12 +82,14 @@ export default function PgnPanel({
 
       <textarea
         className="pgn-output"
+        aria-label="PGN текущей партии"
         value={pgn || "PGN появится здесь после ходов."}
         readOnly
       />
 
       <textarea
         className="pgn-input"
+        aria-label="PGN для импорта"
         placeholder="Вставь PGN партии сюда, чтобы загрузить её на доску"
         value={importText}
         onChange={(event) => {
@@ -105,7 +107,11 @@ export default function PgnPanel({
         Импортировать PGN
       </button>
 
-      {message && <p className="pgn-message">{message}</p>}
+      {message && (
+        <p className="pgn-message" role="status" aria-live="polite">
+          {message}
+        </p>
+      )}
     </div>
   );
 }

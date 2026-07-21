@@ -1,5 +1,9 @@
 import type { CSSProperties } from "react";
-import { Chessboard } from "react-chessboard";
+import {
+  Chessboard,
+  defaultPieces,
+  type PieceRenderObject,
+} from "react-chessboard";
 import { ANALYSIS_LINE_COLORS } from "../theme/analysisPalette";
 import {
   getBoardTheme,
@@ -12,6 +16,36 @@ export type LastMoveSquares = {
 };
 
 type BoardOrientation = "white" | "black";
+
+const accessiblePieceNames: Record<string, string> = {
+  wP: "Белая пешка",
+  wN: "Белый конь",
+  wB: "Белый слон",
+  wR: "Белая ладья",
+  wQ: "Белый ферзь",
+  wK: "Белый король",
+  bP: "Чёрная пешка",
+  bN: "Чёрный конь",
+  bB: "Чёрный слон",
+  bR: "Чёрная ладья",
+  bQ: "Чёрный ферзь",
+  bK: "Чёрный король",
+};
+
+const accessiblePieces = Object.fromEntries(
+  Object.entries(defaultPieces).map(([pieceType, Piece]) => [
+    pieceType,
+    (props) => (
+      <>
+        <span className="visually-hidden">
+          {accessiblePieceNames[pieceType] ?? "Шахматная фигура"}{" "}
+          {props?.square ?? "вне доски"}
+        </span>
+        <Piece {...props} />
+      </>
+    ),
+  ]),
+) as PieceRenderObject;
 
 type Props = {
   position: string;
@@ -164,6 +198,7 @@ export default function ChessBoard({
   return (
     <Chessboard
       options={{
+        pieces: accessiblePieces,
         position,
         boardOrientation,
         onPieceDrop,

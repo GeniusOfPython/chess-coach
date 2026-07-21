@@ -46,13 +46,29 @@ const stages = [
     args: ["scripts/verify-build.mjs"],
   },
   ...(withE2e
-    ? [{
-        id: "e2e",
-        title: "Critical learning-cycle smoke E2E",
-        command: "npm",
-        args: ["run", "test:e2e"],
-        env: { E2E_USE_PREVIEW: "1" },
-      }]
+    ? [
+        {
+          id: "e2e-smoke",
+          title: "Critical learning-cycle smoke E2E",
+          command: "npm",
+          args: ["run", "test:e2e:smoke"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-accessibility",
+          title: "Accessibility smoke E2E",
+          command: "npm",
+          args: ["run", "test:e2e:a11y"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-offline",
+          title: "PWA offline E2E",
+          command: "npm",
+          args: ["run", "test:e2e:offline"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+      ]
     : []),
 ];
 

@@ -52,12 +52,14 @@ export default function FenPanel({
 
       <textarea
         className="fen-output"
+        aria-label="FEN текущей позиции"
         value={fen}
         readOnly
       />
 
       <textarea
         className="fen-input"
+        aria-label="FEN для импорта"
         placeholder="Вставь FEN позиции сюда, чтобы загрузить её на доску"
         value={importText}
         onChange={(event) => {
@@ -75,7 +77,11 @@ export default function FenPanel({
         Импортировать FEN
       </button>
 
-      {message && <p className="fen-message">{message}</p>}
+      {message && (
+        <p className="fen-message" role="status" aria-live="polite">
+          {message}
+        </p>
+      )}
     </div>
   );
 }

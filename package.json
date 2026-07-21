@@ -10,8 +10,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint src server api e2e scripts vite.config.ts playwright.config.ts",
-    "test": "vitest run --exclude e2e/**",
+    "test": "vitest run --exclude \"e2e/**\"",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test e2e/learning-cycle.spec.ts",
+    "test:e2e:a11y": "playwright test e2e/accessibility.spec.ts",
+    "test:e2e:offline": "playwright test e2e/offline.spec.ts",
     "test:e2e:install": "playwright install chromium",
     "eval:ai-coach": "vitest run src/ai/evaluation/aiCoachEval.test.ts --reporter=verbose",
     "check:architecture": "node scripts/check-architecture.mjs",
@@ -27,6 +30,7 @@
     "stockfish": "^18.0.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
