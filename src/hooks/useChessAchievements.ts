@@ -1,27 +1,15 @@
 import { useCallback, useRef, useState } from "react";
 import {
   getChessAchievement,
-  parseUnlockedAchievements,
   type ChessAchievement,
   type ChessAchievementId,
   type UnlockedChessAchievement,
 } from "../features/chessAchievements";
-import {
-  readJsonStorageValue,
-  writeJsonStorageValue,
-} from "../platform/appStorage";
-import { settingsStorageKeys } from "../platform/storageKeys";
-
-function readUnlockedAchievements() {
-  return parseUnlockedAchievements(readJsonStorageValue<unknown>({
-    key: settingsStorageKeys.chessAchievements,
-    fallback: [],
-  }));
-}
+import { chessAchievementsRepository } from "../repositories/chessAchievementsRepository";
 
 export function useChessAchievements() {
   const [unlocked, setUnlocked] = useState<UnlockedChessAchievement[]>(
-    readUnlockedAchievements,
+    chessAchievementsRepository.load,
   );
   const unlockedRef = useRef(unlocked);
 
@@ -50,10 +38,7 @@ export function useChessAchievements() {
     if (newlyUnlocked.length > 0) {
       unlockedRef.current = nextUnlocked;
       setUnlocked(nextUnlocked);
-      writeJsonStorageValue(
-        settingsStorageKeys.chessAchievements,
-        nextUnlocked,
-      );
+      chessAchievementsRepository.save(nextUnlocked);
     }
 
     return newlyUnlocked;

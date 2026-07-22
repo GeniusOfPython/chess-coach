@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import type { LastMoveSquares } from "../components/ChessBoard";
-import { readStorageValue } from "../platform/appStorage";
-import { gameSessionStorageKeys } from "../platform/storageKeys";
+import { gameSessionRepository } from "../repositories/gameSessionRepository";
 
 type UseChessGameOptions = {
   onPositionChanged?: () => void;
@@ -60,7 +59,7 @@ function getLastMoveFromVerboseHistory(
 }
 
 function readSavedPgn() {
-  return readStorageValue(gameSessionStorageKeys.currentPgn) ?? "";
+  return gameSessionRepository.loadCurrentPgn();
 }
 
 function createInitialGame() {

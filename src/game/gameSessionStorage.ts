@@ -1,27 +1,7 @@
-import {
-  readJsonStorageValue,
-  readStorageValue,
-  writeJsonStorageValue,
-  writeStorageValue,
-} from "../platform/appStorage";
-import { gameSessionStorageKeys } from "../platform/storageKeys";
 import type { BotGameTermination } from "./gameTypes";
 
 export function parseBotGameStarted(value: string | null) {
   return value === "true";
-}
-
-export function readBotGameStarted() {
-  return parseBotGameStarted(
-    readStorageValue(gameSessionStorageKeys.botGameStarted),
-  );
-}
-
-export function writeBotGameStarted(isStarted: boolean) {
-  writeStorageValue(
-    gameSessionStorageKeys.botGameStarted,
-    String(isStarted),
-  );
 }
 
 export function parseGameTermination(value: unknown): BotGameTermination | null {
@@ -45,20 +25,4 @@ export function parseGameTermination(value: unknown): BotGameTermination | null 
     winner: value.winner,
     result: value.result,
   };
-}
-
-export function readGameTermination() {
-  return parseGameTermination(readJsonStorageValue<unknown>({
-    key: gameSessionStorageKeys.gameTermination,
-    fallback: null,
-  }));
-}
-
-export function writeGameTermination(
-  termination: BotGameTermination | null,
-) {
-  writeJsonStorageValue(
-    gameSessionStorageKeys.gameTermination,
-    termination,
-  );
 }

@@ -3,17 +3,14 @@ import { AiCoachError, AiCoachService } from "../ai/AiCoachService";
 import { createAiCoachRequest, type AiCoachAdvice } from "../ai/coachContract";
 import {
   getRemainingAiCoachAdvice,
-  readAiCoachUsage,
-  recordAiCoachUsage,
 } from "../ai/coachQuota";
+import { aiCoachUsageRepository } from "../repositories/aiCoachUsageRepository";
 import type {
   AiCoachQuota,
 } from "../features/featureAccess";
 import type { AiCoachServerQuota } from "../ai/coachQuotaProtocol";
 import type { VerifiedChessFacts } from "../analysis/verifiedChessFacts";
-import type { SubscriptionTier } from "../features/featureAccess";
 import { trackProductEvent } from "../platform/analytics/analyticsClient";
-import type { ProductEventProperties } from "../platform/analytics/productEvents";
 
 export type AiCoachStatus =
   | "idle"
@@ -29,18 +26,7 @@ type Options = {
   quota: AiCoachQuota;
   isOnline: boolean;
   enabled: boolean;
-  tier: SubscriptionTier;
 };
-
-function getAiCoachAnalyticsOutcome(
-  error: unknown,
-): ProductEventProperties["ai_coach_finished"]["outcome"] | null {
-  if (!(error instanceof AiCoachError) || error.code === "cancelled") {
-    return error instanceof AiCoachError ? null : "unavailable";
-  }
-
-  return error.code;
-}
 
 function errorMessage(error: unknown) {
   if (!(error instanceof AiCoachError)) {
@@ -71,7 +57,6 @@ export function useAiCoach({
   quota,
   isOnline,
   enabled,
-  tier,
 }: Options) {
   const serviceRef = useRef<AiCoachService | null>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
@@ -79,7 +64,7 @@ export function useAiCoach({
   const [advice, setAdvice] = useState<AiCoachAdvice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [limitReason, setLimitReason] = useState<AiCoachLimitReason | null>(null);
-  const [usage, setUsage] = useState(() => readAiCoachUsage(quota));
+  const [usage, setUsage] = useState(() => aiCoachUsageRepository.load(quota));
   const [serverQuota, setServerQuota] = useState<AiCoachServerQuota | null>(null);
   const remaining = serverQuota?.remaining ??
     getRemainingAiCoachAdvice(usage, quota);
@@ -99,7 +84,7 @@ export function useAiCoach({
   useEffect(() => () => activeRequestRef.current?.abort(), []);
 
   useEffect(() => {
-    setUsage(readAiCoachUsage({
+    setUsage(aiCoachUsageRepository.load({
       limit: quotaLimit,
       period: quotaPeriod,
     }));
@@ -123,7 +108,7 @@ export function useAiCoach({
     setError(null);
     setLimitReason(null);
     trackProductEvent("ai_coach_requested", {
-      tier,
+      quotaPeriod,
       remainingBeforeRequest: remaining,
     });
 
@@ -141,14 +126,14 @@ export function useAiCoach({
       if (result.quota) {
         setServerQuota(result.quota);
       } else {
-        setUsage(recordAiCoachUsage(quota));
+        setUsage(aiCoachUsageRepository.record(quota));
       }
 
       setAdvice(result.advice);
       setStatus("success");
       trackProductEvent("ai_coach_finished", {
-        tier,
         outcome: "success",
+        quotaSource: result.quota ? "server" : "local",
       });
     } catch (requestError) {
       if (controller.signal.aborted) {
@@ -168,22 +153,20 @@ export function useAiCoach({
         );
         setStatus("limited");
         trackProductEvent("ai_coach_finished", {
-          tier,
-          outcome: requestError.code,
+          outcome: "limited",
+          reason: requestError.code,
         });
         return;
       }
 
       setError(errorMessage(requestError));
       setStatus("error");
-      const analyticsOutcome = getAiCoachAnalyticsOutcome(requestError);
-
-      if (analyticsOutcome) {
-        trackProductEvent("ai_coach_finished", {
-          tier,
-          outcome: analyticsOutcome,
-        });
-      }
+      trackProductEvent("ai_coach_finished", {
+        outcome: "error",
+        reason: requestError instanceof AiCoachError
+          ? requestError.code
+          : "unknown",
+      });
     } finally {
       if (activeRequestRef.current === controller) {
         activeRequestRef.current = null;

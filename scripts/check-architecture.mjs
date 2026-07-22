@@ -9,16 +9,21 @@ const apiRoot = resolve(root, "api");
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
 
 const forbiddenTargets = {
-  analysis: new Set(["ai", "app", "components", "engine", "features", "game", "hooks", "theme"]),
-  ai: new Set(["app", "components", "engine", "game", "hooks", "theme"]),
-  engine: new Set(["ai", "analysis", "app", "components", "features", "game", "hooks", "platform", "theme", "utils"]),
-  features: new Set(["ai", "analysis", "app", "components", "engine", "hooks", "platform", "theme", "utils"]),
-  game: new Set(["ai", "analysis", "app", "components", "engine", "features", "hooks", "theme", "utils"]),
-  platform: new Set(["ai", "analysis", "app", "components", "engine", "hooks", "theme", "utils"]),
-  theme: new Set(["ai", "analysis", "app", "components", "engine", "features", "game", "hooks", "platform", "utils"]),
-  types: new Set(["ai", "analysis", "app", "components", "engine", "features", "game", "hooks", "platform", "theme", "utils"]),
-  utils: new Set(["ai", "analysis", "app", "components", "engine", "features", "game", "hooks", "platform", "theme"]),
+  analysis: new Set(["ai", "app", "components", "engine", "features", "game", "hooks", "repositories", "theme"]),
+  ai: new Set(["app", "components", "engine", "game", "hooks", "repositories", "theme"]),
+  engine: new Set(["ai", "analysis", "app", "components", "features", "game", "hooks", "platform", "repositories", "theme", "utils"]),
+  features: new Set(["ai", "analysis", "app", "components", "engine", "hooks", "platform", "repositories", "theme", "utils"]),
+  game: new Set(["ai", "analysis", "app", "components", "engine", "features", "hooks", "repositories", "theme", "utils"]),
+  platform: new Set(["ai", "analysis", "app", "components", "engine", "hooks", "repositories", "theme", "utils"]),
+  theme: new Set(["ai", "analysis", "app", "components", "engine", "features", "game", "hooks", "platform", "repositories", "utils"]),
+  types: new Set(["ai", "analysis", "app", "components", "engine", "features", "game", "hooks", "platform", "repositories", "theme", "utils"]),
+  utils: new Set(["ai", "analysis", "app", "components", "engine", "features", "game", "hooks", "platform", "repositories", "theme"]),
 };
+
+const repositoryOnlyPlatformModules = new Set([
+  "platform/appStorage",
+  "platform/storageKeys",
+]);
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -147,6 +152,19 @@ for (const file of files) {
   const imports = importedSpecifiers(file, content);
   const layer = sourceLayer(file);
 
+  if (
+    layer &&
+    layer !== "platform" &&
+    layer !== "repositories" &&
+    !file.endsWith(".test.ts") &&
+    !file.endsWith(".test.tsx") &&
+    content.includes("chess-coach.")
+  ) {
+    violations.push(
+      `${normalizedPath(file)}: физические ключи chess-coach.* разрешены только platform и repositories`,
+    );
+  }
+
   for (const specifier of imports) {
     const target = resolveSourceModule(file, specifier, knownFiles);
 
@@ -156,12 +174,25 @@ for (const file of files) {
 
     if (layer) {
       const targetLayer = importedLayer(file, specifier);
+      const normalizedTarget = normalizedPath(
+        resolve(dirname(file), specifier),
+      ).replace(/^src\//u, "");
 
       if (targetLayer === "outside-src") {
         violations.push(`${normalizedPath(file)} импортирует код вне src: ${specifier}`);
       } else if (targetLayer && forbiddenTargets[layer]?.has(targetLayer)) {
         violations.push(
           `${normalizedPath(file)}: слой ${layer} не может импортировать ${targetLayer} (${specifier})`,
+        );
+      }
+
+      if (
+        layer !== "platform" &&
+        layer !== "repositories" &&
+        repositoryOnlyPlatformModules.has(normalizedTarget)
+      ) {
+        violations.push(
+          `${normalizedPath(file)}: прямой доступ к ${normalizedTarget} разрешён только репозиториям`,
         );
       }
     } else if (

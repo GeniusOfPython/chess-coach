@@ -1,8 +1,3 @@
-import {
-  readJsonStorageValue,
-  writeJsonStorageValue,
-} from "../platform/appStorage";
-import { settingsStorageKeys } from "../platform/storageKeys";
 import type { AiCoachQuota } from "../features/featureAccess";
 
 export type AiCoachUsage = {
@@ -41,23 +36,6 @@ export function normalizeAiCoachUsage(
   }
 
   return { periodKey, count: value.count };
-}
-
-export function readAiCoachUsage(quota: AiCoachQuota, now = new Date()) {
-  const stored = readJsonStorageValue<unknown>({
-    key: settingsStorageKeys.aiCoachUsage,
-    fallback: null,
-  });
-
-  return normalizeAiCoachUsage(stored, quota, now);
-}
-
-export function recordAiCoachUsage(quota: AiCoachQuota, now = new Date()) {
-  const current = readAiCoachUsage(quota, now);
-  const next = { ...current, count: current.count + 1 };
-
-  writeJsonStorageValue(settingsStorageKeys.aiCoachUsage, next);
-  return next;
 }
 
 export function getRemainingAiCoachAdvice(

@@ -4,58 +4,48 @@ import {
   useState,
 } from "react";
 import {
-  readStorageValue,
-  writeStorageValue,
-} from "../platform/appStorage";
+  interfaceStateRepository,
+  type CollapsibleSectionId,
+} from "../repositories/interfaceStateRepository";
 import "./CollapsibleSection.css";
 
 type Props = {
   title: string;
   description?: string;
   defaultOpen?: boolean;
-  storageKey?: string;
+  persistenceId?: CollapsibleSectionId;
   children: ReactNode;
 };
 
 function readStoredOpenState(
-  storageKey: string | undefined,
+  persistenceId: CollapsibleSectionId | undefined,
   defaultOpen: boolean,
 ) {
-  if (!storageKey) {
+  if (!persistenceId) {
     return defaultOpen;
   }
 
-  const value = readStorageValue(storageKey);
-
-  if (value === "open") {
-    return true;
-  }
-
-  if (value === "closed") {
-    return false;
-  }
-
-  return defaultOpen;
+  return interfaceStateRepository.loadSectionOpen(persistenceId, defaultOpen);
 }
 
 export default function CollapsibleSection({
   title,
   description,
   defaultOpen = false,
-  storageKey,
+  persistenceId,
   children,
 }: Props) {
   const [isOpen, setIsOpen] = useState(() =>
-    readStoredOpenState(storageKey, defaultOpen),
+    readStoredOpenState(persistenceId, defaultOpen),
   );
 
   useEffect(() => {
-    if (!storageKey) {
+    if (!persistenceId) {
       return;
     }
 
-    writeStorageValue(storageKey, isOpen ? "open" : "closed");
-  }, [isOpen, storageKey]);
+    interfaceStateRepository.saveSectionOpen(persistenceId, isOpen);
+  }, [isOpen, persistenceId]);
 
   return (
     <details

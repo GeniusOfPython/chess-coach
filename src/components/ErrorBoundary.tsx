@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { clearAppStorageValues } from "../platform/appStorage";
+import { appDataRepository } from "../repositories/appDataRepository";
 import { captureException } from "../platform/diagnostics/crashReporter";
 import "./ErrorBoundary.css";
 
@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   };
 
   handleResetLocalData = () => {
-    clearAppStorageValues();
+    appDataRepository.clearAll();
     window.location.reload();
   };
 

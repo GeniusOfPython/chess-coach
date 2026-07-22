@@ -1,31 +1,26 @@
 import { useEffect, useState } from "react";
 import type { MoveReview } from "../components/MoveReviewPanel";
-import {
-  readBotGameStarted,
-  readGameTermination,
-  writeBotGameStarted,
-  writeGameTermination,
-} from "../game/gameSessionStorage";
 import type { Color } from "chess.js";
 import type { BotGameTermination } from "../game/gameTypes";
+import { gameSessionRepository } from "../repositories/gameSessionRepository";
 
 export function useGameSession() {
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [isBotGameStarted, setIsBotGameStarted] = useState(
-    readBotGameStarted,
+    gameSessionRepository.loadBotGameStarted,
   );
   const [botSessionId, setBotSessionId] = useState(0);
   const [lastMoveReview, setLastMoveReview] = useState<MoveReview | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [gameTermination, setGameTermination] =
-    useState<BotGameTermination | null>(readGameTermination);
+    useState<BotGameTermination | null>(gameSessionRepository.loadTermination);
 
   useEffect(() => {
-    writeBotGameStarted(isBotGameStarted);
+    gameSessionRepository.saveBotGameStarted(isBotGameStarted);
   }, [isBotGameStarted]);
 
   useEffect(() => {
-    writeGameTermination(gameTermination);
+    gameSessionRepository.saveTermination(gameTermination);
   }, [gameTermination]);
 
   function resetSession() {

@@ -10,8 +10,8 @@ import {
 import { getFeatureAccess } from "../features/featureAccess";
 import type { AdsConsentStatus } from "../features/consent";
 import { isNativeMobileShell } from "../platform/mobile";
-import { writeStorageValue } from "../platform/appStorage";
-import { gameSessionStorageKeys } from "../platform/storageKeys";
+import { gameSessionRepository } from "../repositories/gameSessionRepository";
+import { trackProductEvent } from "../platform/analytics/analyticsClient";
 import { useRewardToast } from "../hooks/useRewardToast";
 import { useGameSession } from "../hooks/useGameSession";
 import {
@@ -29,7 +29,6 @@ import {
 } from "../platform/nativeBridge";
 import { useLearningFlow } from "./useLearningFlow";
 import { useMatchLifecycle } from "./useMatchLifecycle";
-import { trackProductEvent } from "../platform/analytics/analyticsClient";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
@@ -121,7 +120,7 @@ export function useChessCoachController() {
   const isMatchFinished = game.isGameOver() || gameTermination !== null;
 
   useEffect(() => {
-    writeStorageValue(gameSessionStorageKeys.currentPgn, getPgn());
+    gameSessionRepository.saveCurrentPgn(getPgn());
   }, [position, history.length, getPgn]);
   const isActiveBotGame = isBotFairPlayActive({
     mode: gameMode,
@@ -199,7 +198,7 @@ export function useChessCoachController() {
 
   const {
     handleNewGame,
-    handleStartBotGame: startBotGame,
+    handleStartBotGame,
     handleUndoMove,
     handleModeChange,
     handlePlayerSideChange,
@@ -227,18 +226,6 @@ export function useChessCoachController() {
     clearGameTermination,
   });
 
-  function handleStartBotGame() {
-    if (!startBotGame()) {
-      return;
-    }
-
-    trackProductEvent("game_started", {
-      mode: "bot",
-      playerSide,
-      botLevel: botLevelId,
-    });
-  }
-
   const match = useMatchLifecycle({
     game,
     gameMode,
@@ -254,6 +241,15 @@ export function useChessCoachController() {
     setActiveWorkspace,
     showRewardToast,
   });
+
+  function handleTrackedBotGameStart() {
+    trackProductEvent("game_started", {
+      mode: "bot",
+      playerSide,
+      botLevelId,
+    });
+    handleStartBotGame();
+  }
 
   const boardOrientation: "black" | "white" =
     learning.training.task.context?.side === "b" ||
@@ -443,7 +439,7 @@ export function useChessCoachController() {
     },
     actions: {
       handleNewGame,
-      handleStartBotGame,
+      handleStartBotGame: handleTrackedBotGameStart,
       handleUndoMove,
       handleModeChange,
       handlePlayerSideChange,

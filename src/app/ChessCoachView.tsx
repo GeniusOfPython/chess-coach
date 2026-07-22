@@ -181,7 +181,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               title="Настройка партии"
               description="Режим, сторона и уровень бота"
               defaultOpen={preferences.gameMode === "bot" && !session.isBotGameStarted}
-              storageKey="chess-coach.section.game-setup"
+              persistenceId="game-setup"
             >
               <GameModeSelector
                 mode={preferences.gameMode}
@@ -357,7 +357,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="Достижения"
                 description="Проверяемые шахматные события в честных партиях"
-                storageKey="chess-coach.section.achievements"
+                persistenceId="achievements"
               >
                 <ChessAchievementsPanel unlocked={achievements.unlocked} />
               </CollapsibleSection>
@@ -365,7 +365,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="Дебютные принципы"
                 description="Центр, развитие фигур и безопасность короля"
-                storageKey="chess-coach.section.opening"
+                persistenceId="opening"
               >
                 <OpeningPrinciplesPanel fen={game.displayedPosition} />
               </CollapsibleSection>
@@ -373,7 +373,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="Журнал и сводка"
                 description="Ошибки, точность и учебная статистика"
-                storageKey="chess-coach.section.learning-journal"
+                persistenceId="learning-journal"
               >
                 <TrainingSummaryPanel
                   historyLength={game.history.length}
@@ -389,7 +389,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="История ходов"
                 description="Список ходов и просмотр прошлых позиций"
-                storageKey="chess-coach.section.history"
+                persistenceId="history"
               >
                 <MoveNavigatorPanel
                   currentIndex={game.viewedMoveIndex}
@@ -406,7 +406,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="Архив партий"
                 description="Завершённые партии сохраняются автоматически"
-                storageKey="chess-coach.section.game-archive"
+                persistenceId="game-archive"
               >
                 <GameArchivePanel
                   games={archive.games}
@@ -419,7 +419,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="PGN и FEN"
                 description="Импорт, экспорт партии и загрузка позиции"
-                storageKey="chess-coach.section.position-tools"
+                persistenceId="position-tools"
               >
                 {access.canUsePgnTools ? (
                   <PgnPanel
@@ -449,7 +449,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
               <CollapsibleSection
                 title="Настройки"
                 description="Компактный режим и поведение подсказок"
-                storageKey="chess-coach.section.settings"
+                persistenceId="settings"
               >
                 <AppSettingsPanel
                   compactUi={preferences.compactUi}
