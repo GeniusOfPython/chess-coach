@@ -94,6 +94,10 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
         ? "app compact-ui"
         : "app"}
     >
+      <a className="skip-link" href="#workspace-content">
+        Перейти к рабочей области
+      </a>
+
       <header className="header">
         <p className="eyebrow">Интерактивный тренер</p>
         <h1>Шахматный помощник</h1>
@@ -150,7 +154,11 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
           />
         </div>
 
-        <aside className="side-panel" id="workspace-content">
+        <aside
+          className="side-panel"
+          id="workspace-content"
+          tabIndex={-1}
+        >
           <GameSessionCard
             stateText={sessionStateText}
             active={derived.isActiveBotGame && game.isViewingCurrentPosition}

@@ -68,6 +68,27 @@ const stages = [
           args: ["run", "test:e2e:offline"],
           env: { E2E_USE_PREVIEW: "1" },
         },
+        {
+          id: "e2e-visual",
+          title: "Desktop and mobile visual regression",
+          command: "npm",
+          args: ["run", "test:e2e:visual"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-keyboard",
+          title: "Keyboard navigation E2E",
+          command: "npm",
+          args: ["run", "test:e2e:keyboard"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-webkit",
+          title: "WebKit and Safari compatibility E2E",
+          command: "npm",
+          args: ["run", "test:e2e:webkit"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
       ]
     : []),
 ];

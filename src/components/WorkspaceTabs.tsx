@@ -2,6 +2,7 @@ import {
   toggleWorkspace,
   type WorkspaceId,
 } from "../game/workspaceNavigation";
+import type { KeyboardEvent } from "react";
 import WorkspaceIcon, { type WorkspaceIconName } from "./WorkspaceIcon";
 
 type WorkspaceTab = {
@@ -47,12 +48,9 @@ export default function WorkspaceTabs({
 }: Props) {
   const activeTab = tabs.find((tab) => tab.id === active) ?? null;
 
-  function handleTabChange(workspace: WorkspaceId) {
-    const nextWorkspace = toggleWorkspace(active, workspace);
-    onChange(nextWorkspace);
-
+  function scrollToWorkspace(workspace: WorkspaceId | null) {
     if (
-      nextWorkspace === null ||
+      workspace === null ||
       !window.matchMedia("(max-width: 760px)").matches
     ) {
       return;
@@ -68,6 +66,44 @@ export default function WorkspaceTabs({
     });
   }
 
+  function handleTabChange(workspace: WorkspaceId) {
+    const nextWorkspace = toggleWorkspace(active, workspace);
+    onChange(nextWorkspace);
+    scrollToWorkspace(nextWorkspace);
+  }
+
+  function handleTabKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) {
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % tabs.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = tabs.length - 1;
+    }
+
+    if (nextIndex === null) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    onChange(nextTab.id);
+    scrollToWorkspace(nextTab.id);
+
+    const tabList = event.currentTarget.parentElement;
+    const buttons = tabList?.querySelectorAll<HTMLButtonElement>(
+      '[role="tab"]',
+    );
+    buttons?.[nextIndex]?.focus();
+  }
+
   return (
     <nav className="workspace-tabs-card" aria-label="Рабочая область">
       <span className="status-label workspace-tabs-label">
@@ -75,19 +111,21 @@ export default function WorkspaceTabs({
       </span>
 
       <div className="workspace-tabs" role="tablist">
-        {tabs.map((tab) => (
+        {tabs.map((tab, index) => (
           <button
             key={tab.id}
             type="button"
             role="tab"
             aria-selected={tab.id === active}
             aria-controls="workspace-content"
+            tabIndex={tab.id === (active ?? tabs[0].id) ? 0 : -1}
             className={
               tab.id === active
                 ? "workspace-tab active"
                 : "workspace-tab"
             }
             onClick={() => handleTabChange(tab.id)}
+            onKeyDown={(event) => handleTabKeyDown(event, index)}
           >
             <span className="workspace-tab-icon" aria-hidden="true">
               <WorkspaceIcon name={tab.icon} />
