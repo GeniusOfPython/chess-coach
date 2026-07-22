@@ -81,6 +81,66 @@ describe("createStorageGateway", () => {
       "chess-coach.mode": "bot",
     });
   });
+
+  it("после активации читает основной снимок IndexedDB, а не устаревшее зеркало", () => {
+    const storage = createMemoryStorage();
+    storage.setItem("chess-coach.mode", "legacy");
+    const gateway = createStorageGateway(() => storage);
+
+    gateway.activatePersistentStorage(
+      { "chess-coach.mode": "indexeddb" },
+      {
+        write: async () => undefined,
+        remove: async () => undefined,
+        replacePrefix: async () => undefined,
+      },
+      "chess-coach.",
+    );
+
+    expect(gateway.read("chess-coach.mode")).toBe("indexeddb");
+  });
+
+  it("синхронизирует зеркало и удаляет отсутствующие в IndexedDB старые ключи", () => {
+    const storage = createMemoryStorage();
+    storage.setItem("chess-coach.stale", "remove");
+    storage.setItem("other-app.session", "keep");
+    const gateway = createStorageGateway(() => storage);
+
+    gateway.activatePersistentStorage(
+      { "chess-coach.current": "saved" },
+      {
+        write: async () => undefined,
+        remove: async () => undefined,
+        replacePrefix: async () => undefined,
+      },
+      "chess-coach.",
+    );
+
+    expect(storage.getItem("chess-coach.stale")).toBeNull();
+    expect(storage.getItem("chess-coach.current")).toBe("saved");
+    expect(storage.getItem("other-app.session")).toBe("keep");
+  });
+
+  it("записывает в IndexedDB и совместимое localStorage-зеркало", async () => {
+    const storage = createMemoryStorage();
+    const persisted = new Map<string, string>();
+    const gateway = createStorageGateway(() => storage);
+    gateway.activatePersistentStorage({}, {
+      write: async (key, value) => {
+        persisted.set(key, value);
+      },
+      remove: async (key) => {
+        persisted.delete(key);
+      },
+      replacePrefix: async () => undefined,
+    });
+
+    gateway.write("chess-coach.mode", "bot");
+    await gateway.flush();
+
+    expect(persisted.get("chess-coach.mode")).toBe("bot");
+    expect(storage.getItem("chess-coach.mode")).toBe("bot");
+  });
 });
 
 describe("readJsonStorageValue", () => {

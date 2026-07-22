@@ -38,7 +38,7 @@ export default function DataBackupPanel() {
     }
 
     try {
-      restoreAppBackup(await file.text());
+      await restoreAppBackup(await file.text());
       setImportStatus({
         kind: "success",
         message: "Копия восстановлена. Обновляем данные…",

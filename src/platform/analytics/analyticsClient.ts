@@ -1,60 +1,128 @@
-import {
-  assertSafeProductEventProperties,
-  productEventSchemaVersion,
-  type ProductEvent,
-  type ProductEventFor,
-  type ProductEventName,
-  type ProductEventProperties,
-} from "./productEvents";
+import type { GameMode } from "../../game/gameTypes";
 
-export type ProductAnalyticsProvider = {
-  capture: (event: ProductEvent) => void | Promise<void>;
+type AnonymousProductProperties = Readonly<
+  Record<string, string | number | boolean | null | undefined>
+>;
+
+type ProductEventMap = {
+  game_started: AnonymousProductProperties;
+  game_completed: {
+    mode: GameMode;
+    playerOutcome: "win" | "loss" | "draw" | "not_applicable";
+    halfMoves: number;
+    termination: "resignation" | "natural";
+  };
+  review_started: {
+    mode: GameMode;
+    totalPositions: number;
+  };
+  review_finished: {
+    reviewedPositions: number;
+    cachedPositions: number;
+    restoredProgress: boolean;
+  };
+  training_started: {
+    source: "current_position" | "game_review";
+    sequenceTotal: number;
+  };
+  training_hint_revealed: {
+    source: "current_position" | "game_review";
+    hintLevel: number;
+  };
+  training_attempted: {
+    source: "current_position" | "game_review";
+    solved: boolean;
+    hintLevel: number;
+    sequenceIndex: number;
+    sequenceTotal: number;
+  };
+  training_sequence_completed: {
+    source: "current_position" | "game_review";
+    sequenceTotal: number;
+  };
+  ai_coach_requested: AnonymousProductProperties;
+  ai_coach_finished: AnonymousProductProperties;
 };
 
-let activeProvider: ProductAnalyticsProvider | null = null;
+const FORBIDDEN_PRODUCT_PROPERTY_NAMES = new Set([
+  "fen",
+  "pgn",
+  "move",
+  "moves",
+  "san",
+  "uci",
+]);
 
-export function createProductEvent<Name extends ProductEventName>(
-  name: Name,
-  properties: ProductEventProperties[Name],
-  occurredAt = new Date().toISOString(),
-): ProductEventFor<Name> {
-  assertSafeProductEventProperties(name, properties);
-
-  return {
-    schemaVersion: productEventSchemaVersion,
-    name,
-    occurredAt,
-    properties,
-  } as ProductEventFor<Name>;
-}
-
-export function setProductAnalyticsProvider(
-  provider: ProductAnalyticsProvider | null,
-) {
-  activeProvider = provider;
-
-  return () => {
-    if (activeProvider === provider) {
-      activeProvider = null;
-    }
-  };
-}
-
-export function trackProductEvent<Name extends ProductEventName>(
-  name: Name,
-  properties: ProductEventProperties[Name],
-) {
-  if (!activeProvider) {
+function assertPrivacySafeProperties(value: unknown) {
+  if (Array.isArray(value)) {
+    value.forEach(assertPrivacySafeProperties);
     return;
   }
 
-  try {
-    const result = activeProvider.capture(createProductEvent(name, properties));
+  if (!value || typeof value !== "object") {
+    return;
+  }
 
-    if (result instanceof Promise) {
-      void result.catch(() => undefined);
+  for (const [propertyName, propertyValue] of Object.entries(value)) {
+    const normalizedPropertyName = propertyName.toLowerCase();
+
+    if (FORBIDDEN_PRODUCT_PROPERTY_NAMES.has(normalizedPropertyName)) {
+      throw new Error(`запрещённое поле ${normalizedPropertyName}`);
     }
+
+    assertPrivacySafeProperties(propertyValue);
+  }
+}
+
+export type ProductEvent = {
+  [Name in keyof ProductEventMap]: {
+    schemaVersion: 1;
+    name: Name;
+    occurredAt: string;
+    properties: ProductEventMap[Name];
+  };
+}[keyof ProductEventMap];
+
+export type ProductAnalyticsProvider = {
+  capture(event: ProductEvent): void | Promise<void>;
+};
+
+let provider: ProductAnalyticsProvider | null = null;
+
+export function setProductAnalyticsProvider(
+  nextProvider: ProductAnalyticsProvider | null,
+) {
+  provider = nextProvider;
+}
+
+export function createProductEvent<Name extends keyof ProductEventMap>(
+  name: Name,
+  properties: ProductEventMap[Name],
+  occurredAt = new Date().toISOString(),
+): Extract<ProductEvent, { name: Name }> {
+  assertPrivacySafeProperties(properties);
+
+  return {
+    schemaVersion: 1,
+    name,
+    occurredAt,
+    properties,
+  } as Extract<ProductEvent, { name: Name }>;
+}
+
+export function trackProductEvent<Name extends keyof ProductEventMap>(
+  name: Name,
+  properties: ProductEventMap[Name],
+) {
+  if (!provider) {
+    return;
+  }
+
+  const event = createProductEvent(name, properties);
+
+  try {
+    void Promise.resolve(provider.capture(event)).catch(() => undefined);
   } catch {
-    // Сбой аналитики не должен влиять на партию или обучение.
+    // Аналитика не может прерывать партию или учебный сценарий.
   }
 }

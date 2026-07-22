@@ -28,7 +28,7 @@ npm run test:e2e:install
 npm run check:ci
 ```
 
-Команда добавляет восемь браузерных барьеров. Все они запускаются против уже
+Команда добавляет девять браузерных барьеров. Все они запускаются против уже
 проверенного production preview, поэтому проходят тот же код, который попадает
 в артефакт:
 
@@ -43,7 +43,9 @@ npm run check:ci
 6. Core Web Vitals: LCP, CLS и INP на production-сборке в Chromium.
 7. восстановление после повреждения локальных настроек и JSON-данных с
    сохранением исправных записей и данных других приложений.
-8. WebKit-проверка критического учебного цикла и клавиатурного сценария как
+8. миграция данных из `localStorage` в IndexedDB, повторный запуск из новой
+   базы и fallback при недоступной IndexedDB;
+9. WebKit-проверка критического учебного цикла и клавиатурного сценария как
    автоматический барьер совместимости с Safari.
 
 Отдельный диагностический запуск:
@@ -56,6 +58,7 @@ npm run test:e2e:visual
 npm run test:e2e:keyboard
 npm run test:e2e:performance
 npm run test:e2e:recovery
+npm run test:e2e:migration
 npm run test:e2e:webkit
 ```
 

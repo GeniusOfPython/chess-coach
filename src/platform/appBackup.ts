@@ -1,4 +1,5 @@
 import {
+  flushAppStorageWrites,
   readAppStorageEntries,
   replaceAppStorageEntries,
 } from "./appStorage";
@@ -89,8 +90,9 @@ export function parseAppBackup(rawBackup: string): AppBackup {
   });
 }
 
-export function restoreAppBackup(rawBackup: string) {
+export async function restoreAppBackup(rawBackup: string) {
   const backup = parseAppBackup(rawBackup);
   replaceAppStorageEntries(backup.data);
+  await flushAppStorageWrites();
   return backup;
 }

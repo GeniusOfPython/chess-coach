@@ -103,6 +103,13 @@ const stages = [
           env: { E2E_USE_PREVIEW: "1" },
         },
         {
+          id: "e2e-storage-migration",
+          title: "IndexedDB migration and fallback E2E",
+          command: "npm",
+          args: ["run", "test:e2e:migration"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
           id: "e2e-webkit",
           title: "WebKit and Safari compatibility E2E",
           command: "npm",

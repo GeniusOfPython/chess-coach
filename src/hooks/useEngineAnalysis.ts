@@ -27,11 +27,6 @@ export function useEngineAnalysis() {
     [],
   );
 
-  const gameReviewEngine = useMemo(
-    () => new StockfishService(),
-    [],
-  );
-
   const [analysis, setAnalysis] =
     useState<EngineAnalysis | null>(null);
 
@@ -48,9 +43,8 @@ export function useEngineAnalysis() {
       analysisEngine.destroy();
       botEngine.destroy();
       reviewEngine.destroy();
-      gameReviewEngine.destroy();
     };
-  }, [analysisEngine, botEngine, gameReviewEngine, reviewEngine]);
+  }, [analysisEngine, botEngine, reviewEngine]);
 
   const clearAnalysis = useCallback(() => {
     analysisEngine.stop();
@@ -194,7 +188,7 @@ export function useEngineAnalysis() {
       fen,
       isGameOver,
       movetime = 900,
-      timeoutMs = movetime + 1800,
+      timeoutMs = movetime + 3500,
       signal,
     }: {
       fen: string;
@@ -203,29 +197,34 @@ export function useEngineAnalysis() {
       timeoutMs?: number;
       signal?: AbortSignal;
     }) => {
-      if (isGameOver || signal?.aborted) return null;
+      if (isGameOver || signal?.aborted) {
+        return null;
+      }
 
-      const stop = () => gameReviewEngine.stop();
-      signal?.addEventListener("abort", stop, { once: true });
+      const abortAnalysis = () => reviewEngine.stop();
+      signal?.addEventListener("abort", abortAnalysis, { once: true });
 
       try {
-        return await gameReviewEngine.analyze(fen, {
+        return await reviewEngine.analyze(fen, {
           movetime,
           multiPv: 1,
           timeoutMs,
         });
-      } catch (error) {
-        if (isStockfishAnalysisCancelledError(error) || signal?.aborted) {
+      } catch (reviewError) {
+        if (signal?.aborted) {
+          throw new DOMException("Review paused", "AbortError");
+        }
+
+        if (isStockfishAnalysisCancelledError(reviewError)) {
           return null;
         }
 
-        console.error("Ошибка обзора позиции:", error);
-        return null;
+        throw reviewError;
       } finally {
-        signal?.removeEventListener("abort", stop);
+        signal?.removeEventListener("abort", abortAnalysis);
       }
     },
-    [gameReviewEngine],
+    [reviewEngine],
   );
 
   return {
