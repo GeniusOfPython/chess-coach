@@ -11,6 +11,7 @@ import {
 import { createTrainingProgressRepository } from "./trainingProgressRepository";
 import { createSpacedRepetitionRepository } from "./spacedRepetitionRepository";
 import { createOnboardingRepository } from "./onboardingRepository";
+import { createEntitlementRepository } from "./entitlementRepository";
 
 function createMemoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -43,7 +44,6 @@ describe("app preferences repository", () => {
       "chess-coach.compact-ui": "true",
       "chess-coach.show-analysis-arrows": "false",
       "chess-coach.board-theme": "cyber",
-      "chess-coach.subscription-tier": "free",
       "chess-coach.privacy-consent": JSON.stringify({
         ads: "declined",
         updatedAt: "2026-07-22T10:00:00.000Z",
@@ -58,7 +58,6 @@ describe("app preferences repository", () => {
       compactUi: true,
       showAnalysisArrows: false,
       boardTheme: "cyber",
-      subscriptionTier: "free",
       privacyConsent: {
         ads: "declined",
         updatedAt: "2026-07-22T10:00:00.000Z",
@@ -75,6 +74,34 @@ describe("app preferences repository", () => {
 
     expect(values.get("chess-coach.active-workspace")).toBe("none");
     expect(values.get("chess-coach.compact-ui")).toBe("true");
+  });
+});
+
+describe("entitlement repository", () => {
+  it("не превращает старый пользовательский переключатель тарифа в право доступа", () => {
+    const { storage } = createMemoryStorage({
+      "chess-coach.subscription-tier": "premium",
+    });
+
+    expect(createEntitlementRepository(storage).load().kind).toBe("free");
+  });
+
+  it("восстанавливает только структурно корректное право доступа", () => {
+    const { storage } = createMemoryStorage({
+      "chess-coach.entitlement": JSON.stringify({
+        version: 1,
+        kind: "temporary",
+        source: "trial",
+        expiresAt: "2026-07-29T12:00:00.000Z",
+        verifiedAt: "2026-07-22T12:00:00.000Z",
+        autoRenews: false,
+      }),
+    });
+
+    expect(createEntitlementRepository(storage).load()).toMatchObject({
+      kind: "temporary",
+      source: "trial",
+    });
   });
 });
 

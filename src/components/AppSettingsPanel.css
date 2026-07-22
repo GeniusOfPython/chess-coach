@@ -168,33 +168,40 @@
   align-items: start;
 }
 
-.subscription-toggle {
-  display: inline-grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  min-width: 190px;
-  padding: 4px;
+.subscription-status {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  max-width: 280px;
+  text-align: right;
+}
+
+.subscription-badge {
+  display: inline-flex;
+  padding: 5px 10px;
   border: 1px solid #303733;
-  border-radius: 12px;
-  background: #101410;
-}
-
-.subscription-option {
-  min-height: 38px;
-  border-color: transparent;
-  background: transparent;
+  border-radius: 999px;
   color: #d2d8d4;
+  font-size: 12px;
+  font-weight: 900;
 }
 
-.subscription-option.active {
+.subscription-badge.premium {
   border-color: #839376;
   background: #839376;
   color: #101410;
 }
 
+.subscription-restore {
+  min-height: 38px;
+}
+
 @media (max-width: 520px) {
-  .subscription-toggle {
+  .subscription-status {
     width: 100%;
+    max-width: none;
+    justify-items: start;
+    text-align: left;
   }
 }
 

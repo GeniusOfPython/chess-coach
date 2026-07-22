@@ -36,6 +36,7 @@ import {
   type ExperienceLevel,
   type LearningGoal,
 } from "../analysis/diagnosticProfile";
+import { useEntitlement } from "../hooks/useEntitlement";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
@@ -62,12 +63,11 @@ export function useChessCoachController() {
     setShowAnalysisArrows,
     boardTheme,
     setBoardTheme,
-    subscriptionTier,
-    setSubscriptionTier,
     privacyConsent,
     updatePrivacyConsent,
     resetPrivacyConsent,
   } = useAppPreferences();
+  const entitlement = useEntitlement();
 
   const {
     isBotThinking,
@@ -87,7 +87,7 @@ export function useChessCoachController() {
 
   const { message: rewardToast, showRewardToast } = useRewardToast();
 
-  const access = getFeatureAccess(subscriptionTier);
+  const access = getFeatureAccess(entitlement.tier);
   const isNativeApp = isNativeMobileShell();
   const showAdvertisingUi = isNativeApp;
 
@@ -458,8 +458,6 @@ export function useChessCoachController() {
       setShowAnalysisArrows,
       boardTheme,
       setBoardTheme,
-      subscriptionTier,
-      setSubscriptionTier,
       privacyConsent,
     },
     session: {
@@ -512,6 +510,7 @@ export function useChessCoachController() {
       isNativeApp,
       showAdvertisingUi,
     },
+    entitlement,
     access,
     rewardToast,
     resultCelebration: {

@@ -21,6 +21,7 @@
     "test:e2e:migration": "playwright test e2e/storage-migration.spec.ts --project=chromium",
     "test:e2e:repetition": "playwright test e2e/spaced-repetition.spec.ts --project=chromium",
     "test:e2e:onboarding": "playwright test e2e/onboarding.spec.ts --project=chromium",
+    "test:e2e:entitlement": "playwright test e2e/entitlement.spec.ts --project=chromium",
     "test:e2e:webkit": "playwright test e2e/learning-cycle.spec.ts e2e/keyboard-navigation.spec.ts --project=webkit",
     "test:e2e:visual": "playwright test e2e/visual.spec.ts",
     "test:e2e:visual:update": "playwright test e2e/visual.spec.ts --update-snapshots",

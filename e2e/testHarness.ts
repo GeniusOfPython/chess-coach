@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 type DeterministicAppStateOptions = {
   activeWorkspace?: "coach" | "game" | "tools" | "none";
   onboarding?: "complete" | "pending";
+  entitlement?: "premium" | "free" | "expired";
   storageEntries?: Record<string, string>;
   indexedDb?: "available" | "unavailable";
 };
@@ -12,18 +13,47 @@ export async function installDeterministicAppState(
   {
     activeWorkspace = "coach",
     onboarding = "complete",
+    entitlement = "premium",
     storageEntries = {},
     indexedDb = "available",
   }: DeterministicAppStateOptions = {},
 ) {
-  await page.addInitScript(({ workspace, onboardingState, entries, indexedDbState }) => {
+  await page.addInitScript(({
+    workspace,
+    onboardingState,
+    entitlementState,
+    entries,
+    indexedDbState,
+  }) => {
     const installationMarker = "chess-coach.e2e-state-installed";
 
     if (window.sessionStorage.getItem(installationMarker) !== "true") {
       window.sessionStorage.setItem(installationMarker, "true");
       window.localStorage.clear();
       window.localStorage.setItem("chess-coach.active-workspace", workspace);
-      window.localStorage.setItem("chess-coach.subscription-tier", "premium");
+      const entitlementValue = entitlementState === "free"
+        ? {
+            version: 1,
+            kind: "free",
+            source: "none",
+            expiresAt: null,
+            verifiedAt: null,
+            autoRenews: false,
+          }
+        : {
+            version: 1,
+            kind: entitlementState === "expired" ? "temporary" : "premium",
+            source: entitlementState === "expired" ? "trial" : "web",
+            expiresAt: entitlementState === "expired"
+              ? "2020-01-01T00:00:00.000Z"
+              : "2099-12-31T23:59:59.000Z",
+            verifiedAt: "2026-07-22T12:00:00.000Z",
+            autoRenews: entitlementState === "premium",
+          };
+      window.localStorage.setItem(
+        "chess-coach.entitlement",
+        JSON.stringify(entitlementValue),
+      );
       window.localStorage.setItem("chess-coach.board-theme", "sunset");
       window.localStorage.setItem("chess-coach.show-analysis-arrows", "true");
 
@@ -111,6 +141,7 @@ export async function installDeterministicAppState(
   }, {
     workspace: activeWorkspace,
     onboardingState: onboarding,
+    entitlementState: entitlement,
     entries: storageEntries,
     indexedDbState: indexedDb,
   });

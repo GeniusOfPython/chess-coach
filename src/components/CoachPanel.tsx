@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { EngineAnalysis } from "../types/chess";
 import { buildCoachPlan } from "../analysis/coachPlan";
 import { createVerifiedChessFacts } from "../analysis/verifiedChessFacts";
-import { getFeatureAccess, type SubscriptionTier } from "../features/featureAccess";
+import type { FeatureAccess } from "../features/featureAccess";
 import { useAiCoach } from "../hooks/useAiCoach";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { getAiCoachAction } from "../ai/coachUiState";
@@ -11,7 +11,7 @@ import LoadingSkeleton from "./LoadingSkeleton";
 type Props = {
   analysis: EngineAnalysis | null;
   position: string;
-  subscriptionTier: SubscriptionTier;
+  access: FeatureAccess;
 };
 
 const priorityLabels = {
@@ -35,9 +35,8 @@ const motifLabels: Record<string, string> = {
 export default function CoachPanel({
   analysis,
   position,
-  subscriptionTier,
+  access,
 }: Props) {
-  const access = getFeatureAccess(subscriptionTier);
   const networkStatus = useNetworkStatus();
   const aiCoachEnabled = import.meta.env.VITE_AI_COACH_ENABLED === "true";
   const verifiedFacts = useMemo(() => {
@@ -77,9 +76,9 @@ export default function CoachPanel({
 
   const plan = buildCoachPlan(verifiedFacts);
   const tacticalMotifs = verifiedFacts.facts.filter((fact) => fact.category === "motif");
-  const displayedTier = aiCoach.serverQuota?.tier ?? subscriptionTier;
+  const displayedTier = aiCoach.serverQuota?.tier ?? access.tier;
   const displayedQuota = aiCoach.serverQuota ?? {
-    tier: subscriptionTier,
+    tier: access.tier,
     period: access.aiCoachQuota.period,
     limit: access.aiCoachQuota.limit,
     remaining: aiCoach.remaining,

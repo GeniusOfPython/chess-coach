@@ -18,9 +18,6 @@ export function useAppPreferences() {
     initialPreferences.showAnalysisArrows,
   );
   const [boardTheme, setBoardTheme] = useState(initialPreferences.boardTheme);
-  const [subscriptionTier, setSubscriptionTier] = useState(
-    initialPreferences.subscriptionTier,
-  );
   const [privacyConsent, setPrivacyConsent] = useState<PrivacyConsentState>(
     initialPreferences.privacyConsent,
   );
@@ -32,7 +29,6 @@ export function useAppPreferences() {
   useEffect(() => appPreferencesRepository.save("compactUi", compactUi), [compactUi]);
   useEffect(() => appPreferencesRepository.save("showAnalysisArrows", showAnalysisArrows), [showAnalysisArrows]);
   useEffect(() => appPreferencesRepository.save("boardTheme", boardTheme), [boardTheme]);
-  useEffect(() => appPreferencesRepository.save("subscriptionTier", subscriptionTier), [subscriptionTier]);
   useEffect(() => appPreferencesRepository.save("privacyConsent", privacyConsent), [privacyConsent]);
 
   function resetPrivacyConsent() {
@@ -58,8 +54,6 @@ export function useAppPreferences() {
     setShowAnalysisArrows,
     boardTheme,
     setBoardTheme,
-    subscriptionTier,
-    setSubscriptionTier,
     privacyConsent,
     updatePrivacyConsent,
     resetPrivacyConsent,

@@ -1,52 +1,30 @@
 import { lazy, Suspense } from "react";
 import ChessBoard from "../components/ChessBoard";
 import AnalysisPanel from "../components/AnalysisPanel";
-import MoveHistory from "../components/MoveHistory";
 import GameControls from "../components/GameControls";
 import GameModeSelector from "../components/GameModeSelector";
 import PlayerSideSelector from "../components/PlayerSideSelector";
 import BotLevelSelector from "../components/BotLevelSelector";
-import EvaluationBar from "../components/EvaluationBar";
-import MoveReviewPanel from "../components/MoveReviewPanel";
-import PgnPanel from "../components/PgnPanel";
-import FenPanel from "../components/FenPanel";
-import MaterialPanel from "../components/MaterialPanel";
 import CoachPanel from "../components/CoachPanel";
-import GameResultPanel from "../components/GameResultPanel";
 import GameResultCelebration from "../components/GameResultCelebration";
-import GameArchivePanel from "../components/GameArchivePanel";
-import GameReviewPanel from "../components/GameReviewPanel";
-import MoveNavigatorPanel from "../components/MoveNavigatorPanel";
 import BestMoveTrainingPanel from "../components/BestMoveTrainingPanel";
-import LearningJournalPanel from "../components/LearningJournalPanel";
-import TrainingSummaryPanel from "../components/TrainingSummaryPanel";
-import OpeningPrinciplesPanel from "../components/OpeningPrinciplesPanel";
-import AppSettingsPanel from "../components/AppSettingsPanel";
 import AdSlot from "../components/AdSlot";
 import ConsentBanner from "../components/ConsentBanner";
 import CollapsibleSection from "../components/CollapsibleSection";
 import WorkspaceTabs from "../components/WorkspaceTabs";
 import RewardToast from "../components/RewardToast";
-import PremiumFeatureNotice from "../components/PremiumFeatureNotice";
 import GameSessionCard from "../components/GameSessionCard";
 import MoveFeedbackCard from "../components/MoveFeedbackCard";
 import BotFairPlayNotice from "../components/BotFairPlayNotice";
-import ChessAchievementsPanel from "../components/ChessAchievementsPanel";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import {
   INITIAL_POSITION_FEN,
   type ChessCoachController,
 } from "./useChessCoachController";
 import "../components/CoachPanel.css";
-import "../components/GameResultPanel.css";
 import "../components/GameResultCelebration.css";
 import "../components/LoadingSkeleton.css";
-import "../components/GameReviewPanel.css";
-import "../components/MoveNavigatorPanel.css";
 import "../components/BestMoveTrainingPanel.css";
-import "../components/LearningJournalPanel.css";
-import "../components/TrainingSummaryPanel.css";
-import "../components/OpeningPrinciplesPanel.css";
-import "../components/AppSettingsPanel.css";
 import "../components/AdSlot.css";
 import "../components/ConsentBanner.css";
 import "../components/WorkspaceTabs.css";
@@ -59,9 +37,8 @@ const OnboardingDialog = lazy(() => import("../components/OnboardingDialog"));
 const DiagnosticStatusCard = lazy(() =>
   import("../components/DiagnosticStatusCard")
 );
-const DiagnosticProfilePanel = lazy(() =>
-  import("../components/DiagnosticProfilePanel")
-);
+const ReviewWorkspace = lazy(() => import("./ReviewWorkspace"));
+const ToolsWorkspace = lazy(() => import("./ToolsWorkspace"));
 
 interface ChessCoachViewProps {
   controller: ChessCoachController;
@@ -73,9 +50,6 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
     session,
     training,
     review,
-    journal,
-    archive,
-    achievements,
     onboarding,
     engine,
     game,
@@ -125,7 +99,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
 
       {platform.showAdvertisingUi && (
         <ConsentBanner
-          tier={preferences.subscriptionTier}
+          tier={access.tier}
           consent={preferences.privacyConsent}
           onChange={actions.handlePrivacyConsentChange}
         />
@@ -278,7 +252,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
 
           {platform.showAdvertisingUi && !derived.isActiveBotGame && (
             <AdSlot
-              tier={preferences.subscriptionTier}
+              tier={access.tier}
               placement="sidePanel"
               consent={preferences.privacyConsent}
             />
@@ -298,7 +272,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                   <CoachPanel
                     analysis={engine.analysis}
                     position={game.displayedPosition}
-                    subscriptionTier={preferences.subscriptionTier}
+                    access={access}
                   />
 
                   <AnalysisPanel
@@ -335,184 +309,27 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
           )}
 
           {preferences.activeWorkspace === "game" && (
-            <section className="workspace-panel">
-              <GameReviewPanel
-                status={review.status}
-                progress={review.progress}
-                total={Math.min(
-                  game.lastMoveHistory.length,
-                  Math.max(0, game.fenHistory.length - 1),
-                  24,
-                )}
-                items={review.items}
-                error={review.error}
-                restoredProgress={review.restoredProgress}
-                cachedPositions={review.cachedPositions}
-                selectedPositionIndex={game.viewedMoveIndex}
-                disabled={session.isBotThinking || derived.isActiveBotGame}
-                disabledMessage={derived.isActiveBotGame
-                  ? "Разбор станет доступен после завершения партии."
-                  : undefined}
-                onRun={actions.handleRunGameReview}
-                onPause={review.pause}
-                onClear={review.clear}
-                onSelectPosition={actions.handleSelectReviewedPosition}
-                onPracticeMainMistake={actions.handlePracticeMainMistake}
-                onPracticeSequence={actions.handlePracticeReviewSequence}
-              />
-
-              {preferences.gameMode === "analysis" && access.canUseMoveReview ? (
-                <MoveReviewPanel
-                  review={session.lastMoveReview}
-                  canShowExplanations={access.canUseMoveExplanations}
-                />
-              ) : preferences.gameMode === "analysis" ? (
-                <PremiumFeatureNotice
-                  featureKey="moveReview"
-                  description="Разбор последнего хода подготовлен как премиальная функция для будущей мобильной версии."
-                />
-              ) : null}
-
-              <GameResultPanel
-                game={game.instance}
-                historyLength={game.history.length}
-                onNewGame={actions.handleNewGame}
-                overrideResult={session.gameTermination
-                  ? derived.finalResultInfo
-                  : null}
-              />
-
-              <EvaluationBar
-                analysis={engine.analysis}
-                analyzedTurn={engine.analyzedTurn}
-              />
-
-              <MaterialPanel fen={game.getFen()} />
-            </section>
+            <Suspense
+              fallback={(
+                <section className="workspace-panel">
+                  <LoadingSkeleton label="Загружаем разбор…" rows={3} />
+                </section>
+              )}
+            >
+              <ReviewWorkspace controller={controller} />
+            </Suspense>
           )}
 
           {preferences.activeWorkspace === "tools" && (
-            <section className="workspace-panel">
-              <CollapsibleSection
-                title="Достижения"
-                description="Проверяемые шахматные события в честных партиях"
-                persistenceId="achievements"
-              >
-                <ChessAchievementsPanel unlocked={achievements.unlocked} />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Дебютные принципы"
-                description="Центр, развитие фигур и безопасность короля"
-                persistenceId="opening"
-              >
-                <OpeningPrinciplesPanel fen={game.displayedPosition} />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Журнал и сводка"
-                description="Ошибки, точность и учебная статистика"
-                persistenceId="learning-journal"
-              >
-                {onboarding.status === "complete" && (
-                  <Suspense fallback={null}>
-                    <DiagnosticProfilePanel profile={onboarding.result} />
-                  </Suspense>
-                )}
-
-                <TrainingSummaryPanel
-                  historyLength={game.history.length}
-                  items={journal.items}
-                />
-
-                <LearningJournalPanel
-                  items={journal.items}
-                  onClear={journal.clear}
-                />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="История ходов"
-                description="Список ходов и просмотр прошлых позиций"
-                persistenceId="history"
-              >
-                <MoveNavigatorPanel
-                  currentIndex={game.viewedMoveIndex}
-                  totalPositions={game.fenHistory.length}
-                  isViewingCurrentPosition={game.isViewingCurrentPosition}
-                  onPrevious={game.viewPreviousMove}
-                  onNext={game.viewNextMove}
-                  onCurrent={game.viewCurrentMove}
-                />
-
-                <MoveHistory history={game.history} />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Архив партий"
-                description="Завершённые партии сохраняются автоматически"
-                persistenceId="game-archive"
-              >
-                <GameArchivePanel
-                  games={archive.games}
-                  onOpen={actions.handleOpenArchivedGame}
-                  onRemove={archive.remove}
-                  onClear={archive.clear}
-                />
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="PGN и FEN"
-                description="Импорт, экспорт партии и загрузка позиции"
-                persistenceId="position-tools"
-              >
-                {access.canUsePgnTools ? (
-                  <PgnPanel
-                    pgn={game.getPgn()}
-                    onImportPgn={actions.handleImportPgn}
-                  />
-                ) : (
-                  <PremiumFeatureNotice
-                    featureKey="pgnTools"
-                    description="Импорт и экспорт партий доступны в Premium."
-                  />
-                )}
-
-                {access.canUseFenTools ? (
-                  <FenPanel
-                    fen={game.getFen()}
-                    onImportFen={actions.handleImportFen}
-                  />
-                ) : (
-                  <PremiumFeatureNotice
-                    featureKey="fenTools"
-                    description="Загрузка и сохранение позиций доступны в Premium."
-                  />
-                )}
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Настройки"
-                description="Компактный режим и поведение подсказок"
-                persistenceId="settings"
-              >
-                <AppSettingsPanel
-                  compactUi={preferences.compactUi}
-                  showCompactUiSetting={platform.isNativeApp}
-                  showAnalysisArrows={preferences.showAnalysisArrows}
-                  boardTheme={preferences.boardTheme}
-                  subscriptionTier={preferences.subscriptionTier}
-                  privacyConsent={preferences.privacyConsent}
-                  showMonetizationSettings={platform.showAdvertisingUi}
-                  onCompactUiChange={preferences.setCompactUi}
-                  onShowAnalysisArrowsChange={preferences.setShowAnalysisArrows}
-                  onBoardThemeChange={preferences.setBoardTheme}
-                  onSubscriptionTierChange={preferences.setSubscriptionTier}
-                  onPrivacyConsentChange={actions.handlePrivacyConsentChange}
-                  onPrivacyConsentReset={actions.handleResetPrivacyConsent}
-                />
-              </CollapsibleSection>
-            </section>
+            <Suspense
+              fallback={(
+                <section className="workspace-panel">
+                  <LoadingSkeleton label="Загружаем инструменты…" rows={3} />
+                </section>
+              )}
+            >
+              <ToolsWorkspace controller={controller} />
+            </Suspense>
           )}
         </aside>
       </section>

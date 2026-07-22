@@ -796,21 +796,22 @@ button.secondary {
   background: var(--color-ink);
 }
 
-.subscription-toggle {
+.subscription-badge {
   border-color: var(--color-border);
   background: rgb(8 7 27 / 92%);
-}
-
-.subscription-option {
-  background: transparent;
-  box-shadow: none;
   color: var(--color-text-muted);
 }
 
-.subscription-option.active {
+.subscription-badge.premium {
   border-color: rgb(0 229 255 / 70%);
   background: var(--color-secondary);
   color: var(--color-ink);
+}
+
+.subscription-restore {
+  border-color: var(--color-border);
+  background: rgb(14 10 37 / 86%);
+  color: var(--color-text);
 }
 
 .consent-option {

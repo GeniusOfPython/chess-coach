@@ -3,7 +3,6 @@ import {
   parsePrivacyConsent,
   type PrivacyConsentState,
 } from "../features/consent";
-import type { SubscriptionTier } from "../features/featureAccess";
 import type { GameMode } from "../game/gameTypes";
 import type { WorkspaceId } from "../game/workspaceNavigation";
 import { settingsStorageKeys } from "../platform/storageKeys";
@@ -25,7 +24,6 @@ export type AppPreferencesSnapshot = {
   compactUi: boolean;
   showAnalysisArrows: boolean;
   boardTheme: BoardThemeId;
-  subscriptionTier: SubscriptionTier;
   privacyConsent: PrivacyConsentState;
 };
 
@@ -59,10 +57,6 @@ function readWorkspace(value: string | null): WorkspaceId | null {
   return value === "game" || value === "tools" ? value : "coach";
 }
 
-function readSubscriptionTier(value: string | null): SubscriptionTier {
-  return value === "free" ? "free" : "premium";
-}
-
 export function createAppPreferencesRepository(
   storage: RepositoryStorage = localRepositoryStorage,
 ) {
@@ -85,9 +79,6 @@ export function createAppPreferencesRepository(
         ),
         boardTheme: parseBoardThemeId(
           storage.read(settingsStorageKeys.boardTheme),
-        ),
-        subscriptionTier: readSubscriptionTier(
-          storage.read(settingsStorageKeys.subscriptionTier),
         ),
         privacyConsent: parsePrivacyConsent(
           storage.read(settingsStorageKeys.privacyConsent),
@@ -112,7 +103,6 @@ export function createAppPreferencesRepository(
         compactUi: settingsStorageKeys.compactUi,
         showAnalysisArrows: settingsStorageKeys.showAnalysisArrows,
         boardTheme: settingsStorageKeys.boardTheme,
-        subscriptionTier: settingsStorageKeys.subscriptionTier,
       };
       const serializedValue = name === "activeWorkspace"
         ? String(value ?? "none")

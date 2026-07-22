@@ -5,6 +5,11 @@ import {
   type PrivacyConsentState,
 } from "../features/consent";
 import type { SubscriptionTier } from "../features/featureAccess";
+import { getEntitlementLabel } from "../features/entitlement";
+import type {
+  EntitlementSnapshot,
+  PurchaseRestoreStatus,
+} from "../types/entitlement";
 import {
   BOARD_THEMES,
   type BoardThemeId,
@@ -16,13 +21,16 @@ type Props = {
   showCompactUiSetting: boolean;
   showAnalysisArrows: boolean;
   boardTheme: BoardThemeId;
+  entitlement: EntitlementSnapshot;
   subscriptionTier: SubscriptionTier;
+  canRestorePurchases: boolean;
+  restoreStatus: PurchaseRestoreStatus;
   privacyConsent: PrivacyConsentState;
   showMonetizationSettings: boolean;
   onCompactUiChange: (enabled: boolean) => void;
   onShowAnalysisArrowsChange: (enabled: boolean) => void;
   onBoardThemeChange: (theme: BoardThemeId) => void;
-  onSubscriptionTierChange: (tier: SubscriptionTier) => void;
+  onRestorePurchases: () => void;
   onPrivacyConsentChange: (status: AdsConsentStatus) => void;
   onPrivacyConsentReset: () => void;
 };
@@ -32,13 +40,16 @@ export default function AppSettingsPanel({
   showCompactUiSetting,
   showAnalysisArrows,
   boardTheme,
+  entitlement,
   subscriptionTier,
+  canRestorePurchases,
+  restoreStatus,
   privacyConsent,
   showMonetizationSettings,
   onCompactUiChange,
   onShowAnalysisArrowsChange,
   onBoardThemeChange,
-  onSubscriptionTierChange,
+  onRestorePurchases,
   onPrivacyConsentChange,
   onPrivacyConsentReset,
 }: Props) {
@@ -129,38 +140,50 @@ export default function AppSettingsPanel({
             <div>
               <strong>Тариф</strong>
               <p>
-                Бесплатный тариф включает рекламные материалы. Premium
-                скрывает рекламу и открывает расширенные учебные функции.
+                Право доступа подтверждается магазином или сервером. Оно не
+                влияет на честность активной партии.
               </p>
             </div>
 
-            <div className="subscription-toggle">
+            <div className="subscription-status" aria-live="polite">
+              <span className={`subscription-badge ${subscriptionTier}`}>
+                {getEntitlementLabel(entitlement)}
+              </span>
+              {entitlement.kind === "temporary" && entitlement.expiresAt && (
+                <small>
+                  До {new Intl.DateTimeFormat("ru-RU", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }).format(new Date(entitlement.expiresAt))}
+                </small>
+              )}
               <button
                 type="button"
-                className={
-                  subscriptionTier === "free"
-                    ? "subscription-option active"
-                    : "subscription-option"
-                }
-                onClick={() => onSubscriptionTierChange("free")}
+                className="subscription-restore"
+                disabled={!canRestorePurchases || restoreStatus === "restoring"}
+                onClick={onRestorePurchases}
               >
-                Free
+                {restoreStatus === "restoring"
+                  ? "Восстановление…"
+                  : "Восстановить покупки"}
               </button>
-
-              <button
-                type="button"
-                className={
-                  subscriptionTier === "premium"
-                    ? "subscription-option active"
-                    : "subscription-option"
-                }
-                onClick={() => onSubscriptionTierChange("premium")}
-              >
-                Premium
-              </button>
+              {!canRestorePurchases && (
+                <small>Платёжный адаптер в этой сборке не подключён.</small>
+              )}
+              {restoreStatus === "restored" && (
+                <small>Доступ восстановлен.</small>
+              )}
+              {restoreStatus === "not_found" && (
+                <small>Активные покупки не найдены.</small>
+              )}
+              {restoreStatus === "error" && (
+                <small>Не удалось проверить покупки.</small>
+              )}
             </div>
           </div>
 
+          {subscriptionTier === "free" && (
           <div className="setting-row consent-row">
             <div>
               <strong>Согласие на рекламу</strong>
@@ -226,6 +249,7 @@ export default function AppSettingsPanel({
               </button>
             </div>
           </div>
+          )}
         </>
       )}
 

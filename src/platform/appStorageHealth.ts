@@ -39,6 +39,7 @@ const validators = new Map<string, { category: string; validate: Validator }>([
   [settingsStorageKeys.compactUi, { category: "preferences", validate: oneOf("true", "false") }],
   [settingsStorageKeys.showAnalysisArrows, { category: "preferences", validate: oneOf("true", "false") }],
   [settingsStorageKeys.boardTheme, { category: "preferences", validate: oneOf("cyber", "ultraviolet", "sunset") }],
+  [settingsStorageKeys.entitlement, { category: "entitlement", validate: validJson }],
   [settingsStorageKeys.subscriptionTier, { category: "preferences", validate: oneOf("free", "premium") }],
   [settingsStorageKeys.activeWorkspace, { category: "preferences", validate: oneOf("coach", "game", "tools", "none") }],
   [settingsStorageKeys.privacyConsent, { category: "consent", validate: validJson }],

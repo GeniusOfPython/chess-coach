@@ -1,4 +1,6 @@
-export type SubscriptionTier = "free" | "premium";
+import type { SubscriptionTier } from "../types/entitlement";
+
+export type { SubscriptionTier } from "../types/entitlement";
 
 export const freeAiCoachDailyLimit = 3;
 export const premiumAiCoachMonthlyLimit = 300;
@@ -43,7 +45,7 @@ export function getFeatureAccess(
   };
 }
 
-export const featureAccess = getFeatureAccess("premium");
+export const featureAccess = getFeatureAccess("free");
 
 export function isPremiumFeature(
   featureKey: PremiumFeatureKey,
