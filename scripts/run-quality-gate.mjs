@@ -45,6 +45,12 @@ const stages = [
     command: process.execPath,
     args: ["scripts/verify-build.mjs"],
   },
+  {
+    id: "performance-budget",
+    title: "Production bundle performance budget",
+    command: "npm",
+    args: ["run", "check:performance-budget"],
+  },
   ...(withE2e
     ? [
         {
@@ -80,6 +86,13 @@ const stages = [
           title: "Keyboard navigation E2E",
           command: "npm",
           args: ["run", "test:e2e:keyboard"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-performance",
+          title: "Core Web Vitals performance E2E",
+          command: "npm",
+          args: ["run", "test:e2e:performance"],
           env: { E2E_USE_PREVIEW: "1" },
         },
         {

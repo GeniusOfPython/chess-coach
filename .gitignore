@@ -13,6 +13,8 @@ dist-ssr
 playwright-report
 test-results
 quality-gate-report.json
+performance-budget-report.json
+web-vitals-report.json
 *.local
 
 # Editor directories and files

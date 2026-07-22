@@ -2,7 +2,7 @@ import {
   toggleWorkspace,
   type WorkspaceId,
 } from "../game/workspaceNavigation";
-import type { KeyboardEvent } from "react";
+import { startTransition, type KeyboardEvent } from "react";
 import WorkspaceIcon, { type WorkspaceIconName } from "./WorkspaceIcon";
 
 type WorkspaceTab = {
@@ -68,7 +68,7 @@ export default function WorkspaceTabs({
 
   function handleTabChange(workspace: WorkspaceId) {
     const nextWorkspace = toggleWorkspace(active, workspace);
-    onChange(nextWorkspace);
+    startTransition(() => onChange(nextWorkspace));
     scrollToWorkspace(nextWorkspace);
   }
 
@@ -94,7 +94,7 @@ export default function WorkspaceTabs({
 
     event.preventDefault();
     const nextTab = tabs[nextIndex];
-    onChange(nextTab.id);
+    startTransition(() => onChange(nextTab.id));
     scrollToWorkspace(nextTab.id);
 
     const tabList = event.currentTarget.parentElement;

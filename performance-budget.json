@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "build": {
+    "initialJavaScriptBytes": 500000,
+    "initialJavaScriptGzipBytes": 150000,
+    "initialStylesheetBytes": 90000,
+    "initialStylesheetGzipBytes": 18000,
+    "initialDocumentBytes": 600000,
+    "stockfishWasmBytes": 8000000,
+    "totalDistBytes": 9000000
+  },
+  "webVitals": {
+    "largestContentfulPaintMs": 2500,
+    "cumulativeLayoutShift": 0.1,
+    "interactionToNextPaintMs": 200
+  }
+}
