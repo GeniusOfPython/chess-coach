@@ -156,6 +156,12 @@ export function clearAppStorageValues() {
   appStorage.clearPrefix(appStoragePrefix);
 }
 
+export function removeAppStorageValue(key: string) {
+  if (key.startsWith(appStoragePrefix)) {
+    appStorage.remove(key);
+  }
+}
+
 export function readAppStorageEntries() {
   return appStorage.entries(appStoragePrefix);
 }

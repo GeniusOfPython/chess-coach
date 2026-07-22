@@ -44,6 +44,16 @@
   box-shadow: 0 0 0 4px rgb(57 245 196 / 14%), 0 0 14px rgb(57 245 196 / 40%);
 }
 
+.connectivity-notice--recovered {
+  border-color: rgb(255 174 66 / 62%);
+  background: rgb(42 26 58 / 96%);
+}
+
+.connectivity-notice--recovered .connectivity-notice__indicator {
+  background: #ffae42;
+  box-shadow: 0 0 0 4px rgb(255 174 66 / 14%), 0 0 14px rgb(255 174 66 / 44%);
+}
+
 .connectivity-notice__content {
   display: grid;
   gap: 2px;

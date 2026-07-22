@@ -17,6 +17,7 @@
     "test:e2e:offline": "playwright test e2e/offline.spec.ts --project=chromium",
     "test:e2e:keyboard": "playwright test e2e/keyboard-navigation.spec.ts --project=chromium",
     "test:e2e:performance": "playwright test e2e/performance.spec.ts --project=chromium",
+    "test:e2e:recovery": "playwright test e2e/storage-recovery.spec.ts --project=chromium",
     "test:e2e:webkit": "playwright test e2e/learning-cycle.spec.ts e2e/keyboard-navigation.spec.ts --project=webkit",
     "test:e2e:visual": "playwright test e2e/visual.spec.ts",
     "test:e2e:visual:update": "playwright test e2e/visual.spec.ts --update-snapshots",

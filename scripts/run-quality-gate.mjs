@@ -96,6 +96,13 @@ const stages = [
           env: { E2E_USE_PREVIEW: "1" },
         },
         {
+          id: "e2e-storage-recovery",
+          title: "Corrupted local data recovery E2E",
+          command: "npm",
+          args: ["run", "test:e2e:recovery"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
           id: "e2e-webkit",
           title: "WebKit and Safari compatibility E2E",
           command: "npm",

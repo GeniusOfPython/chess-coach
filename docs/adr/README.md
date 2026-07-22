@@ -9,6 +9,7 @@ ADR фиксируют решения, которые нельзя безопа�
 - `0005-unified-release-quality-gate.md` — единый статус готовности релиза.
 - `0006-webkit-keyboard-quality-barrier.md` — WebKit и клавиатурная доступность.
 - `0007-performance-budgets-and-web-vitals.md` — бюджеты сборки и браузерные метрики.
+- `0008-private-crash-reporting-and-storage-recovery.md` — приватная диагностика и восстановление локальных данных.
 
 Статусы:
 

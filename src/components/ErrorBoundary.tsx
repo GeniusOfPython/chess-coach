@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { clearAppStorageValues } from "../platform/appStorage";
+import { captureException } from "../platform/diagnostics/crashReporter";
 import "./ErrorBoundary.css";
 
 type Props = {
@@ -8,28 +9,29 @@ type Props = {
 
 type State = {
   hasError: boolean;
-  errorMessage: string;
+  reportId: string;
 };
 
 export default class ErrorBoundary extends Component<Props, State> {
   state: State = {
     hasError: false,
-    errorMessage: "",
+    reportId: "",
   };
 
-  static getDerivedStateFromError(error: unknown): State {
+  static getDerivedStateFromError(): State {
     return {
       hasError: true,
-      errorMessage:
-        error instanceof Error
-          ? error.message
-          : "Что-то пошло не так",
+      reportId: "",
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Критическая ошибка:", error);
-    console.error("React stack:", errorInfo.componentStack);
+    const report = captureException(error, {
+      source: "react-boundary",
+      componentStack: errorInfo.componentStack,
+    });
+
+    this.setState({ reportId: report.id });
   }
 
   handleReload = () => {
@@ -61,9 +63,9 @@ export default class ErrorBoundary extends Component<Props, State> {
             или очистить сохранённые данные.
           </p>
 
-          {this.state.errorMessage && (
+          {this.state.reportId && (
             <pre className="error-boundary-message">
-              {this.state.errorMessage}
+              Код диагностики: {this.state.reportId}
             </pre>
           )}
 
