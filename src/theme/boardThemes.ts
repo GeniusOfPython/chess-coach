@@ -13,7 +13,7 @@ export type BoardTheme = {
 
 export const DEFAULT_BOARD_THEME: BoardThemeId = "sunset";
 
-export const BOARD_THEMES: readonly BoardTheme[] = [
+export const BOARD_THEMES = [
   {
     id: "sunset",
     name: "Sunset",
@@ -47,7 +47,7 @@ export const BOARD_THEMES: readonly BoardTheme[] = [
     shadow:
       "0 20px 54px rgba(0, 0, 0, 0.5), 0 0 34px rgba(166, 96, 255, 0.22), 0 0 18px rgba(255, 60, 172, 0.12)",
   },
-] as const;
+] as const satisfies readonly BoardTheme[];
 
 export function parseBoardThemeId(value: string | null): BoardThemeId {
   return BOARD_THEMES.some((theme) => theme.id === value)

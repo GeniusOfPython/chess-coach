@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { installDeterministicAppState } from "./testHarness";
 
 async function expectNoAccessibilityViolations(page: Page, state: string) {
   const results = await new AxeBuilder({ page })
@@ -22,11 +23,7 @@ async function expectNoAccessibilityViolations(page: Page, state: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.clear();
-    window.localStorage.setItem("chess-coach.privacy-consent", "essential");
-    window.localStorage.setItem("chess-coach.active-workspace", "tools");
-  });
+  await installDeterministicAppState(page, { activeWorkspace: "tools" });
 });
 
 test("главный экран и панель импорта соответствуют WCAG 2.1 AA", async ({ page }) => {

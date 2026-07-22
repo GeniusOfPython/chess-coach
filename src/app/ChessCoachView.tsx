@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import ChessBoard from "../components/ChessBoard";
 import AnalysisPanel from "../components/AnalysisPanel";
 import MoveHistory from "../components/MoveHistory";
@@ -54,6 +55,14 @@ import "../components/GameSessionCard.css";
 import "../components/MoveFeedbackCard.css";
 import "../App.css";
 
+const OnboardingDialog = lazy(() => import("../components/OnboardingDialog"));
+const DiagnosticStatusCard = lazy(() =>
+  import("../components/DiagnosticStatusCard")
+);
+const DiagnosticProfilePanel = lazy(() =>
+  import("../components/DiagnosticProfilePanel")
+);
+
 interface ChessCoachViewProps {
   controller: ChessCoachController;
 }
@@ -67,6 +76,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
     journal,
     archive,
     achievements,
+    onboarding,
     engine,
     game,
     derived,
@@ -97,6 +107,15 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
       <a className="skip-link" href="#workspace-content">
         Перейти к рабочей области
       </a>
+
+      {onboarding.status === "pending" && (
+        <Suspense fallback={null}>
+          <OnboardingDialog
+            onStart={actions.handleStartDiagnostic}
+            onSkip={actions.handleSkipOnboarding}
+          />
+        </Suspense>
+      )}
 
       <header className="header">
         <p className="eyebrow">Интерактивный тренер</p>
@@ -159,6 +178,22 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
           id="workspace-content"
           tabIndex={-1}
         >
+          {(onboarding.status === "diagnostic" ||
+            (onboarding.status === "complete" && !onboarding.resultDismissed)) && (
+            <Suspense fallback={null}>
+              <DiagnosticStatusCard
+                state={onboarding}
+                gameStarted={session.isBotGameStarted}
+                gameFinished={derived.isMatchFinished}
+                halfMoves={game.history.length}
+                reviewStatus={review.status}
+                reviewProgress={review.progress}
+                onOpenReview={actions.handleOpenDiagnosticReview}
+                onRestart={actions.handleRestartDiagnostic}
+                onDismissResult={actions.handleDismissDiagnosticResult}
+              />
+            </Suspense>
+          )}
           <GameSessionCard
             stateText={sessionStateText}
             active={derived.isActiveBotGame && game.isViewingCurrentPosition}
@@ -278,6 +313,8 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                   <BestMoveTrainingPanel
                     task={training.task}
                     stats={training.stats}
+                    repetition={training.repetition}
+                    weeklyPlan={training.weeklyPlan}
                     canStart={
                       !session.isBotThinking &&
                       game.isViewingCurrentPosition &&
@@ -289,6 +326,8 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                     onRetry={actions.handleRetryBestMoveTraining}
                     onNextReviewMoment={actions.handleContinueReviewTraining}
                     onResetStats={training.resetStats}
+                    onStartDueReview={actions.handleStartDueReviewTraining}
+                    onClearReviewQueue={training.clearRepetition}
                   />
                 </>
               )}
@@ -375,6 +414,12 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                 description="Ошибки, точность и учебная статистика"
                 persistenceId="learning-journal"
               >
+                {onboarding.status === "complete" && (
+                  <Suspense fallback={null}>
+                    <DiagnosticProfilePanel profile={onboarding.result} />
+                  </Suspense>
+                )}
+
                 <TrainingSummaryPanel
                   historyLength={game.history.length}
                   items={journal.items}

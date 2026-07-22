@@ -85,7 +85,7 @@ test.beforeEach(async ({ page }) => {
       }).observe({ type: "event", buffered: true, durationThreshold: 16 });
     }
   });
-  await installDeterministicAppState(page, "coach");
+  await installDeterministicAppState(page, { activeWorkspace: "coach" });
 });
 
 test("главный экран укладывается в бюджеты Core Web Vitals", async ({ page }) => {

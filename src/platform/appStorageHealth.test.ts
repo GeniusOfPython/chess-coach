@@ -25,6 +25,7 @@ describe("inspectAppStorageEntries", () => {
       "chess-coach.board-theme": "sunset",
       "chess-coach.section.settings": "open",
       "chess-coach.training-total-attempts": "12",
+      "chess-coach.training-review-queue": "[]",
     })).toBeNull();
   });
 });

@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { installDeterministicAppState } from "./testHarness";
 
 test("приложение точечно восстанавливается после повреждения localStorage", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    window.localStorage.clear();
-    window.localStorage.setItem("chess-coach.active-workspace", "coach");
-    window.localStorage.setItem("chess-coach.subscription-tier", "premium");
-    window.localStorage.setItem("chess-coach.game-mode", "corrupted-mode");
-    window.localStorage.setItem("chess-coach.game-archive", "{broken-json");
-    window.localStorage.setItem("chess-coach.current-pgn", "1. e4 e5");
-    window.localStorage.setItem("other-app.session", "must-survive");
+  await installDeterministicAppState(page, {
+    storageEntries: {
+      "chess-coach.game-mode": "corrupted-mode",
+      "chess-coach.game-archive": "{broken-json",
+      "chess-coach.current-pgn": "1. e4 e5",
+      "other-app.session": "must-survive",
+    },
   });
 
   await page.goto("/");

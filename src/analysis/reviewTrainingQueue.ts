@@ -3,11 +3,13 @@ import type { GameReviewItem } from "./gameReview";
 export type ReviewTrainingQueue = {
   items: GameReviewItem[];
   currentIndex: number;
+  source: "game_review" | "spaced_repetition";
 };
 
 export function createReviewTrainingQueue(
   items: GameReviewItem[],
   limit = 3,
+  source: ReviewTrainingQueue["source"] = "game_review",
 ): ReviewTrainingQueue | null {
   const unique = new Map<string, GameReviewItem>();
 
@@ -24,7 +26,7 @@ export function createReviewTrainingQueue(
   const trainable = [...unique.values()].slice(0, Math.max(0, limit));
 
   return trainable.length > 0
-    ? { items: trainable, currentIndex: 0 }
+    ? { items: trainable, currentIndex: 0, source }
     : null;
 }
 

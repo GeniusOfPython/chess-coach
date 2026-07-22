@@ -1,0 +1,233 @@
+.onboarding-backdrop {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow-y: auto;
+  background: rgb(4 3 18 / 88%);
+  backdrop-filter: blur(12px);
+}
+
+.onboarding-dialog {
+  display: grid;
+  gap: 20px;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 40px);
+  padding: clamp(22px, 4vw, 34px);
+  overflow-y: auto;
+  border: 1px solid rgb(121 241 255 / 46%);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 88% 4%, rgb(0 229 255 / 14%), transparent 32%),
+    radial-gradient(circle at 4% 96%, rgb(255 60 172 / 18%), transparent 36%),
+    #0b0824;
+  box-shadow: 0 30px 100px rgb(0 0 0 / 62%), 0 0 44px rgb(255 60 172 / 18%);
+}
+
+.onboarding-dialog h2 {
+  margin: -8px 0 0;
+  font-size: clamp(26px, 5vw, 38px);
+}
+
+.onboarding-dialog > p,
+.diagnostic-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.onboarding-dialog fieldset {
+  display: grid;
+  gap: 11px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.onboarding-dialog legend {
+  margin-bottom: 11px;
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.onboarding-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.onboarding-options button {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  padding: 16px;
+  border-color: var(--color-border);
+  background: rgb(9 8 29 / 82%);
+  box-shadow: none;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.onboarding-options button span {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.onboarding-options button.selected {
+  border-color: rgb(121 241 255 / 78%);
+  background: linear-gradient(145deg, rgb(0 229 255 / 18%), rgb(255 60 172 / 15%));
+  box-shadow: 0 0 0 2px rgb(0 229 255 / 10%), 0 10px 28px rgb(0 0 0 / 24%);
+}
+
+.onboarding-actions,
+.diagnostic-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(150px, 0.5fr);
+  gap: 10px;
+}
+
+.onboarding-start {
+  min-height: 54px;
+}
+
+.diagnostic-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid rgb(121 241 255 / 50%);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(145deg, rgb(12 18 53 / 96%), rgb(26 8 43 / 96%)) padding-box,
+    linear-gradient(135deg, var(--color-secondary), var(--color-primary)) border-box;
+  box-shadow: var(--shadow-card), 0 0 28px rgb(0 229 255 / 10%);
+}
+
+.diagnostic-profile-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgb(121 241 255 / 32%);
+  border-radius: var(--radius-card);
+  background: rgb(8 9 31 / 68%);
+}
+
+.diagnostic-profile-panel > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.diagnostic-profile-panel dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.diagnostic-profile-panel dl div {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.diagnostic-profile-panel dt {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+}
+
+.diagnostic-profile-panel dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.diagnostic-profile-panel p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.diagnostic-profile-panel p strong {
+  color: var(--color-accent);
+}
+
+.diagnostic-card > strong,
+.diagnostic-heading strong {
+  font-size: 18px;
+}
+
+.diagnostic-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.diagnostic-heading > div {
+  display: grid;
+  gap: 5px;
+}
+
+.diagnostic-heading > b {
+  color: var(--color-secondary-bright);
+  font-size: 28px;
+}
+
+.diagnostic-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.diagnostic-metrics span {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.diagnostic-metrics b {
+  color: var(--color-text);
+  font-size: 17px;
+}
+
+.diagnostic-focus strong,
+.diagnostic-next-step strong {
+  color: var(--color-accent);
+}
+
+@media (max-width: 650px) {
+  .onboarding-backdrop {
+    place-items: start center;
+    padding: 10px;
+  }
+
+  .onboarding-dialog {
+    max-height: none;
+    border-radius: 18px;
+  }
+
+  .onboarding-options,
+  .onboarding-actions,
+  .diagnostic-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostic-profile-panel dl {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-options button {
+    min-height: 84px;
+  }
+}

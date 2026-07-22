@@ -11,6 +11,8 @@ import {
   getWhiteEvaluation,
   isMoveMatchingBestMove,
 } from "../analysis/reviewRules";
+import { createReviewSignature } from "../analysis/reviewSession";
+import { reviewSessionRepository } from "../repositories/reviewSessionRepository";
 import type { EngineAnalysis } from "../types/chess";
 
 type ReviewMove = { from: string; to: string };
@@ -70,6 +72,7 @@ export function useGameReview() {
     setError("");
     setRestoredProgress(false);
     setCachedPositions(0);
+    reviewSessionRepository.clearCheckpoint();
   }
 
   function pause() {
@@ -107,21 +110,34 @@ export function useGameReview() {
     }
 
     const isResume = statusRef.current === "paused" && progressRef.current < total;
-    const startIndex = isResume ? progressRef.current : 0;
-    const reviewed = isResume ? [...itemsRef.current] : [];
+    const signature = createReviewSignature({
+      fenHistory,
+      moveHistory,
+      reviewSide,
+    });
+    const checkpoint = isResume
+      ? null
+      : reviewSessionRepository.readCheckpoint({ signature, total });
+    const restoredFromStorage = Boolean(checkpoint);
+    const startIndex = isResume
+      ? progressRef.current
+      : checkpoint?.nextIndex ?? 0;
+    const reviewed = isResume
+      ? [...itemsRef.current]
+      : [...(checkpoint?.items ?? [])];
     let cacheHits = 0;
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
     if (!isResume) {
       cacheRef.current.clear();
-      updateItems([]);
-      updateProgress(0);
+      updateItems(reviewed);
+      updateProgress(startIndex);
     }
 
     updateStatus("running");
     setError("");
-    setRestoredProgress(isResume);
+    setRestoredProgress(isResume || restoredFromStorage);
     setCachedPositions(0);
 
     const analyzeFen = async (fen: string, movetime: number) => {
@@ -133,6 +149,18 @@ export function useGameReview() {
         return cacheRef.current.get(cacheKey) ?? null;
       }
 
+      const storedResult = reviewSessionRepository.getCachedAnalysis({
+        fen,
+        movetime,
+      });
+
+      if (storedResult) {
+        cacheRef.current.set(cacheKey, storedResult);
+        cacheHits += 1;
+        setCachedPositions(cacheHits);
+        return storedResult;
+      }
+
       const result = await calculatePositionAnalysis({
         fen,
         isGameOver: false,
@@ -141,7 +169,25 @@ export function useGameReview() {
         signal: controller.signal,
       });
       cacheRef.current.set(cacheKey, result);
+
+      if (result) {
+        reviewSessionRepository.cacheAnalysis({
+          fen,
+          movetime,
+          analysis: result,
+        });
+      }
+
       return result;
+    };
+
+    const saveProgress = (nextIndex: number) => {
+      reviewSessionRepository.saveCheckpoint({
+        signature,
+        total,
+        nextIndex,
+        items: [...reviewed],
+      });
     };
 
     try {
@@ -156,6 +202,7 @@ export function useGameReview() {
 
         if (!beforeFen || !afterFen || !move) {
           updateProgress(index + 1);
+          saveProgress(index + 1);
           continue;
         }
 
@@ -165,6 +212,7 @@ export function useGameReview() {
 
         if (!before?.bestMove) {
           updateProgress(index + 1);
+          saveProgress(index + 1);
           continue;
         }
 
@@ -205,13 +253,15 @@ export function useGameReview() {
         });
         updateItems([...reviewed]);
         updateProgress(index + 1);
+        saveProgress(index + 1);
       }
 
       updateStatus("done");
+      reviewSessionRepository.clearCheckpoint();
       return {
         reviewedPositions: reviewed.length,
         cachedPositions: cacheHits,
-        restoredProgress: isResume,
+        restoredProgress: isResume || restoredFromStorage,
       };
     } catch (reviewError) {
       if (isAbortError(reviewError) || controller.signal.aborted) {

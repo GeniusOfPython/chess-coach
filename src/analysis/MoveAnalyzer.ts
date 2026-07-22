@@ -122,7 +122,7 @@ export function analyzeMove(
   fen: string,
   engineMove: string,
 ): MoveAnalysis {
-  if (!engineMove || engineMove === "(none)") {
+  if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/u.test(engineMove)) {
     return createInvalidAnalysis(engineMove);
   }
 
@@ -130,7 +130,14 @@ export function analyzeMove(
   const to = engineMove.slice(2, 4) as Square;
   const promotion = engineMove.slice(4);
 
-  const game = new Chess(fen);
+  let game: Chess;
+
+  try {
+    game = new Chess(fen);
+  } catch {
+    return createInvalidAnalysis(engineMove);
+  }
+
   const movingPiece = game.get(from);
   const targetPiece = game.get(to);
 
@@ -183,7 +190,7 @@ export function analyzeMove(
   const opensDevelopmentLine =
     isOpening &&
     movingPiece.type === "p" &&
-    ["c", "d", "e"].includes(from[0]);
+    ["c", "d", "e"].includes(from.charAt(0));
 
   const isCenterMove = centerSquares.has(to);
 

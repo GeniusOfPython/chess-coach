@@ -25,6 +25,12 @@ import {
 } from "../platform/nativeBridge";
 import { trackProductEvent } from "../platform/analytics/analyticsClient";
 import type { EngineAnalysis } from "../types/chess";
+import {
+  identifyTrainingTheme,
+  repetitionItemToGameReviewItem,
+  trainingThemeLabels,
+} from "../analysis/spacedRepetition";
+import { useSpacedRepetition } from "../hooks/useSpacedRepetition";
 
 type ReviewMove = { from: string; to: string };
 
@@ -137,6 +143,7 @@ export function useLearningFlow({
       text: "Пять лучших ходов найдены. Можно закончить на хорошем результате или продолжить серию.",
     }),
   });
+  const repetition = useSpacedRepetition();
   const {
     items: journalItems,
     addItem: addJournalItem,
@@ -192,9 +199,19 @@ export function useLearningFlow({
     item: GameReviewItem,
     sequenceIndex: number,
     sequenceTotal: number,
+    source: ReviewTrainingQueue["source"],
   ) {
+    const repetitionItem = repetition.items.find(({ id }) => id === item.id);
+
     return {
       kind: "review" as const,
+      source,
+      repetitionId: item.id,
+      themeLabel: repetitionItem
+        ? trainingThemeLabels[repetitionItem.theme]
+        : item.bestMove
+          ? trainingThemeLabels[identifyTrainingTheme(item.positionFen, item.bestMove)]
+          : null,
       moveNumber: item.moveNumber,
       side: item.side,
       playedMove: item.playedMove,
@@ -295,8 +312,11 @@ export function useLearningFlow({
     });
   }
 
-  function startReviewTraining(items: GameReviewItem[]) {
-    const queue = createReviewTrainingQueue(items);
+  function startReviewTraining(
+    items: GameReviewItem[],
+    source: ReviewTrainingQueue["source"] = "game_review",
+  ) {
+    const queue = createReviewTrainingQueue(items, source === "spaced_repetition" ? 5 : 3, source);
     const item = getCurrentReviewTrainingItem(queue);
 
     if (!queue || !item?.bestMove || !loadTrainingPosition(item.positionFen)) {
@@ -308,14 +328,18 @@ export function useLearningFlow({
       return;
     }
 
+    if (source === "game_review") {
+      repetition.addReviewItems(queue.items);
+    }
+
     setReviewTrainingQueue(queue);
     readyTask(
       item.positionFen,
       item.bestMove,
-      getTrainingContext(item, 1, queue.items.length),
+      getTrainingContext(item, 1, queue.items.length, source),
     );
     trackProductEvent("training_started", {
-      source: "game_review",
+      source,
       sequenceTotal: queue.items.length,
     });
     setActiveWorkspace("coach");
@@ -334,6 +358,21 @@ export function useLearningFlow({
 
   function practiceReviewSequence(items: GameReviewItem[]) {
     startReviewTraining(items);
+  }
+
+  function startDueReviewTraining() {
+    const dueItems = repetition.dueItems.map(repetitionItemToGameReviewItem);
+
+    if (dueItems.length === 0) {
+      showRewardToast({
+        kind: "success",
+        title: "Повторений нет",
+        text: "Все сохранённые ошибки повторены по расписанию.",
+      });
+      return;
+    }
+
+    startReviewTraining(dueItems, "spaced_repetition");
   }
 
   function continueReviewTraining() {
@@ -356,6 +395,7 @@ export function useLearningFlow({
         nextItem,
         nextQueue.currentIndex + 1,
         nextQueue.items.length,
+        nextQueue.source,
       ),
     );
   }
@@ -376,7 +416,7 @@ export function useLearningFlow({
     }
 
     trackProductEvent("training_hint_revealed", {
-      source: task.context ? "game_review" : "current_position",
+      source: task.context?.source ?? "current_position",
       hintLevel: Math.min(task.hintLevel + 1, 3),
     });
     revealHint();
@@ -415,8 +455,16 @@ export function useLearningFlow({
       const sequencePosition = task.context?.sequenceIndex ?? 1;
       const sequenceTotal = task.context?.sequenceTotal ?? 1;
       const trainingSource = task.context
-        ? "game_review" as const
+        ? task.context.source
         : "current_position" as const;
+
+      if (task.context?.repetitionId) {
+        repetition.recordResult(
+          task.context.repetitionId,
+          trainingSolved,
+          task.hintLevel,
+        );
+      }
 
       trackProductEvent("training_attempted", {
         source: trainingSource,
@@ -473,8 +521,11 @@ export function useLearningFlow({
         dailyGoal,
         dailySuccesses,
       },
+      repetition: repetition.summary,
+      weeklyPlan: repetition.weeklyPlan,
       reset: resetTrainingFlow,
       resetStats,
+      clearRepetition: repetition.clear,
     },
     review: {
       status: reviewStatus,
@@ -497,6 +548,7 @@ export function useLearningFlow({
       startBestMoveTraining,
       practiceMainMistake,
       practiceReviewSequence,
+      startDueReviewTraining,
       continueReviewTraining,
       retryBestMoveTraining,
       revealBestMoveHint,

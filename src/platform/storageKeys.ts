@@ -13,8 +13,10 @@ export const settingsStorageKeys = {
   trainingTotalSuccesses: "chess-coach.training-total-successes",
   trainingDailyDate: "chess-coach.training-daily-date",
   trainingDailySuccesses: "chess-coach.training-daily-successes",
+  trainingReviewQueue: "chess-coach.training-review-queue",
   aiCoachUsage: "chess-coach.ai-coach-usage",
   chessAchievements: "chess-coach.chess-achievements",
+  onboarding: "chess-coach.onboarding",
 } as const;
 
 export const gameSessionStorageKeys = {
@@ -22,6 +24,6 @@ export const gameSessionStorageKeys = {
   botGameStarted: "chess-coach.bot-game-started",
   gameTermination: "chess-coach.game-termination",
   gameArchive: "chess-coach.game-archive",
-  reviewAnalysisCache: "chess-coach.review-analysis-cache-v1",
-  reviewCheckpoint: "chess-coach.review-checkpoint-v1",
+  reviewAnalysisCache: "chess-coach.review-analysis-cache",
+  reviewCheckpoint: "chess-coach.review-checkpoint",
 } as const;

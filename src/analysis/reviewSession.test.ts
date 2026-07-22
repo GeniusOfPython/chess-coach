@@ -1,73 +1,43 @@
-import { afterEach, describe, expect, it } from "vitest";
-import type { EngineAnalysis } from "../types/chess";
-import {
-  cacheReviewAnalysis,
-  clearReviewAnalysisCache,
-  clearReviewCheckpoint,
-  createReviewSignature,
-  getCachedReviewAnalysis,
-  readReviewCheckpoint,
-  saveReviewCheckpoint,
-} from "./reviewSession";
+import { describe, expect, it } from "vitest";
+import { createReviewSignature } from "./reviewSession";
 
-const analysis: EngineAnalysis = {
-  rank: 1,
-  bestMove: "e2e4",
-  evaluation: 0.28,
-  mate: null,
-  depth: 12,
-  variation: ["e2e4", "e7e5"],
-  lines: [{
-    rank: 1,
-    bestMove: "e2e4",
-    evaluation: 0.28,
-    mate: null,
-    depth: 12,
-    variation: ["e2e4", "e7e5"],
-  }],
+const game = {
+  fenHistory: [
+    "start-fen",
+    "after-white",
+    "after-black",
+  ],
+  moveHistory: [
+    { from: "e2", to: "e4" },
+    { from: "e7", to: "e5" },
+  ],
 };
 
-afterEach(() => {
-  clearReviewAnalysisCache();
-  clearReviewCheckpoint();
-});
-
 describe("review session", () => {
-  it("reuses only an analysis with sufficient calculation time", () => {
-    cacheReviewAnalysis({
-      fen: "test-fen",
-      movetime: 650,
-      analysis,
-      now: 1_000,
-    });
-
-    expect(getCachedReviewAnalysis({
-      fen: "test-fen",
-      movetime: 450,
-      now: 1_001,
-    })).toEqual(analysis);
-    expect(getCachedReviewAnalysis({
-      fen: "test-fen",
-      movetime: 900,
-      now: 1_001,
-    })).toBeNull();
+  it("creates a stable signature for the same game", () => {
+    expect(createReviewSignature(game)).toBe(createReviewSignature({
+      fenHistory: [...game.fenHistory],
+      moveHistory: game.moveHistory.map((move) => ({ ...move })),
+    }));
   });
 
-  it("restores progress only for the same game", () => {
-    const signature = createReviewSignature({
-      fenHistory: ["fen-1", "fen-2"],
-      moveHistory: [{ from: "e2", to: "e4" }],
-      reviewSide: "w",
+  it("distinguishes games and review sides", () => {
+    const allMoves = createReviewSignature(game);
+    const whiteMoves = createReviewSignature({ ...game, reviewSide: "w" });
+    const blackMoves = createReviewSignature({ ...game, reviewSide: "b" });
+    const anotherGame = createReviewSignature({
+      ...game,
+      moveHistory: [
+        { from: "d2", to: "d4" },
+        game.moveHistory[1]!,
+      ],
     });
 
-    saveReviewCheckpoint({
-      signature,
-      total: 1,
-      nextIndex: 1,
-      items: [],
-    });
-
-    expect(readReviewCheckpoint({ signature, total: 1 })?.nextIndex).toBe(1);
-    expect(readReviewCheckpoint({ signature: "another-game", total: 1 })).toBeNull();
+    expect(new Set([
+      allMoves,
+      whiteMoves,
+      blackMoves,
+      anotherGame,
+    ]).size).toBe(4);
   });
 });

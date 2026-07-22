@@ -55,8 +55,8 @@ describe("review timeline", () => {
       }),
     ]);
 
-    expect(result[0].item.id).toBe("swing");
-    expect(result[0].reason).toBe("Перевес перешёл к сопернику");
+    expect(result[0]!.item.id).toBe("swing");
+    expect(result[0]!.reason).toBe("Перевес перешёл к сопернику");
   });
 
   it("ignores moves without a trainable alternative", () => {

@@ -13,7 +13,7 @@ type WorkspaceTab = {
   description: string;
 };
 
-const tabs: WorkspaceTab[] = [
+const tabs = [
   {
     id: "coach",
     title: "Учёба",
@@ -35,7 +35,7 @@ const tabs: WorkspaceTab[] = [
     icon: "more",
     description: "История, PGN/FEN, настройки и журнал.",
   },
-];
+] as const satisfies readonly WorkspaceTab[];
 
 type Props = {
   active: WorkspaceId | null;
@@ -94,6 +94,11 @@ export default function WorkspaceTabs({
 
     event.preventDefault();
     const nextTab = tabs[nextIndex];
+
+    if (!nextTab) {
+      return;
+    }
+
     startTransition(() => onChange(nextTab.id));
     scrollToWorkspace(nextTab.id);
 

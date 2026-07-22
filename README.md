@@ -1,32 +1,59 @@
-# React + TypeScript + Vite
+# Chess Coach
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Шахматный тренер на React, TypeScript и Vite. Проект включает локальный
+Stockfish, PWA-режим, разбор партий, тренировку ошибок и диагностический первый
+запуск.
 
-Currently, two official plugins are available:
+## Требования
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js версии из `.nvmrc` или новее;
+- npm;
+- Chromium и WebKit Playwright для полного релизного прогона.
 
-## React Compiler
+## Первый запуск
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run test:e2e:install
+npm run check:ci
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Для повседневной проверки без браузерных сценариев:
+
+```bash
+npm run check
+```
+
+Для отдельной production-сборки:
+
+```bash
+npm run build
+```
+
+## Обязательный порядок проверки изменений
+
+1. `npm run check` — архитектура, единое состояние E2E, линтер, unit-тесты,
+   factual eval, production-сборка, PWA и performance-бюджеты.
+2. `npm run check:ci` — тот же gate плюс все Chromium/WebKit E2E.
+3. `npm run build` — контрольная production-сборка перед передачей версии.
+
+`check:ci` самостоятельно собирает production-версию перед запуском браузерных
+тестов. Не запускайте E2E на старом каталоге `dist`.
+
+## Конфигурация
+
+Скопируйте `.env.example` в `.env.local` и заполните локальные значения.
+`.env.local` содержит секреты и не должен попадать в Git или архивы проекта.
+
+## Диагностика E2E
+
+```bash
+npm run test:e2e:onboarding
+npm run test:e2e:a11y
+npm run test:e2e:repetition
+```
+
+Все E2E-сценарии обязаны создавать состояние через `e2e/testHarness.ts`.
+Прямая инициализация `localStorage` в spec-файле блокируется quality gate.
+
+Подробное устройство проверки описано в `docs/quality-gate.md`.

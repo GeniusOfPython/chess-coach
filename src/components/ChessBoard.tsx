@@ -181,7 +181,10 @@ export default function ChessBoard({
         ...uniqueCandidates
           .slice(0, 2)
           .map((move, index) =>
-            createArrow(move, ANALYSIS_LINE_COLORS[index + 1]),
+            createArrow(
+              move,
+              ANALYSIS_LINE_COLORS[index + 1] ?? ANALYSIS_LINE_COLORS[1],
+            ),
           ),
       ]
     : [];

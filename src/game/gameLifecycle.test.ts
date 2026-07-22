@@ -72,6 +72,25 @@ describe("createGameLifecycleActions", () => {
     expect(dependencies.startBotSession).not.toHaveBeenCalled();
   });
 
+  it("возвращает результат запуска партии с выбранной стороной", () => {
+    const dependencies = createDependencies();
+    const actions = createGameLifecycleActions(dependencies);
+
+    expect(actions.handleStartConfiguredBotGame("b")).toBe(true);
+    expect(dependencies.setGameMode).toHaveBeenCalledWith("bot");
+    expect(dependencies.setPlayerSide).toHaveBeenCalledWith("b");
+    expect(dependencies.startBotSession).toHaveBeenCalledOnce();
+  });
+
+  it("не запускает настроенную партию во время расчёта бота", () => {
+    const dependencies = createDependencies({ isBotThinking: true });
+    const actions = createGameLifecycleActions(dependencies);
+
+    expect(actions.handleStartConfiguredBotGame("w")).toBe(false);
+    expect(dependencies.newGame).not.toHaveBeenCalled();
+    expect(dependencies.startBotSession).not.toHaveBeenCalled();
+  });
+
   it("отменяет пару ходов в партии против бота", () => {
     const dependencies = createDependencies({
       isBotTurn: vi.fn(() => true),

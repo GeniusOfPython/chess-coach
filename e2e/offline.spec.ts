@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { installDeterministicAppState } from "./testHarness";
+
+test.beforeEach(async ({ page }) => {
+  await installDeterministicAppState(page);
+});
 
 test("установленная PWA запускается без сети из актуального кеша", async ({
   context,

@@ -1,6 +1,7 @@
 import type { Color } from "chess.js";
 import { buildReviewInsight } from "../analysis/reviewInsight";
 import { explainEngineMove } from "../utils/explainMove";
+import type { WeeklyTrainingPlan } from "../analysis/weeklyTrainingPlan";
 
 export type BestMoveTrainingStatus =
   | "idle"
@@ -21,6 +22,9 @@ export type BestMoveTrainingTask = {
 
 export type BestMoveTrainingContext = {
   kind: "review";
+  source: "game_review" | "spaced_repetition";
+  repetitionId: string;
+  themeLabel: string | null;
   moveNumber: number;
   side: Color;
   playedMove: string;
@@ -41,9 +45,17 @@ export type BestMoveTrainingStats = {
   dailySuccesses: number;
 };
 
+export type RepetitionTrainingStats = {
+  total: number;
+  due: number;
+  weakThemeLabel: string | null;
+};
+
 type Props = {
   task: BestMoveTrainingTask;
   stats: BestMoveTrainingStats;
+  repetition: RepetitionTrainingStats;
+  weeklyPlan: WeeklyTrainingPlan;
   canStart: boolean;
   onStart: () => void;
   onRevealHint: () => void;
@@ -51,6 +63,8 @@ type Props = {
   onRetry: () => void;
   onNextReviewMoment: () => void;
   onResetStats: () => void;
+  onStartDueReview: () => void;
+  onClearReviewQueue: () => void;
 };
 
 function formatMove(move: string | null) {
@@ -146,6 +160,8 @@ function getDailyProgress(stats: BestMoveTrainingStats) {
 export default function BestMoveTrainingPanel({
   task,
   stats,
+  repetition,
+  weeklyPlan,
   canStart,
   onStart,
   onRevealHint,
@@ -153,6 +169,8 @@ export default function BestMoveTrainingPanel({
   onRetry,
   onNextReviewMoment,
   onResetStats,
+  onStartDueReview,
+  onClearReviewQueue,
 }: Props) {
   const explanations =
     task.positionFen && task.bestMove
@@ -243,12 +261,75 @@ export default function BestMoveTrainingPanel({
         </div>
       </div>
 
+      {weeklyPlan.status !== "empty" && (
+        <section className={`weekly-training-plan ${weeklyPlan.status}`}>
+          <div className="weekly-training-plan-header">
+            <div>
+              <span>План недели</span>
+              <strong>{weeklyPlan.completed} / {weeklyPlan.target} позиций</strong>
+            </div>
+            <b>{weeklyPlan.progress}%</b>
+          </div>
+
+          <div
+            className="weekly-training-plan-bar"
+            role="progressbar"
+            aria-label="Выполнение недельного плана"
+            aria-valuemin={0}
+            aria-valuemax={weeklyPlan.target}
+            aria-valuenow={weeklyPlan.completed}
+          >
+            <div style={{ width: `${weeklyPlan.progress}%` }} />
+          </div>
+
+          <p>
+            {weeklyPlan.focusThemeLabel
+              ? `Главный фокус: ${weeklyPlan.focusThemeLabel}. `
+              : ""}
+            {weeklyPlan.nextAction}
+          </p>
+        </section>
+      )}
+
+      <div className="spaced-repetition-summary">
+        <div>
+          <span>Повторение ошибок</span>
+          <strong>{repetition.due} к повторению</strong>
+          <p>
+            {repetition.weakThemeLabel
+              ? `Слабая тема: ${repetition.weakThemeLabel}`
+              : "Слабая тема появится после разбора ошибок."}
+          </p>
+        </div>
+
+        <div className="spaced-repetition-actions">
+          <button
+            type="button"
+            className="secondary"
+            disabled={repetition.due === 0 || task.status === "preparing" || task.status === "ready"}
+            onClick={onStartDueReview}
+          >
+            Повторить ошибки
+          </button>
+          {repetition.total > 0 && (
+            <button
+              type="button"
+              className="secondary ghost"
+              disabled={task.status === "preparing" || task.status === "ready"}
+              onClick={onClearReviewQueue}
+            >
+              Очистить очередь
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className={`best-move-training ${task.status}`}>
         <strong>{getStatusText(task)}</strong>
 
         {task.context && task.status !== "success" && (
           <p className="best-move-training-origin">
-            В партии на {task.context.moveNumber}-м ходу было сыграно {formatMove(task.context.playedMove)}.
+            {task.context.source === "spaced_repetition" ? "Повторение" : "В партии"} на {task.context.moveNumber}-м ходу: {formatMove(task.context.playedMove)}.
             Найди ход, который исправляет эту ошибку.
           </p>
         )}
@@ -299,8 +380,8 @@ export default function BestMoveTrainingPanel({
                 </p>
 
                 {reviewInsight && (
-                  <div className="best-move-training-insight">
-                    <span>Закреплённый мотив</span>
+                <div className="best-move-training-insight">
+                    <span>{task.context.themeLabel ?? "Закреплённый мотив"}</span>
                     <strong>{reviewInsight.title}</strong>
                     <p>{reviewInsight.trainingFocus}</p>
                   </div>

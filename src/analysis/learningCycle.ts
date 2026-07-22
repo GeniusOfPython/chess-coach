@@ -43,5 +43,5 @@ export function selectPrimaryReviewItem<T extends ReviewCandidate>(
     }
 
     return left.positionIndex - right.positionIndex;
-  })[0];
+  })[0] ?? null;
 }

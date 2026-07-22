@@ -146,7 +146,7 @@ export class StockfishService {
     );
     const pvMatch = message.match(/\bpv\s+(.+)$/);
 
-    const rank = rankMatch ? Number(rankMatch[1]) : 1;
+    const rank = Number(rankMatch?.[1] ?? 1);
 
     const existing: EngineLine =
       this.lines.get(rank) ?? {
@@ -159,23 +159,21 @@ export class StockfishService {
       };
 
     if (depthMatch) {
-      existing.depth = Number(depthMatch[1]);
+      existing.depth = Number(depthMatch[1] ?? 0);
     }
 
     if (cpMatch) {
-      existing.evaluation = Number(cpMatch[1]) / 100;
+      existing.evaluation = Number(cpMatch[1] ?? 0) / 100;
       existing.mate = null;
     }
 
     if (mateMatch) {
-      existing.mate = Number(mateMatch[1]);
+      existing.mate = Number(mateMatch[1] ?? 0);
       existing.evaluation = null;
     }
 
     if (pvMatch) {
-      existing.variation = pvMatch[1]
-        .trim()
-        .split(/\s+/);
+      existing.variation = pvMatch[1]?.trim().split(/\s+/) ?? [];
 
       existing.bestMove = existing.variation[0] ?? "";
     }
@@ -189,7 +187,7 @@ export class StockfishService {
     const bestMove =
       message.match(/^bestmove\s+(\S+)/)?.[1] ?? "";
 
-    if (!bestMove || bestMove === "(none)") {
+    if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/u.test(bestMove)) {
       this.finishWithError(
         new Error("Не удалось получить допустимый ход"),
       );
@@ -211,8 +209,15 @@ export class StockfishService {
       });
     }
 
-    const primary = {
-      ...sortedLines[0],
+    const primaryLine = sortedLines[0];
+
+    if (!primaryLine) {
+      this.finishWithError(new Error("Движок не вернул основную линию"));
+      return;
+    }
+
+    const primary: EngineLine = {
+      ...primaryLine,
       bestMove,
     };
 

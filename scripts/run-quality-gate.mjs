@@ -16,6 +16,12 @@ const stages = [
     args: ["run", "check:architecture"],
   },
   {
+    id: "e2e-contracts",
+    title: "Deterministic E2E state contracts",
+    command: "npm",
+    args: ["run", "check:e2e-contracts"],
+  },
+  {
     id: "lint",
     title: "Static analysis",
     command: "npm",
@@ -107,6 +113,20 @@ const stages = [
           title: "IndexedDB migration and fallback E2E",
           command: "npm",
           args: ["run", "test:e2e:migration"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-spaced-repetition",
+          title: "Weak-theme spaced repetition E2E",
+          command: "npm",
+          args: ["run", "test:e2e:repetition"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-onboarding",
+          title: "First-run onboarding and diagnostic E2E",
+          command: "npm",
+          args: ["run", "test:e2e:onboarding"],
           env: { E2E_USE_PREVIEW: "1" },
         },
         {

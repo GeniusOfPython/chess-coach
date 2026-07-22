@@ -315,3 +315,124 @@
   background: linear-gradient(90deg, #46a3ff, #3cc85a);
   transition: width 0.25s ease;
 }
+
+.weekly-training-plan {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgb(0 229 255 / 34%);
+  border-radius: var(--radius-card, 14px);
+  background: linear-gradient(115deg, rgb(0 229 255 / 8%), rgb(255 60 172 / 7%));
+}
+
+.weekly-training-plan.complete {
+  border-color: rgb(57 245 196 / 48%);
+  background: rgb(57 245 196 / 8%);
+}
+
+.weekly-training-plan-header,
+.weekly-training-plan-header > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.weekly-training-plan-header > div {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.weekly-training-plan-header span {
+  color: #82efff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.weekly-training-plan-header strong,
+.weekly-training-plan-header b {
+  color: var(--color-text, #f8f4ff);
+}
+
+.weekly-training-plan-header b {
+  font-size: 20px;
+}
+
+.weekly-training-plan-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(5 7 26 / 72%);
+}
+
+.weekly-training-plan-bar > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #00e5ff, #ff3cac, #39f5c4);
+  transition: width 0.25s ease;
+}
+
+.weekly-training-plan p {
+  margin: 0;
+  color: var(--color-text-muted, #c7bdd8);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.spaced-repetition-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgb(217 70 239 / 34%);
+  border-radius: var(--radius-card, 14px);
+  background: linear-gradient(110deg, rgb(217 70 239 / 8%), rgb(0 229 255 / 6%));
+}
+
+.spaced-repetition-summary > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.spaced-repetition-summary span {
+  color: #d9a7ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.spaced-repetition-summary strong {
+  color: var(--color-text, #f8f4ff);
+}
+
+.spaced-repetition-summary p {
+  margin: 0;
+  color: var(--color-text-muted, #c7bdd8);
+  font-size: 13px;
+}
+
+.spaced-repetition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .spaced-repetition-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .spaced-repetition-actions {
+    justify-content: stretch;
+  }
+
+  .spaced-repetition-actions button {
+    flex: 1 1 100%;
+  }
+}

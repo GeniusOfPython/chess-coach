@@ -61,15 +61,26 @@ export function explainEngineMove(
   fen: string,
   engineMove: string,
 ): string[] {
-  if (!engineMove || engineMove === "(none)") {
+  if (engineMove === "(none)") {
     return ["В этой позиции допустимого хода нет."];
+  }
+
+  if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/u.test(engineMove)) {
+    return ["Движок вернул ход в неподдерживаемом формате."];
   }
 
   const from = engineMove.slice(0, 2) as Square;
   const to = engineMove.slice(2, 4) as Square;
   const promotion = engineMove.slice(4);
 
-  const game = new Chess(fen);
+  let game: Chess;
+
+  try {
+    game = new Chess(fen);
+  } catch {
+    return ["Не удалось прочитать исходную позицию."];
+  }
+
   const movingPiece = game.get(from);
   const targetPiece = game.get(to);
 
@@ -110,7 +121,7 @@ export function explainEngineMove(
     const opensDevelopmentLine =
       isOpening &&
       movingPiece.type === "p" &&
-      ["c", "d", "e"].includes(from[0]);
+      ["c", "d", "e"].includes(from.charAt(0));
 
     const isEarlyQueenMove =
       isOpening && movingPiece.type === "q";

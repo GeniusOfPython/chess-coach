@@ -1,18 +1,25 @@
 import { expect, test } from "@playwright/test";
+import { Chess } from "chess.js";
+import { installDeterministicAppState } from "./testHarness";
+
+function expectPgnMoves(pgn: string | null, expectedMoves: string[]) {
+  expect(pgn).not.toBeNull();
+
+  const game = new Chess();
+  game.loadPgn(pgn ?? "");
+
+  expect(game.history()).toEqual(expectedMoves);
+}
 
 test("переносит localStorage в IndexedDB и восстанавливает данные из новой базы", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    if (window.sessionStorage.getItem("storage-migration-seeded")) {
-      return;
-    }
-
-    window.sessionStorage.setItem("storage-migration-seeded", "true");
-    window.localStorage.setItem("chess-coach.active-workspace", "coach");
-    window.localStorage.setItem("chess-coach.game-mode", "bot");
-    window.localStorage.setItem("chess-coach.current-pgn", "1. e4 e5 2. Nf3");
-    window.localStorage.setItem("other-app.session", "must-survive");
+  await installDeterministicAppState(page, {
+    storageEntries: {
+      "chess-coach.game-mode": "bot",
+      "chess-coach.current-pgn": "1. e4 e5 2. Nf3",
+      "other-app.session": "must-survive",
+    },
   });
 
   await page.goto("/");
@@ -52,10 +59,8 @@ test("переносит localStorage в IndexedDB и восстанавлива
     return result;
   });
 
-  expect(migrated).toEqual({
-    pgn: "1. e4 e5 2. Nf3",
-    migrationComplete: true,
-  });
+  expect(migrated.migrationComplete).toBe(true);
+  expectPgnMoves(migrated.pgn, ["e4", "e5", "Nf3"]);
 
   await page.evaluate(() => {
     for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
@@ -77,20 +82,18 @@ test("переносит localStorage в IndexedDB и восстанавлива
     otherApp: window.localStorage.getItem("other-app.session"),
   }));
 
-  expect(restored.pgn).toBe("1. e4 e5 2. Nf3");
+  expectPgnMoves(restored.pgn, ["e4", "e5", "Nf3"]);
   expect(restored.otherApp).toBe("must-survive");
 });
 
 test("продолжает работать на localStorage при недоступной IndexedDB", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(window, "indexedDB", {
-      configurable: true,
-      value: undefined,
-    });
-    window.localStorage.setItem("chess-coach.active-workspace", "coach");
-    window.localStorage.setItem("chess-coach.current-pgn", "1. d4 d5");
+  await installDeterministicAppState(page, {
+    indexedDb: "unavailable",
+    storageEntries: {
+      "chess-coach.current-pgn": "1. d4 d5",
+    },
   });
 
   await page.goto("/");
@@ -98,9 +101,9 @@ test("продолжает работать на localStorage при недос�
   await expect(
     page.getByRole("heading", { name: "Шахматный помощник" }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(() =>
-      window.localStorage.getItem("chess-coach.current-pgn"),
-    ),
-  ).toBe("1. d4 d5");
+  const fallbackPgn = await page.evaluate(() =>
+    window.localStorage.getItem("chess-coach.current-pgn"),
+  );
+
+  expectPgnMoves(fallbackPgn, ["d4", "d5"]);
 });

@@ -23,7 +23,10 @@ export default function GameSessionCard({
         <span className="status-label">Состояние партии</span>
 
         {active && (
-          <span className="active-game-indicator">
+          <span
+            className="active-game-indicator"
+            data-testid="active-game-indicator"
+          >
             <span className="active-game-dot" aria-hidden="true" />
             Партия идёт
           </span>

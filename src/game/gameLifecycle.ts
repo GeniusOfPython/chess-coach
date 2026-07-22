@@ -79,6 +79,18 @@ export function createGameLifecycleActions({
     return true;
   }
 
+  function handleStartConfiguredBotGame(side: Color) {
+    if (isBotThinking) return false;
+
+    newGame();
+    setSelectedSquare(null);
+    setGameMode("bot");
+    setPlayerSide(side);
+    startBotSession();
+    clearTransientState({ clearJournal: true });
+    return true;
+  }
+
   function handleUndoMove() {
     if (isBotThinking) return;
 
@@ -132,6 +144,7 @@ export function createGameLifecycleActions({
   return {
     handleNewGame,
     handleStartBotGame,
+    handleStartConfiguredBotGame,
     handleUndoMove,
     handleModeChange,
     handlePlayerSideChange,

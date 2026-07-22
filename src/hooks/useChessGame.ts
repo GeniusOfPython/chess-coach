@@ -11,8 +11,14 @@ function findKingSquare(game: Chess, color: "w" | "b") {
   const board = game.board();
 
   for (let row = 0; row < board.length; row += 1) {
-    for (let column = 0; column < board[row].length; column += 1) {
-      const piece = board[row][column];
+    const boardRow = board[row];
+
+    if (!boardRow) {
+      continue;
+    }
+
+    for (let column = 0; column < boardRow.length; column += 1) {
+      const piece = boardRow[column];
 
       if (piece?.type === "k" && piece.color === color) {
         const file = String.fromCharCode(97 + column);

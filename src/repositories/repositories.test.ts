@@ -9,6 +9,8 @@ import {
   type RepositoryStorage,
 } from "./repositoryStorage";
 import { createTrainingProgressRepository } from "./trainingProgressRepository";
+import { createSpacedRepetitionRepository } from "./spacedRepetitionRepository";
+import { createOnboardingRepository } from "./onboardingRepository";
 
 function createMemoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -96,6 +98,72 @@ describe("training progress repository", () => {
       totalSuccesses: 21,
       dailySuccesses: 0,
     });
+  });
+});
+
+describe("onboarding repository", () => {
+  it("restores a valid diagnostic and rejects an incomplete snapshot", () => {
+    const valid = createMemoryStorage({
+      "chess-coach.onboarding": JSON.stringify({
+        version: 1,
+        status: "diagnostic",
+        goal: "reduce_mistakes",
+        experience: "basic",
+        startedAt: "2026-07-22T12:00:00.000Z",
+      }),
+    });
+    const invalid = createMemoryStorage({
+      "chess-coach.onboarding": JSON.stringify({
+        version: 1,
+        status: "diagnostic",
+      }),
+    });
+
+    expect(createOnboardingRepository(valid.storage).load()).toMatchObject({
+      status: "diagnostic",
+      experience: "basic",
+    });
+    expect(createOnboardingRepository(invalid.storage).load()).toEqual({
+      version: 1,
+      status: "pending",
+    });
+  });
+});
+
+describe("spaced repetition repository", () => {
+  it("keeps valid tasks and drops malformed queue entries", () => {
+    const validItem = {
+      id: "position-1",
+      positionFen: "start",
+      bestMove: "e2e4",
+      moveNumber: 1,
+      side: "w",
+      playedMove: "d2d4",
+      verdict: "mistake",
+      evaluationBeforeWhite: 0.3,
+      evaluationAfterWhite: -1,
+      evaluationLoss: 1.3,
+      theme: "calculation",
+      attempts: 1,
+      successes: 1,
+      lapses: 0,
+      intervalDays: 1,
+      dueAt: "2026-07-23T12:00:00.000Z",
+      lastReviewedAt: "2026-07-22T12:00:00.000Z",
+      createdAt: "2026-07-22T12:00:00.000Z",
+      updatedAt: "2026-07-22T12:00:00.000Z",
+    };
+    const { storage } = createMemoryStorage({
+      "chess-coach.training-review-queue": JSON.stringify([
+        validItem,
+        { id: "broken" },
+      ]),
+    });
+
+    expect(createSpacedRepetitionRepository(storage).load()).toEqual([{
+      ...validItem,
+      reviewHistory: [],
+    }]);
   });
 });
 

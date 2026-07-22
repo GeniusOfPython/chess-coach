@@ -2,16 +2,27 @@ import { expect, test } from "@playwright/test";
 import { installDeterministicAppState } from "./testHarness";
 
 test.beforeEach(async ({ page }) => {
-  await installDeterministicAppState(page, "tools");
+  await installDeterministicAppState(page, { activeWorkspace: "tools" });
 });
 
-test("основной сценарий доступен без мыши и не запирает фокус", async ({ page }) => {
+test("основной сценарий доступен без мыши и не запирает фокус", async ({
+  page,
+  browserName,
+}) => {
   await page.goto("/");
 
   const skipLink = page.getByRole("link", {
     name: "Перейти к рабочей области",
   });
-  await page.keyboard.press("Tab");
+
+  if (browserName === "webkit") {
+    // WebKit inherits the operating system's full-keyboard-access setting.
+    // Playwright cannot control it, so Tab traversal is verified by the
+    // Chromium project while WebKit verifies focusability and key handling.
+    await skipLink.focus();
+  } else {
+    await page.keyboard.press("Tab");
+  }
   await expect(skipLink).toBeFocused();
 
   await page.keyboard.press("Enter");
@@ -41,11 +52,20 @@ test("основной сценарий доступен без мыши и не
   await page.keyboard.press("Enter");
   await expect(positionTools.locator("..")).toHaveAttribute("open", "");
 
-  await page.keyboard.press("Tab");
-  await expect(
-    page.getByRole("button", { name: "Скопировать PGN" }),
-  ).toBeFocused();
+  const copyPgnButton = page.getByRole("button", {
+    name: "Скопировать PGN",
+  });
+  if (browserName === "webkit") {
+    await copyPgnButton.focus();
+  } else {
+    await page.keyboard.press("Tab");
+  }
+  await expect(copyPgnButton).toBeFocused();
 
-  await page.keyboard.press("Shift+Tab");
+  if (browserName === "webkit") {
+    await positionTools.focus();
+  } else {
+    await page.keyboard.press("Shift+Tab");
+  }
   await expect(positionTools).toBeFocused();
 });

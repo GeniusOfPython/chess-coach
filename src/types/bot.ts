@@ -12,7 +12,7 @@ export type BotLevel = {
   movetime: number;
 };
 
-export const BOT_LEVELS: BotLevel[] = [
+export const BOT_LEVELS = [
   {
     id: "beginner",
     title: "Новичок",
@@ -43,7 +43,7 @@ export const BOT_LEVELS: BotLevel[] = [
     description: "Самый сильный режим на текущей сборке.",
     movetime: 4000,
   },
-];
+] as const satisfies readonly BotLevel[];
 
 export function getBotLevel(id: BotLevelId) {
   return (

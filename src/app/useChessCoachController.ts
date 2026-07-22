@@ -29,10 +29,24 @@ import {
 } from "../platform/nativeBridge";
 import { useLearningFlow } from "./useLearningFlow";
 import { useMatchLifecycle } from "./useMatchLifecycle";
+import { useOnboardingFlow } from "../hooks/useOnboardingFlow";
+import {
+  buildDiagnosticProfile,
+  getDiagnosticBotLevel,
+  type ExperienceLevel,
+  type LearningGoal,
+} from "../analysis/diagnosticProfile";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
 export function useChessCoachController() {
+  const {
+    state: onboardingState,
+    startDiagnostic,
+    skip: skipOnboarding,
+    completeDiagnostic,
+    dismissResult: dismissDiagnosticResult,
+  } = useOnboardingFlow();
   const {
     gameMode,
     setGameMode,
@@ -199,6 +213,7 @@ export function useChessCoachController() {
   const {
     handleNewGame,
     handleStartBotGame,
+    handleStartConfiguredBotGame,
     handleUndoMove,
     handleModeChange,
     handlePlayerSideChange,
@@ -242,13 +257,82 @@ export function useChessCoachController() {
     showRewardToast,
   });
 
+  useEffect(() => {
+    if (
+      onboardingState.status === "diagnostic" &&
+      match.result.isMatchFinished &&
+      learning.review.status === "done"
+    ) {
+      const profile = buildDiagnosticProfile(
+        learning.review.items,
+        onboardingState.goal,
+      );
+      setBotLevelId(profile.recommendedBotLevel);
+      completeDiagnostic(profile);
+    }
+  }, [
+    learning.review.items,
+    learning.review.status,
+    match.result.isMatchFinished,
+    onboardingState,
+    completeDiagnostic,
+    setBotLevelId,
+  ]);
+
   function handleTrackedBotGameStart() {
+    if (handleStartBotGame()) {
+      trackProductEvent("game_started", {
+        mode: "bot",
+        playerSide,
+        botLevelId,
+      });
+    }
+  }
+
+  function startDiagnosticGame({
+    goal,
+    experience,
+  }: {
+    goal: LearningGoal;
+    experience: ExperienceLevel;
+  }) {
+    const level = getDiagnosticBotLevel(experience);
+    setBotLevelId(level);
+
+    if (!handleStartConfiguredBotGame("w")) {
+      return;
+    }
+
+    startDiagnostic({ goal, experience });
+    setActiveWorkspace("game");
     trackProductEvent("game_started", {
       mode: "bot",
-      playerSide,
-      botLevelId,
+      playerSide: "w",
+      botLevelId: level,
+      source: "diagnostic",
     });
-    handleStartBotGame();
+  }
+
+  function restartDiagnosticGame() {
+    if (onboardingState.status !== "diagnostic") {
+      return;
+    }
+
+    setBotLevelId(getDiagnosticBotLevel(onboardingState.experience));
+    handleStartConfiguredBotGame("w");
+    setActiveWorkspace("game");
+  }
+
+  function openDiagnosticReview() {
+    setActiveWorkspace("game");
+
+    if (
+      onboardingState.status === "diagnostic" &&
+      match.result.isMatchFinished &&
+      learning.review.status !== "done"
+    ) {
+      void learning.actions.runGameReview();
+    }
   }
 
   const boardOrientation: "black" | "white" =
@@ -391,6 +475,7 @@ export function useChessCoachController() {
     journal: learning.journal,
     archive: match.archive,
     achievements: match.achievements,
+    onboarding: onboardingState,
     engine: {
       analysis,
       analyzedTurn,
@@ -454,6 +539,7 @@ export function useChessCoachController() {
       handleStartBestMoveTraining: learning.actions.startBestMoveTraining,
       handlePracticeMainMistake: learning.actions.practiceMainMistake,
       handlePracticeReviewSequence: learning.actions.practiceReviewSequence,
+      handleStartDueReviewTraining: learning.actions.startDueReviewTraining,
       handleContinueReviewTraining: learning.actions.continueReviewTraining,
       handleRetryBestMoveTraining: learning.actions.retryBestMoveTraining,
       handleRevealBestMoveHint: learning.actions.revealBestMoveHint,
@@ -461,6 +547,11 @@ export function useChessCoachController() {
       handleSquareClick,
       handlePrivacyConsentChange,
       handleResetPrivacyConsent: resetPrivacyConsent,
+      handleStartDiagnostic: startDiagnosticGame,
+      handleSkipOnboarding: skipOnboarding,
+      handleRestartDiagnostic: restartDiagnosticGame,
+      handleOpenDiagnosticReview: openDiagnosticReview,
+      handleDismissDiagnosticResult: dismissDiagnosticResult,
     },
   };
 }
