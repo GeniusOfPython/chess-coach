@@ -7,8 +7,13 @@ import {
 import type { SubscriptionTier } from "../features/featureAccess";
 import { getEntitlementLabel } from "../features/entitlement";
 import type {
+  EntitlementAccessStatus,
   EntitlementSnapshot,
+  EntitlementVerificationStatus,
+  PurchaseOffersStatus,
   PurchaseRestoreStatus,
+  PurchaseStatus,
+  SubscriptionOffer,
 } from "../types/entitlement";
 import {
   BOARD_THEMES,
@@ -23,14 +28,26 @@ type Props = {
   boardTheme: BoardThemeId;
   entitlement: EntitlementSnapshot;
   subscriptionTier: SubscriptionTier;
+  entitlementAccessStatus: EntitlementAccessStatus;
+  entitlementEffectiveUntil: string | null;
+  entitlementVerificationStatus: EntitlementVerificationStatus;
   canRestorePurchases: boolean;
   restoreStatus: PurchaseRestoreStatus;
+  canPurchase: boolean;
+  offers: SubscriptionOffer[];
+  offersStatus: PurchaseOffersStatus;
+  purchaseStatus: PurchaseStatus;
+  canManageSubscription: boolean;
+  managementStatus: "idle" | "opening" | "error";
   privacyConsent: PrivacyConsentState;
   showMonetizationSettings: boolean;
   onCompactUiChange: (enabled: boolean) => void;
   onShowAnalysisArrowsChange: (enabled: boolean) => void;
   onBoardThemeChange: (theme: BoardThemeId) => void;
   onRestorePurchases: () => void;
+  onLoadOffers: () => void;
+  onPurchase: (productId: string) => void;
+  onManageSubscription: () => void;
   onPrivacyConsentChange: (status: AdsConsentStatus) => void;
   onPrivacyConsentReset: () => void;
 };
@@ -42,14 +59,26 @@ export default function AppSettingsPanel({
   boardTheme,
   entitlement,
   subscriptionTier,
+  entitlementAccessStatus,
+  entitlementEffectiveUntil,
+  entitlementVerificationStatus,
   canRestorePurchases,
   restoreStatus,
+  canPurchase,
+  offers,
+  offersStatus,
+  purchaseStatus,
+  canManageSubscription,
+  managementStatus,
   privacyConsent,
   showMonetizationSettings,
   onCompactUiChange,
   onShowAnalysisArrowsChange,
   onBoardThemeChange,
   onRestorePurchases,
+  onLoadOffers,
+  onPurchase,
+  onManageSubscription,
   onPrivacyConsentChange,
   onPrivacyConsentReset,
 }: Props) {
@@ -147,15 +176,106 @@ export default function AppSettingsPanel({
 
             <div className="subscription-status" aria-live="polite">
               <span className={`subscription-badge ${subscriptionTier}`}>
-                {getEntitlementLabel(entitlement)}
+                {getEntitlementLabel(entitlement, subscriptionTier)}
               </span>
-              {entitlement.kind === "temporary" && entitlement.expiresAt && (
+              {subscriptionTier === "premium" && entitlement.expiresAt && (
                 <small>
-                  До {new Intl.DateTimeFormat("ru-RU", {
+                  {entitlement.autoRenews ? "Продлевается " : "Доступ до "}
+                  {new Intl.DateTimeFormat("ru-RU", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
                   }).format(new Date(entitlement.expiresAt))}
+                </small>
+              )}
+              {entitlementAccessStatus === "offline_grace" &&
+                entitlementEffectiveUntil && (
+                <small className="subscription-warning">
+                  Офлайн-доступ действует до {new Intl.DateTimeFormat("ru-RU", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(entitlementEffectiveUntil))}
+                </small>
+              )}
+              {entitlementVerificationStatus === "checking" && (
+                <small>Проверяем доступ…</small>
+              )}
+              {entitlementVerificationStatus === "error" && (
+                <small className="subscription-warning">
+                  Проверка не выполнена. Premium временно отключён.
+                </small>
+              )}
+              {entitlementAccessStatus === "stale" && (
+                <small className="subscription-warning">
+                  Срок офлайн-подтверждения истёк.
+                </small>
+              )}
+
+              {subscriptionTier === "free" && canPurchase && (
+                <div className="subscription-offers">
+                  {offersStatus === "idle" && (
+                    <button
+                      type="button"
+                      className="subscription-primary"
+                      onClick={onLoadOffers}
+                    >
+                      Посмотреть Premium
+                    </button>
+                  )}
+                  {offersStatus === "loading" && (
+                    <small>Загружаем варианты подписки…</small>
+                  )}
+                  {offers.map((offer) => (
+                    <button
+                      type="button"
+                      className="subscription-offer"
+                      disabled={purchaseStatus === "purchasing"}
+                      key={offer.productId}
+                      onClick={() => onPurchase(offer.productId)}
+                    >
+                      <span>
+                        <strong>{offer.title}</strong>
+                        <small>{offer.description}</small>
+                      </span>
+                      <b>{offer.price}</b>
+                    </button>
+                  ))}
+                  {offersStatus === "empty" && (
+                    <small>Варианты подписки сейчас недоступны.</small>
+                  )}
+                  {offersStatus === "error" && (
+                    <small className="subscription-warning">
+                      Не удалось загрузить варианты подписки.
+                    </small>
+                  )}
+                  {purchaseStatus === "purchased" && (
+                    <small>Premium подключён.</small>
+                  )}
+                  {purchaseStatus === "error" && (
+                    <small className="subscription-warning">
+                      Покупка не завершена. Списание не подтверждено.
+                    </small>
+                  )}
+                </div>
+              )}
+
+              {subscriptionTier === "premium" && canManageSubscription && (
+                <button
+                  type="button"
+                  className="subscription-restore"
+                  disabled={managementStatus === "opening"}
+                  onClick={onManageSubscription}
+                >
+                  {managementStatus === "opening"
+                    ? "Открываем…"
+                    : "Управлять подпиской"}
+                </button>
+              )}
+              {managementStatus === "error" && (
+                <small className="subscription-warning">
+                  Не удалось открыть управление подпиской.
                 </small>
               )}
               <button

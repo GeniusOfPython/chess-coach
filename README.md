@@ -52,6 +52,7 @@ npm run build
 npm run test:e2e:onboarding
 npm run test:e2e:a11y
 npm run test:e2e:repetition
+npm run test:e2e:entitlement
 ```
 
 Все E2E-сценарии обязаны создавать состояние через `e2e/testHarness.ts`.
@@ -65,4 +66,7 @@ npm run test:e2e:repetition
 Мобильный магазин подключается через
 `src/platform/purchases/purchaseProvider.ts`, а серверные функции независимо
 проверяют право и квоты. Старый ключ `chess-coach.subscription-tier` не даёт
-доступа.
+доступа. Запись entitlement в `localStorage` также не является доказательством
+покупки: Premium активируется только ответом адаптера текущей сессии. Офлайн-
+подтверждение действует максимум 72 часа и никогда не переживает дату окончания
+подписки.

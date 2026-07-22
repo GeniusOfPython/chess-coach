@@ -151,14 +151,27 @@ export default function ToolsWorkspace({
           boardTheme={preferences.boardTheme}
           entitlement={entitlement.snapshot}
           subscriptionTier={access.tier}
+          entitlementAccessStatus={entitlement.accessStatus}
+          entitlementEffectiveUntil={entitlement.effectiveUntil}
+          entitlementVerificationStatus={entitlement.verificationStatus}
           canRestorePurchases={entitlement.canRestorePurchases}
           restoreStatus={entitlement.restoreStatus}
+          canPurchase={entitlement.canPurchase}
+          offers={entitlement.offers}
+          offersStatus={entitlement.offersStatus}
+          purchaseStatus={entitlement.purchaseStatus}
+          canManageSubscription={entitlement.canManageSubscription}
+          managementStatus={entitlement.managementStatus}
           privacyConsent={preferences.privacyConsent}
           showMonetizationSettings={platform.showAdvertisingUi}
           onCompactUiChange={preferences.setCompactUi}
           onShowAnalysisArrowsChange={preferences.setShowAnalysisArrows}
           onBoardThemeChange={preferences.setBoardTheme}
           onRestorePurchases={() => void entitlement.restorePurchases()}
+          onLoadOffers={() => void entitlement.loadOffers()}
+          onPurchase={(productId) => void entitlement.purchasePremium(productId)}
+          onManageSubscription={() =>
+            void entitlement.openSubscriptionManagement()}
           onPrivacyConsentChange={actions.handlePrivacyConsentChange}
           onPrivacyConsentReset={actions.handleResetPrivacyConsent}
         />

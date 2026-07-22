@@ -1,89 +1,99 @@
 import { describe, expect, it } from "vitest";
 import {
   freeEntitlement,
+  getEntitlementAccess,
   getEntitlementLabel,
-  getEntitlementTier,
   parseEntitlement,
 } from "./entitlement";
 
+const verifiedPremium = {
+  version: 2,
+  kind: "premium",
+  source: "app_store",
+  expiresAt: "2026-08-22T12:00:00.000Z",
+  verifiedAt: "2026-07-22T12:00:00.000Z",
+  verificationMode: "online",
+  autoRenews: true,
+} as const;
+
 describe("entitlement", () => {
-  it("по умолчанию и при повреждённых данных выдаёт только Free", () => {
-    expect(parseEntitlement(null)).toEqual(freeEntitlement);
-    expect(parseEntitlement({ kind: "premium" })).toEqual(freeEntitlement);
-    expect(getEntitlementTier(freeEntitlement)).toBe("free");
-  });
-
-  it("принимает активную проверенную подписку", () => {
-    const entitlement = parseEntitlement({
-      version: 1,
-      kind: "premium",
-      source: "app_store",
-      expiresAt: "2026-08-22T12:00:00.000Z",
-      verifiedAt: "2026-07-22T12:00:00.000Z",
-      autoRenews: true,
-    });
-
-    expect(getEntitlementTier(
-      entitlement,
-      new Date("2026-07-22T12:00:00.000Z"),
-    )).toBe("premium");
-    expect(getEntitlementLabel(
-      entitlement,
-      new Date("2026-07-22T12:00:00.000Z"),
-    )).toBe("Premium");
-  });
-
-  it("не оставляет Premium после истечения срока", () => {
-    const entitlement = parseEntitlement({
-      version: 1,
-      kind: "temporary",
-      source: "trial",
-      expiresAt: "2026-07-21T12:00:00.000Z",
-      verifiedAt: "2026-07-20T12:00:00.000Z",
-      autoRenews: false,
-    });
-
-    expect(getEntitlementTier(
-      entitlement,
-      new Date("2026-07-22T12:00:00.000Z"),
-    )).toBe("free");
-  });
-
-  it("отклоняет временный доступ без срока и источник none для Premium", () => {
+  it("по умолчанию, при повреждённых и старых данных выдаёт только Free", () => {
+    expect(parseEntitlement(null)).toBeNull();
+    expect(parseEntitlement({ kind: "premium" })).toBeNull();
+    expect(parseEntitlement({ ...verifiedPremium, version: 1 }))
+      .toBeNull();
+    expect(parseEntitlement(freeEntitlement)).toEqual(freeEntitlement);
     expect(parseEntitlement({
-      version: 1,
-      kind: "temporary",
-      source: "trial",
-      expiresAt: null,
-      verifiedAt: "2026-07-22T12:00:00.000Z",
-      autoRenews: false,
-    })).toEqual(freeEntitlement);
-    expect(parseEntitlement({
-      version: 1,
-      kind: "premium",
-      source: "none",
-      expiresAt: null,
-      verifiedAt: null,
-      autoRenews: false,
-    })).toEqual(freeEntitlement);
-  });
-
-  it("не принимает непроверенное или противоречивое право", () => {
-    expect(parseEntitlement({
-      version: 1,
-      kind: "premium",
+      ...freeEntitlement,
       source: "web",
-      expiresAt: null,
-      verifiedAt: null,
-      autoRenews: false,
-    })).toEqual(freeEntitlement);
+    })).toBeNull();
+    expect(getEntitlementAccess(freeEntitlement, { trusted: false }).tier)
+      .toBe("free");
+  });
+
+  it("принимает активную подписку только от доверенного провайдера", () => {
+    const entitlement = parseEntitlement(verifiedPremium)!;
+    const trusted = getEntitlementAccess(entitlement, {
+      trusted: true,
+      now: new Date("2026-07-22T12:05:00.000Z"),
+    });
+    const localCache = getEntitlementAccess(entitlement, {
+      trusted: false,
+      now: new Date("2026-07-22T12:05:00.000Z"),
+    });
+
+    expect(trusted).toMatchObject({ tier: "premium", status: "verified" });
+    expect(localCache).toEqual({
+      tier: "free",
+      status: "unverified",
+      effectiveUntil: null,
+    });
+    expect(getEntitlementLabel(entitlement, trusted.tier)).toBe("Premium");
+  });
+
+  it("ограничивает офлайн-доступ 72 часами после проверки", () => {
+    const entitlement = parseEntitlement({
+      ...verifiedPremium,
+      verificationMode: "offline",
+    })!;
+
+    expect(getEntitlementAccess(entitlement, {
+      trusted: true,
+      now: new Date("2026-07-25T11:59:59.000Z"),
+    })).toMatchObject({ tier: "premium", status: "offline_grace" });
+    expect(getEntitlementAccess(entitlement, {
+      trusted: true,
+      now: new Date("2026-07-25T12:00:00.000Z"),
+    })).toMatchObject({ tier: "free", status: "stale" });
+  });
+
+  it("не продлевает доступ за пределы срока подписки", () => {
+    const entitlement = parseEntitlement({
+      ...verifiedPremium,
+      expiresAt: "2026-07-23T12:00:00.000Z",
+      verificationMode: "offline",
+    })!;
+
+    expect(getEntitlementAccess(entitlement, {
+      trusted: true,
+      now: new Date("2026-07-23T12:00:00.000Z"),
+    })).toMatchObject({ tier: "free", status: "stale" });
+  });
+
+  it("отклоняет противоречивый источник и время проверки из будущего", () => {
     expect(parseEntitlement({
-      version: 1,
+      ...verifiedPremium,
       kind: "temporary",
       source: "app_store",
-      expiresAt: "2026-07-29T12:00:00.000Z",
-      verifiedAt: "2026-07-22T12:00:00.000Z",
-      autoRenews: false,
-    })).toEqual(freeEntitlement);
+    })).toBeNull();
+
+    const futureClaim = parseEntitlement({
+      ...verifiedPremium,
+      verifiedAt: "2026-07-23T12:00:00.000Z",
+    })!;
+    expect(getEntitlementAccess(futureClaim, {
+      trusted: true,
+      now: new Date("2026-07-22T12:00:00.000Z"),
+    })).toMatchObject({ tier: "free", status: "stale" });
   });
 });

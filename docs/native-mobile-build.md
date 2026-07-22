@@ -7,6 +7,8 @@
 - `capacitor.config.json` — базовая конфигурация мобильного приложения.
 - `src/platform/nativeBridge.ts` — единое место для проверки платформы: web / android / ios.
 - `src/platform/mobile.ts` — уже используется для скрытия рекламы в браузере и подготовки рекламы только для native mobile.
+- `src/platform/purchases/purchaseProvider.ts` — контракт получения тарифов,
+  покупки, восстановления и управления подпиской.
 - `manifest.webmanifest`, `public/sw.js` и service worker — основа для офлайн-работы.
 
 ## Когда переходить к реальной мобильной сборке
@@ -58,15 +60,19 @@ npx cap open android
 npx cap open ios
 ```
 
-## Где потом подключать платные функции
+## Где подключать платёжный SDK
 
-Проверка подписки должна жить не в компонентах, а в отдельном слое:
+StoreKit, Google Play Billing или RevenueCat подключается к глобальному мосту
+`window.ChessCoachPurchases`. React-код обращается только к адаптеру:
 
 ```text
-src/features/featureAccess.ts
+src/platform/purchases/purchaseProvider.ts
 ```
 
-Сейчас там можно вручную включать и выключать доступ. В будущем этот файл должен получать статус подписки из native purchase SDK.
+Мост должен реализовать получение текущего entitlement, список предложений,
+покупку, восстановление и открытие системного экрана управления. Product ID и
+цены остаются в конфигурации магазина. Локальный `localStorage` не может
+активировать Premium.
 
 ## Где потом подключать рекламу
 

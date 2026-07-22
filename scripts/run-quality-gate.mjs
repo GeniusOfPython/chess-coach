@@ -130,6 +130,13 @@ const stages = [
           env: { E2E_USE_PREVIEW: "1" },
         },
         {
+          id: "e2e-entitlement",
+          title: "Trusted entitlement and subscription lifecycle E2E",
+          command: "npm",
+          args: ["run", "test:e2e:entitlement"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
           id: "e2e-webkit",
           title: "WebKit and Safari compatibility E2E",
           command: "npm",

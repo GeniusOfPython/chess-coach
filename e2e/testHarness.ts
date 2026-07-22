@@ -3,7 +3,8 @@ import type { Page } from "@playwright/test";
 type DeterministicAppStateOptions = {
   activeWorkspace?: "coach" | "game" | "tools" | "none";
   onboarding?: "complete" | "pending";
-  entitlement?: "premium" | "free" | "expired";
+  entitlement?: "premium" | "free" | "expired" | "offline" | "stale";
+  nativePlatform?: "web" | "android" | "ios";
   storageEntries?: Record<string, string>;
   indexedDb?: "available" | "unavailable";
 };
@@ -14,6 +15,7 @@ export async function installDeterministicAppState(
     activeWorkspace = "coach",
     onboarding = "complete",
     entitlement = "premium",
+    nativePlatform = "web",
     storageEntries = {},
     indexedDb = "available",
   }: DeterministicAppStateOptions = {},
@@ -24,6 +26,7 @@ export async function installDeterministicAppState(
     entitlementState,
     entries,
     indexedDbState,
+    platform,
   }) => {
     const installationMarker = "chess-coach.e2e-state-installed";
 
@@ -31,29 +34,6 @@ export async function installDeterministicAppState(
       window.sessionStorage.setItem(installationMarker, "true");
       window.localStorage.clear();
       window.localStorage.setItem("chess-coach.active-workspace", workspace);
-      const entitlementValue = entitlementState === "free"
-        ? {
-            version: 1,
-            kind: "free",
-            source: "none",
-            expiresAt: null,
-            verifiedAt: null,
-            autoRenews: false,
-          }
-        : {
-            version: 1,
-            kind: entitlementState === "expired" ? "temporary" : "premium",
-            source: entitlementState === "expired" ? "trial" : "web",
-            expiresAt: entitlementState === "expired"
-              ? "2020-01-01T00:00:00.000Z"
-              : "2099-12-31T23:59:59.000Z",
-            verifiedAt: "2026-07-22T12:00:00.000Z",
-            autoRenews: entitlementState === "premium",
-          };
-      window.localStorage.setItem(
-        "chess-coach.entitlement",
-        JSON.stringify(entitlementValue),
-      );
       window.localStorage.setItem("chess-coach.board-theme", "sunset");
       window.localStorage.setItem("chess-coach.show-analysis-arrows", "true");
 
@@ -68,6 +48,91 @@ export async function installDeterministicAppState(
         window.localStorage.setItem(key, value);
       });
     }
+
+    const now = Date.now();
+    const entitlementValue = entitlementState === "free"
+      ? {
+          version: 2,
+          kind: "free",
+          source: "none",
+          expiresAt: null,
+          verifiedAt: null,
+          verificationMode: null,
+          autoRenews: false,
+        }
+      : {
+          version: 2,
+          kind: entitlementState === "expired" ? "temporary" : "premium",
+          source: entitlementState === "expired"
+            ? "trial"
+            : platform === "ios"
+              ? "app_store"
+              : "play_store",
+          expiresAt: entitlementState === "expired"
+            ? "2020-01-01T00:00:00.000Z"
+            : new Date(now + 30 * 24 * 60 * 60 * 1_000).toISOString(),
+          verifiedAt: new Date(
+            entitlementState === "stale"
+              ? now - 96 * 60 * 60 * 1_000
+              : entitlementState === "offline"
+                ? now - 60 * 60 * 1_000
+                : now,
+          ).toISOString(),
+          verificationMode:
+            entitlementState === "offline" || entitlementState === "stale"
+              ? "offline"
+              : "online",
+          autoRenews: entitlementState === "premium",
+        };
+
+    Object.defineProperty(window, "Capacitor", {
+      configurable: true,
+      value: {
+        getPlatform: () => platform,
+        isNativePlatform: () => platform !== "web",
+      },
+    });
+
+    Object.defineProperty(window, "ChessCoachPurchases", {
+      configurable: true,
+      value: {
+        getCurrentEntitlement: async () => entitlementValue,
+        getOfferings: async () => [
+          {
+            productId: "premium.monthly",
+            title: "Premium на месяц",
+            description: "Ежемесячная подписка",
+            price: "499 ₽",
+            period: "month",
+          },
+          {
+            productId: "premium.annual",
+            title: "Premium на год",
+            description: "Годовая подписка",
+            price: "3 990 ₽",
+            period: "year",
+          },
+        ],
+        purchase: async () => ({
+          version: 2,
+          kind: "premium",
+          source: platform === "ios" ? "app_store" : "play_store",
+          expiresAt: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1_000,
+          ).toISOString(),
+          verifiedAt: new Date().toISOString(),
+          verificationMode: "online",
+          autoRenews: true,
+        }),
+        restorePurchases: async () => entitlementValue,
+        openSubscriptionManagement: async () => {
+          window.sessionStorage.setItem(
+            "chess-coach.e2e-subscription-management-opened",
+            "true",
+          );
+        },
+      },
+    });
 
     if (indexedDbState === "unavailable") {
       Object.defineProperty(window, "indexedDB", {
@@ -144,6 +209,7 @@ export async function installDeterministicAppState(
     entitlementState: entitlement,
     entries: storageEntries,
     indexedDbState: indexedDb,
+    platform: nativePlatform,
   });
 }
 

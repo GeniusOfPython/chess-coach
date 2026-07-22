@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  getEntitlementTier,
+  freeEntitlement,
+  getEntitlementAccess,
   parseEntitlement,
+  type EntitlementAccess,
 } from "../features/entitlement";
 import {
   purchaseProvider,
@@ -10,92 +12,274 @@ import {
 import { entitlementRepository } from "../repositories/entitlementRepository";
 import type {
   EntitlementSnapshot,
+  EntitlementVerificationStatus,
+  PurchaseOffersStatus,
   PurchaseRestoreStatus,
+  PurchaseStatus,
+  SubscriptionOffer,
 } from "../types/entitlement";
+
+type EntitlementSession = {
+  snapshot: EntitlementSnapshot;
+  access: EntitlementAccess;
+};
+
+const initialSession: EntitlementSession = {
+  snapshot: freeEntitlement,
+  access: getEntitlementAccess(freeEntitlement, { trusted: false }),
+};
 
 export function useEntitlement(
   provider: PurchaseProvider = purchaseProvider,
 ) {
-  const [snapshot, setSnapshot] = useState<EntitlementSnapshot>(() =>
-    entitlementRepository.load()
-  );
+  const accessRequestSequence = useRef(0);
+  const commerceOperationInProgress = useRef(false);
+  const [session, setSession] = useState<EntitlementSession>(initialSession);
+  const [verificationStatus, setVerificationStatus] =
+    useState<EntitlementVerificationStatus>(
+      provider.available ? "checking" : "unavailable",
+    );
   const [restoreStatus, setRestoreStatus] = useState<PurchaseRestoreStatus>(
     "idle",
   );
-  const [expiryTick, setExpiryTick] = useState(0);
+  const [offersStatus, setOffersStatus] = useState<PurchaseOffersStatus>(
+    "idle",
+  );
+  const [offers, setOffers] = useState<SubscriptionOffer[]>([]);
+  const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>("idle");
+  const [managementStatus, setManagementStatus] = useState<
+    "idle" | "opening" | "error"
+  >("idle");
 
-  const storeSnapshot = useCallback((value: unknown) => {
-    const nextSnapshot = parseEntitlement(value);
-    entitlementRepository.save(nextSnapshot);
-    setSnapshot(nextSnapshot);
-    return nextSnapshot;
+  const acceptProviderClaim = useCallback((value: unknown) => {
+    const parsed = parseEntitlement(value);
+
+    if (!parsed) {
+      throw new Error("Invalid entitlement response");
+    }
+
+    const access = getEntitlementAccess(parsed, {
+      trusted: true,
+      now: new Date(),
+    });
+    const acceptedSnapshot = access.tier === "premium"
+      ? parsed
+      : freeEntitlement;
+
+    entitlementRepository.clearLegacyAccess();
+    setSession({ snapshot: acceptedSnapshot, access });
+    return access;
   }, []);
 
-  useEffect(() => {
-    if (!provider.available) {
+  const clearAccess = useCallback(() => {
+    entitlementRepository.clearLegacyAccess();
+    setSession(initialSession);
+  }, []);
+
+  const refreshEntitlement = useCallback(async () => {
+    if (commerceOperationInProgress.current) {
       return;
     }
 
-    let active = true;
+    const requestId = ++accessRequestSequence.current;
 
-    void provider.getCurrentEntitlement()
-      .then((value) => {
-        if (active) {
-          storeSnapshot(value);
-        }
-      })
-      .catch(() => undefined);
+    if (!provider.available) {
+      clearAccess();
+      setVerificationStatus("unavailable");
+      return;
+    }
+
+    setVerificationStatus("checking");
+
+    try {
+      const value = await provider.getCurrentEntitlement();
+
+      if (requestId !== accessRequestSequence.current) {
+        return;
+      }
+
+      acceptProviderClaim(value);
+      setVerificationStatus("ready");
+    } catch {
+      if (requestId !== accessRequestSequence.current) {
+        return;
+      }
+
+      clearAccess();
+      setVerificationStatus("error");
+    }
+  }, [acceptProviderClaim, clearAccess, provider]);
+
+  useEffect(() => {
+    void refreshEntitlement();
 
     return () => {
-      active = false;
+      accessRequestSequence.current += 1;
     };
-  }, [provider, storeSnapshot]);
+  }, [refreshEntitlement]);
 
   useEffect(() => {
-    if (!snapshot.expiresAt) {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshEntitlement();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshEntitlement]);
+
+  useEffect(() => {
+    if (session.access.tier !== "premium" || !session.access.effectiveUntil) {
       return;
     }
 
-    const remainingMs = Date.parse(snapshot.expiresAt) - Date.now();
+    const remainingMs = Date.parse(session.access.effectiveUntil) - Date.now();
 
     if (remainingMs <= 0) {
+      void refreshEntitlement();
       return;
     }
 
     const timer = window.setTimeout(
-      () => setExpiryTick((value) => value + 1),
+      () => void refreshEntitlement(),
       Math.min(remainingMs + 50, 2_147_000_000),
     );
 
     return () => window.clearTimeout(timer);
-  }, [snapshot.expiresAt, expiryTick]);
+  }, [refreshEntitlement, session.access.effectiveUntil, session.access.tier]);
 
-  const tier = getEntitlementTier(snapshot, new Date());
+  const loadOffers = useCallback(async () => {
+    if (!provider.canPurchase || offersStatus === "loading") {
+      return;
+    }
+
+    setOffersStatus("loading");
+
+    try {
+      const nextOffers = await provider.getOfferings();
+      setOffers(nextOffers);
+      setOffersStatus(nextOffers.length > 0 ? "ready" : "empty");
+    } catch {
+      setOffers([]);
+      setOffersStatus("error");
+    }
+  }, [offersStatus, provider]);
+
+  const purchasePremium = useCallback(async (productId: string) => {
+    if (
+      !provider.canPurchase ||
+      commerceOperationInProgress.current ||
+      purchaseStatus === "purchasing" ||
+      !offers.some((offer) => offer.productId === productId)
+    ) {
+      return;
+    }
+
+    setPurchaseStatus("purchasing");
+    commerceOperationInProgress.current = true;
+    const requestId = ++accessRequestSequence.current;
+
+    try {
+      const value = await provider.purchase(productId);
+
+      if (requestId !== accessRequestSequence.current) {
+        return;
+      }
+
+      const access = acceptProviderClaim(value);
+      setPurchaseStatus(access.tier === "premium" ? "purchased" : "error");
+      setVerificationStatus("ready");
+    } catch {
+      if (requestId === accessRequestSequence.current) {
+        setPurchaseStatus("error");
+      }
+    } finally {
+      commerceOperationInProgress.current = false;
+    }
+  }, [acceptProviderClaim, offers, provider, purchaseStatus]);
 
   const restorePurchases = useCallback(async () => {
-    if (!provider.available || restoreStatus === "restoring") {
+    if (
+      !provider.available ||
+      commerceOperationInProgress.current ||
+      restoreStatus === "restoring"
+    ) {
       return;
     }
 
     setRestoreStatus("restoring");
+    commerceOperationInProgress.current = true;
+    const requestId = ++accessRequestSequence.current;
 
     try {
-      const restored = storeSnapshot(await provider.restorePurchases());
-      setRestoreStatus(
-        getEntitlementTier(restored) === "premium"
-          ? "restored"
-          : "not_found",
-      );
-    } catch {
-      setRestoreStatus("error");
-    }
-  }, [provider, restoreStatus, storeSnapshot]);
+      const value = await provider.restorePurchases();
 
-  return {
-    snapshot,
-    tier,
+      if (requestId !== accessRequestSequence.current) {
+        return;
+      }
+
+      const access = acceptProviderClaim(value);
+      setRestoreStatus(access.tier === "premium" ? "restored" : "not_found");
+      setVerificationStatus("ready");
+    } catch {
+      if (requestId === accessRequestSequence.current) {
+        setRestoreStatus("error");
+      }
+    } finally {
+      commerceOperationInProgress.current = false;
+    }
+  }, [acceptProviderClaim, provider, restoreStatus]);
+
+  const openSubscriptionManagement = useCallback(async () => {
+    if (!provider.canManageSubscription || managementStatus === "opening") {
+      return;
+    }
+
+    setManagementStatus("opening");
+
+    try {
+      await provider.openSubscriptionManagement();
+      setManagementStatus("idle");
+    } catch {
+      setManagementStatus("error");
+    }
+  }, [managementStatus, provider]);
+
+  return useMemo(() => ({
+    snapshot: session.snapshot,
+    tier: session.access.tier,
+    accessStatus: session.access.status,
+    effectiveUntil: session.access.effectiveUntil,
+    verificationStatus,
     canRestorePurchases: provider.available,
     restoreStatus,
     restorePurchases,
-  };
+    canPurchase: provider.canPurchase,
+    offers,
+    offersStatus,
+    loadOffers,
+    purchaseStatus,
+    purchasePremium,
+    canManageSubscription: provider.canManageSubscription,
+    managementStatus,
+    openSubscriptionManagement,
+  }), [
+    loadOffers,
+    managementStatus,
+    offers,
+    offersStatus,
+    openSubscriptionManagement,
+    provider.available,
+    provider.canManageSubscription,
+    provider.canPurchase,
+    purchasePremium,
+    purchaseStatus,
+    restorePurchases,
+    restoreStatus,
+    session,
+    verificationStatus,
+  ]);
 }

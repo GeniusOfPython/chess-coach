@@ -78,30 +78,27 @@ describe("app preferences repository", () => {
 });
 
 describe("entitlement repository", () => {
-  it("не превращает старый пользовательский переключатель тарифа в право доступа", () => {
-    const { storage } = createMemoryStorage({
+  it("удаляет старые локальные записи, которые не могут быть источником доступа", () => {
+    const { storage, values } = createMemoryStorage({
       "chess-coach.subscription-tier": "premium",
-    });
-
-    expect(createEntitlementRepository(storage).load().kind).toBe("free");
-  });
-
-  it("восстанавливает только структурно корректное право доступа", () => {
-    const { storage } = createMemoryStorage({
       "chess-coach.entitlement": JSON.stringify({
-        version: 1,
-        kind: "temporary",
-        source: "trial",
+        version: 2,
+        kind: "premium",
+        source: "web",
         expiresAt: "2026-07-29T12:00:00.000Z",
         verifiedAt: "2026-07-22T12:00:00.000Z",
-        autoRenews: false,
+        verificationMode: "online",
+        autoRenews: true,
       }),
+      "chess-coach.board-theme": "sunset",
     });
+    const repository = createEntitlementRepository(storage);
 
-    expect(createEntitlementRepository(storage).load()).toMatchObject({
-      kind: "temporary",
-      source: "trial",
-    });
+    repository.clearLegacyAccess();
+
+    expect(values.has("chess-coach.subscription-tier")).toBe(false);
+    expect(values.has("chess-coach.entitlement")).toBe(false);
+    expect(values.get("chess-coach.board-theme")).toBe("sunset");
   });
 });
 
