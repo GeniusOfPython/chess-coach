@@ -22,22 +22,22 @@ type ProductEventMap = {
     restoredProgress: boolean;
   };
   training_started: {
-    source: "current_position" | "game_review" | "spaced_repetition";
+    source: "current_position" | "game_review" | "spaced_repetition" | "ai_reflection";
     sequenceTotal: number;
   };
   training_hint_revealed: {
-    source: "current_position" | "game_review" | "spaced_repetition";
+    source: "current_position" | "game_review" | "spaced_repetition" | "ai_reflection";
     hintLevel: number;
   };
   training_attempted: {
-    source: "current_position" | "game_review" | "spaced_repetition";
+    source: "current_position" | "game_review" | "spaced_repetition" | "ai_reflection";
     solved: boolean;
     hintLevel: number;
     sequenceIndex: number;
     sequenceTotal: number;
   };
   training_sequence_completed: {
-    source: "current_position" | "game_review" | "spaced_repetition";
+    source: "current_position" | "game_review" | "spaced_repetition" | "ai_reflection";
     sequenceTotal: number;
   };
   ai_coach_requested: AnonymousProductProperties;

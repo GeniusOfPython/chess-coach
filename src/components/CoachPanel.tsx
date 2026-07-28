@@ -7,13 +7,14 @@ import { useAiCoach } from "../hooks/useAiCoach";
 import { useAiCoachReflection } from "../hooks/useAiCoachReflection";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { getAiCoachAction } from "../ai/coachUiState";
+import type { AiReflectionTrainingInput } from "../analysis/reflectionTraining";
 import LoadingSkeleton from "./LoadingSkeleton";
 
 type Props = {
   analysis: EngineAnalysis | null;
   position: string;
   access: FeatureAccess;
-  onStartTraining: () => void;
+  onStartTraining: (input: AiReflectionTrainingInput) => void;
 };
 
 const priorityLabels = {
@@ -93,6 +94,17 @@ export default function CoachPanel({
     status: aiCoach.status,
     remaining: aiCoach.remaining,
   });
+
+  function startReflectionTraining() {
+    if (!aiCoach.advice) {
+      return;
+    }
+
+    onStartTraining({
+      answer: reflection.answer,
+      question: aiCoach.advice.question,
+    });
+  }
 
   return (
     <div className={`coach-card coach-priority-${plan.priority}`}>
@@ -265,7 +277,7 @@ export default function CoachPanel({
               title={reflection.saved
                 ? "Открыть позицию как задачу без подсказок"
                 : "Сначала сохрани свою мысль"}
-              onClick={onStartTraining}
+              onClick={startReflectionTraining}
             >
               Проверить мысль на доске
             </button>

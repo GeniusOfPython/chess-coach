@@ -399,8 +399,11 @@ export function useChessCoachController() {
     }
   }
 
+  const trainingSide = learning.training.task.context?.kind === "review"
+    ? learning.training.task.context.side
+    : null;
   const boardOrientation: "black" | "white" =
-    learning.training.task.context?.side === "b" ||
+    trainingSide === "b" ||
     (gameMode === "bot" && playerSide === "b")
       ? "black"
       : "white";
@@ -600,6 +603,7 @@ export function useChessCoachController() {
       handleSelectReviewedPosition: learning.actions.selectReviewedPosition,
       handleOpenArchivedGame: match.archive.open,
       handleStartBestMoveTraining: learning.actions.startBestMoveTraining,
+      handleStartAiReflectionTraining: learning.actions.startAiReflectionTraining,
       handlePracticeMainMistake: learning.actions.practiceMainMistake,
       handlePracticeReviewSequence: learning.actions.practiceReviewSequence,
       handleStartDueReviewTraining: learning.actions.startDueReviewTraining,

@@ -326,7 +326,7 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
                     analysis={engine.analysis}
                     position={game.displayedPosition}
                     access={access}
-                    onStartTraining={actions.handleStartBestMoveTraining}
+                    onStartTraining={actions.handleStartAiReflectionTraining}
                   />
 
                   <AnalysisPanel

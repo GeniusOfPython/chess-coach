@@ -127,6 +127,10 @@ describe("CoachPanel DOM contract", () => {
     act(() => trainingButton?.click());
 
     expect(onStartTraining).toHaveBeenCalledOnce();
+    expect(onStartTraining).toHaveBeenCalledWith({
+      answer: "Сначала оценю безопасность короля.",
+      question: "Какой ответ соперника нужно проверить первым?",
+    });
   });
 
   it("не позволяет открыть тренировку с несохранённым ответом", () => {

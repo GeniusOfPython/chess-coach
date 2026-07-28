@@ -2,6 +2,7 @@ import type { Color } from "chess.js";
 import { buildReviewInsight } from "../analysis/reviewInsight";
 import { explainEngineMove } from "../utils/explainMove";
 import type { WeeklyTrainingPlan } from "../analysis/weeklyTrainingPlan";
+import type { AiReflectionTrainingContext } from "../analysis/reflectionTraining";
 
 export type BestMoveTrainingStatus =
   | "idle"
@@ -20,7 +21,7 @@ export type BestMoveTrainingTask = {
   context: BestMoveTrainingContext | null;
 };
 
-export type BestMoveTrainingContext = {
+export type ReviewTrainingContext = {
   kind: "review";
   source: "game_review" | "spaced_repetition";
   repetitionId: string;
@@ -35,6 +36,10 @@ export type BestMoveTrainingContext = {
   sequenceIndex: number;
   sequenceTotal: number;
 };
+
+export type BestMoveTrainingContext =
+  | ReviewTrainingContext
+  | AiReflectionTrainingContext;
 
 export type BestMoveTrainingStats = {
   currentStreak: number;
@@ -178,20 +183,26 @@ export default function BestMoveTrainingPanel({
       : [];
 
   const visibleHints = getVisibleHints(task);
-  const isReviewTask = task.context?.kind === "review";
-  const reviewInsight = task.context && task.positionFen
+  const reviewContext = task.context?.kind === "review"
+    ? task.context
+    : null;
+  const isReviewTask = Boolean(reviewContext);
+  const aiReflection = task.context?.kind === "ai_reflection"
+    ? task.context
+    : null;
+  const reviewInsight = reviewContext && task.positionFen
     ? buildReviewInsight({
         positionFen: task.positionFen,
-        side: task.context.side,
-        playedMove: task.context.playedMove,
+        side: reviewContext.side,
+        playedMove: reviewContext.playedMove,
         bestMove: task.bestMove,
-        evaluationBeforeWhite: task.context.evaluationBeforeWhite,
-        evaluationAfterWhite: task.context.evaluationAfterWhite,
-        evaluationLoss: task.context.evaluationLoss,
+        evaluationBeforeWhite: reviewContext.evaluationBeforeWhite,
+        evaluationAfterWhite: reviewContext.evaluationAfterWhite,
+        evaluationLoss: reviewContext.evaluationLoss,
       })
     : null;
   const hasNextReviewMoment = Boolean(
-    task.context && task.context.sequenceIndex < task.context.sequenceTotal,
+    reviewContext && reviewContext.sequenceIndex < reviewContext.sequenceTotal,
   );
 
   return (
@@ -212,12 +223,12 @@ export default function BestMoveTrainingPanel({
         )}
       </div>
 
-      {task.context && (
+      {reviewContext && (
         <>
-          {task.context.sequenceTotal > 1 && (
+          {reviewContext.sequenceTotal > 1 && (
             <div className="review-training-sequence" aria-label="Прогресс тренировки переломных моментов">
               <span>Серия позиций</span>
-              <strong>{task.context.sequenceIndex} / {task.context.sequenceTotal}</strong>
+              <strong>{reviewContext.sequenceIndex} / {reviewContext.sequenceTotal}</strong>
             </div>
           )}
 
@@ -227,6 +238,14 @@ export default function BestMoveTrainingPanel({
             <div className={task.status === "success" ? "complete" : "pending"}><span>3</span><b>Навык проверен</b></div>
           </div>
         </>
+      )}
+
+      {aiReflection && (
+        <section className="ai-reflection-training-context" aria-label="Твоя сохранённая мысль">
+          <span>Твоя мысль перед проверкой</span>
+          <p>{aiReflection.answer}</p>
+          <small>Вопрос ИИ: {aiReflection.question}</small>
+        </section>
       )}
 
       <div className="best-move-training-stats" aria-label="Статистика тренировки">
@@ -327,9 +346,9 @@ export default function BestMoveTrainingPanel({
       <div className={`best-move-training ${task.status}`}>
         <strong>{getStatusText(task)}</strong>
 
-        {task.context && task.status !== "success" && (
+        {reviewContext && task.status !== "success" && (
           <p className="best-move-training-origin">
-            {task.context.source === "spaced_repetition" ? "Повторение" : "В партии"} на {task.context.moveNumber}-м ходу: {formatMove(task.context.playedMove)}.
+            {reviewContext.source === "spaced_repetition" ? "Повторение" : "В партии"} на {reviewContext.moveNumber}-м ходу: {formatMove(reviewContext.playedMove)}.
             Найди ход, который исправляет эту ошибку.
           </p>
         )}
@@ -369,24 +388,30 @@ export default function BestMoveTrainingPanel({
               <span>Твой ход</span>
               <b>{formatMove(task.playedMove)}</b>
             </div>
-            {task.context && (
+            {reviewContext && (
               <>
                 <p className="best-move-training-verified">
                   {hasNextReviewMoment
-                    ? `Момент ${task.context.sequenceIndex} решён. Результат засчитан, следующий момент готов к повторению.`
-                    : task.context.sequenceTotal > 1
-                      ? `Все ${task.context.sequenceTotal} ключевых момента решены. Серия завершена.`
+                    ? `Момент ${reviewContext.sequenceIndex} решён. Результат засчитан, следующий момент готов к повторению.`
+                    : reviewContext.sequenceTotal > 1
+                      ? `Все ${reviewContext.sequenceTotal} ключевых момента решены. Серия завершена.`
                       : "Главная ошибка исправлена. Позиция решена самостоятельно, навык засчитан в прогресс."}
                 </p>
 
                 {reviewInsight && (
                 <div className="best-move-training-insight">
-                    <span>{task.context.themeLabel ?? "Закреплённый мотив"}</span>
+                    <span>{reviewContext.themeLabel ?? "Закреплённый мотив"}</span>
                     <strong>{reviewInsight.title}</strong>
                     <p>{reviewInsight.trainingFocus}</p>
                   </div>
                 )}
               </>
+            )}
+
+            {aiReflection && (
+              <p className="best-move-training-verified">
+                Мысль проверена на доске: найденный ход совпал с расчётом позиции.
+              </p>
             )}
           </>
         )}

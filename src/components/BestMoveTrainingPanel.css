@@ -152,6 +152,34 @@
   background: rgb(255 60 172 / 7%);
 }
 
+.ai-reflection-training-context {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgb(0 229 255 / 36%);
+  border-radius: var(--radius-card, 14px);
+  background: linear-gradient(110deg, rgb(0 229 255 / 9%), rgb(217 70 239 / 8%));
+}
+
+.ai-reflection-training-context > span {
+  color: #82efff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ai-reflection-training-context p,
+.ai-reflection-training-context small {
+  margin: 0;
+  color: var(--color-text, #f8f4ff);
+  line-height: 1.45;
+}
+
+.ai-reflection-training-context small {
+  color: var(--color-text-muted, #c7bdd8);
+}
+
 .best-move-training-verified {
   padding: 10px 12px;
   border: 1px solid rgb(57 245 196 / 46%);

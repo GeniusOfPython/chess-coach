@@ -31,6 +31,10 @@ import {
   trainingThemeLabels,
 } from "../analysis/spacedRepetition";
 import { useSpacedRepetition } from "../hooks/useSpacedRepetition";
+import {
+  createAiReflectionTrainingContext,
+  type AiReflectionTrainingInput,
+} from "../analysis/reflectionTraining";
 
 type ReviewMove = { from: string; to: string };
 
@@ -312,6 +316,50 @@ export function useLearningFlow({
     });
   }
 
+  async function startAiReflectionTraining(input: AiReflectionTrainingInput) {
+    const context = createAiReflectionTrainingContext(input);
+
+    if (
+      !context ||
+      isBotThinking ||
+      isActiveBotGame ||
+      !isViewingCurrentPosition ||
+      game.isGameOver()
+    ) {
+      return;
+    }
+
+    const trainingFen = position;
+
+    setReviewTrainingQueue(null);
+    setSelectedSquare(null);
+    clearAnalysis();
+    prepareTask(trainingFen);
+
+    const trainingAnalysis = await calculatePositionAnalysis({
+      fen: trainingFen,
+      isGameOver: game.isGameOver(),
+      movetime: 1400,
+    });
+
+    if (!trainingAnalysis?.bestMove) {
+      failTask("Не удалось подготовить задачу из текущей позиции.");
+      return;
+    }
+
+    readyTask(trainingFen, trainingAnalysis.bestMove, context);
+    trackProductEvent("training_started", {
+      source: "ai_reflection",
+      sequenceTotal: 1,
+    });
+    setActiveWorkspace("coach");
+    showRewardToast({
+      kind: "success",
+      title: "Проверь мысль на доске",
+      text: "Подсказки и стрелки скрыты. Найди лучший ход самостоятельно.",
+    });
+  }
+
   function startReviewTraining(
     items: GameReviewItem[],
     source: ReviewTrainingQueue["source"] = "game_review",
@@ -415,8 +463,14 @@ export function useLearningFlow({
       return;
     }
 
+    const trainingSource = task.context?.kind === "review"
+      ? task.context.source
+      : task.context?.kind === "ai_reflection"
+        ? "ai_reflection"
+        : "current_position" as const;
+
     trackProductEvent("training_hint_revealed", {
-      source: task.context?.source ?? "current_position",
+      source: trainingSource,
       hintLevel: Math.min(task.hintLevel + 1, 3),
     });
     revealHint();
@@ -452,15 +506,20 @@ export function useLearningFlow({
 
       recordAttempt(trainingSolved);
       completeTask(playedMove, trainingSolved);
-      const sequencePosition = task.context?.sequenceIndex ?? 1;
-      const sequenceTotal = task.context?.sequenceTotal ?? 1;
-      const trainingSource = task.context
-        ? task.context.source
-        : "current_position" as const;
+      const reviewContext = task.context?.kind === "review"
+        ? task.context
+        : null;
+      const sequencePosition = reviewContext?.sequenceIndex ?? 1;
+      const sequenceTotal = reviewContext?.sequenceTotal ?? 1;
+      const trainingSource = reviewContext
+        ? reviewContext.source
+        : task.context?.kind === "ai_reflection"
+          ? "ai_reflection"
+          : "current_position" as const;
 
-      if (task.context?.repetitionId) {
+      if (reviewContext?.repetitionId) {
         repetition.recordResult(
-          task.context.repetitionId,
+          reviewContext.repetitionId,
           trainingSolved,
           task.hintLevel,
         );
@@ -546,6 +605,7 @@ export function useLearningFlow({
       runGameReview,
       selectReviewedPosition,
       startBestMoveTraining,
+      startAiReflectionTraining,
       practiceMainMistake,
       practiceReviewSequence,
       startDueReviewTraining,
