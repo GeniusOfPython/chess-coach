@@ -136,6 +136,10 @@ describe("CoachPanel DOM contract", () => {
       answer: "Сначала оценю безопасность короля.",
       question: "Какой ответ соперника нужно проверить первым?",
       reflectionKey: "position-key",
+      target: {
+        positionFen: "rn1qkbnr/pppb1ppp/3pp3/8/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 4",
+        bestMove: "f1b5",
+      },
     });
   });
 
