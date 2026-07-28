@@ -180,7 +180,7 @@ export default function CoachPanel({
           </p>
         )}
 
-        {aiCoachEnabled && networkStatus === "offline" && (
+        {aiCoachEnabled && networkStatus === "offline" && aiCoach.status !== "success" && (
           <p className="ai-coach-message">
             Для расширенного ИИ-разбора нужен интернет. Базовый план
             остаётся доступен офлайн.
@@ -200,6 +200,11 @@ export default function CoachPanel({
 
         {aiCoach.status === "success" && aiCoach.advice && (
           <div className="ai-coach-answer" aria-live="polite">
+            {aiCoach.adviceSource === "cache" && (
+              <p className="ai-coach-cache-note">
+                Сохранённый ИИ-разбор доступен без нового запроса.
+              </p>
+            )}
             <strong>{aiCoach.advice.headline}</strong>
             <p>{aiCoach.advice.explanation}</p>
 

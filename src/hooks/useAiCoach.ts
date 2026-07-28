@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AiCoachError, AiCoachService } from "../ai/AiCoachService";
 import { createAiCoachRequest, type AiCoachAdvice } from "../ai/coachContract";
+import { aiCoachAdviceRepository } from "../repositories/aiCoachAdviceRepository";
 import {
   getRemainingAiCoachAdvice,
 } from "../ai/coachQuota";
@@ -62,6 +63,7 @@ export function useAiCoach({
   const activeRequestRef = useRef<AbortController | null>(null);
   const [status, setStatus] = useState<AiCoachStatus>("idle");
   const [advice, setAdvice] = useState<AiCoachAdvice | null>(null);
+  const [adviceSource, setAdviceSource] = useState<"cache" | "live" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [limitReason, setLimitReason] = useState<AiCoachLimitReason | null>(null);
   const [usage, setUsage] = useState(() => aiCoachUsageRepository.load(quota));
@@ -70,16 +72,37 @@ export function useAiCoach({
     getRemainingAiCoachAdvice(usage, quota);
   const quotaLimit = quota.limit;
   const quotaPeriod = quota.period;
+  const request = useMemo(
+    () => facts ? createAiCoachRequest(facts) : null,
+    [facts],
+  );
 
   useEffect(() => {
     activeRequestRef.current?.abort();
     activeRequestRef.current = null;
-    setStatus("idle");
-    setAdvice(null);
     setError(null);
     setLimitReason(null);
     setServerQuota(null);
-  }, [facts?.position.fen, facts?.recommendation.bestMove]);
+    setAdviceSource(null);
+
+    if (!enabled || !request) {
+      setStatus("idle");
+      setAdvice(null);
+      return;
+    }
+
+    const cached = aiCoachAdviceRepository.load(request);
+
+    if (cached) {
+      setAdvice(cached.advice);
+      setAdviceSource("cache");
+      setStatus("success");
+      return;
+    }
+
+    setStatus("idle");
+    setAdvice(null);
+  }, [enabled, request]);
 
   useEffect(() => () => activeRequestRef.current?.abort(), []);
 
@@ -91,7 +114,7 @@ export function useAiCoach({
   }, [quotaLimit, quotaPeriod]);
 
   async function requestAdvice() {
-    if (!enabled || !isOnline || !facts || status === "loading") {
+    if (!enabled || !isOnline || !request || status === "loading") {
       return;
     }
 
@@ -115,7 +138,7 @@ export function useAiCoach({
     try {
       serviceRef.current ??= new AiCoachService();
       const result = await serviceRef.current.getAdvice(
-        createAiCoachRequest(facts),
+        request,
         controller.signal,
       );
 
@@ -129,7 +152,9 @@ export function useAiCoach({
         setUsage(aiCoachUsageRepository.record(quota));
       }
 
+      aiCoachAdviceRepository.save(request, result.advice);
       setAdvice(result.advice);
+      setAdviceSource("live");
       setStatus("success");
       trackProductEvent("ai_coach_finished", {
         outcome: "success",
@@ -177,6 +202,7 @@ export function useAiCoach({
   return {
     status,
     advice,
+    adviceSource,
     error,
     remaining,
     serverQuota,

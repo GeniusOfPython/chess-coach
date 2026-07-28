@@ -16,6 +16,7 @@ export const settingsStorageKeys = {
   trainingDailySuccesses: "chess-coach.training-daily-successes",
   trainingReviewQueue: "chess-coach.training-review-queue",
   aiCoachUsage: "chess-coach.ai-coach-usage",
+  aiCoachAdviceCache: "chess-coach.ai-coach-advice-cache",
   chessAchievements: "chess-coach.chess-achievements",
   onboarding: "chess-coach.onboarding",
 } as const;
