@@ -124,7 +124,7 @@ function createController(overrides: Partial<ChessCoachController> = {}) {
       resetStats: vi.fn(),
       clearRepetition: vi.fn(),
     },
-    review: { status: "idle", progress: null },
+    review: { status: "idle", items: [], progress: null },
     onboarding: { status: "complete", resultDismissed: true },
     engine: {
       analysis: null,
