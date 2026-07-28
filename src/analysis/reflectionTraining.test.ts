@@ -6,10 +6,12 @@ describe("AI reflection training context", () => {
     expect(createAiReflectionTrainingContext({
       answer: "  Сначала проверю защиту короля.  ",
       question: "  Как соперник отвечает на ход?  ",
+      reflectionKey: " position-key ",
     })).toEqual({
       kind: "ai_reflection",
       answer: "Сначала проверю защиту короля.",
       question: "Как соперник отвечает на ход?",
+      reflectionKey: "position-key",
     });
   });
 
@@ -17,6 +19,7 @@ describe("AI reflection training context", () => {
     expect(createAiReflectionTrainingContext({
       answer: "   ",
       question: "Как соперник отвечает на ход?",
+      reflectionKey: "position-key",
     })).toBeNull();
   });
 });

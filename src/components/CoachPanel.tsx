@@ -96,13 +96,14 @@ export default function CoachPanel({
   });
 
   function startReflectionTraining() {
-    if (!aiCoach.advice) {
+    if (!aiCoach.advice || !reflection.key) {
       return;
     }
 
     onStartTraining({
       answer: reflection.answer,
       question: aiCoach.advice.question,
+      reflectionKey: reflection.key,
     });
   }
 
@@ -262,7 +263,7 @@ export default function CoachPanel({
                   <button
                     type="button"
                     disabled={!reflection.answer.trim() || reflection.saved}
-                    onClick={reflection.save}
+                    onClick={() => reflection.save(aiCoach.advice?.question ?? "")}
                   >
                     Сохранить мысль
                   </button>
@@ -273,7 +274,7 @@ export default function CoachPanel({
             <button
               type="button"
               className="ai-coach-action ai-coach-training-action"
-              disabled={!reflection.saved}
+              disabled={!reflection.saved || !reflection.key}
               title={reflection.saved
                 ? "Открыть позицию как задачу без подсказок"
                 : "Сначала сохрани свою мысль"}
@@ -281,6 +282,14 @@ export default function CoachPanel({
             >
               Проверить мысль на доске
             </button>
+
+            {reflection.practice && (
+              <p className={`ai-coach-practice ${reflection.practice.outcome}`}>
+                {reflection.practice.outcome === "verified"
+                  ? "Проверено на доске: ход совпал с расчётом."
+                  : "Последняя проверка не подтвердила мысль. Её можно уточнить и попробовать снова."}
+              </p>
+            )}
 
             <p className="ai-coach-grounding">
               Ответ сверён с расчётом позиции.

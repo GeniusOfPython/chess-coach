@@ -35,6 +35,7 @@ import {
   createAiReflectionTrainingContext,
   type AiReflectionTrainingInput,
 } from "../analysis/reflectionTraining";
+import { aiCoachReflectionRepository } from "../repositories/aiCoachReflectionRepository";
 
 type ReviewMove = { from: string; to: string };
 
@@ -522,6 +523,13 @@ export function useLearningFlow({
           reviewContext.repetitionId,
           trainingSolved,
           task.hintLevel,
+        );
+      }
+
+      if (task.context?.kind === "ai_reflection") {
+        aiCoachReflectionRepository.recordPractice(
+          task.context.reflectionKey,
+          trainingSolved,
         );
       }
 

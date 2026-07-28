@@ -11,11 +11,13 @@ import OpeningPrinciplesPanel from "../components/OpeningPrinciplesPanel";
 import PgnPanel from "../components/PgnPanel";
 import PremiumFeatureNotice from "../components/PremiumFeatureNotice";
 import TrainingSummaryPanel from "../components/TrainingSummaryPanel";
+import AiReflectionJournalPanel from "../components/AiReflectionJournalPanel";
 import type { ChessCoachController } from "./useChessCoachController";
 import "../components/MoveNavigatorPanel.css";
 import "../components/TrainingSummaryPanel.css";
 import "../components/OpeningPrinciplesPanel.css";
 import "../components/AppSettingsPanel.css";
+import "../components/AiReflectionJournalPanel.css";
 
 const DiagnosticProfilePanel = lazy(() =>
   import("../components/DiagnosticProfilePanel")
@@ -37,6 +39,7 @@ export default function ToolsWorkspace({
     entitlement,
     access,
     actions,
+    aiReflections,
   } = controller;
 
   return (
@@ -76,6 +79,18 @@ export default function ToolsWorkspace({
         <LearningJournalPanel
           items={journal.items}
           onClear={journal.clear}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Мысли из ИИ-разборов"
+        description="Сохранённые ответы и результаты проверки на доске"
+        persistenceId="ai-reflection-journal"
+      >
+        <AiReflectionJournalPanel
+          entries={aiReflections.entries}
+          onRemove={aiReflections.remove}
+          onClear={aiReflections.clear}
         />
       </CollapsibleSection>
 

@@ -8,6 +8,7 @@ export type CollapsibleSectionId =
   | "achievements"
   | "opening"
   | "learning-journal"
+  | "ai-reflection-journal"
   | "history"
   | "game-archive"
   | "position-tools"

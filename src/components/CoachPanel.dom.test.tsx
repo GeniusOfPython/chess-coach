@@ -3,11 +3,14 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineAnalysis } from "../types/chess";
+import type { AiCoachReflectionPractice } from "../repositories/aiCoachReflectionRepository";
 import CoachPanel from "./CoachPanel";
 
 const reflection = vi.hoisted(() => ({
   answer: "Сначала оценю безопасность короля.",
   saved: true,
+  key: "position-key",
+  practice: null as AiCoachReflectionPractice | null,
   maximumLength: 500,
   updateAnswer: vi.fn(),
   save: vi.fn(),
@@ -87,6 +90,8 @@ function render() {
 afterEach(() => {
   reflection.answer = "Сначала оценю безопасность короля.";
   reflection.saved = true;
+  reflection.key = "position-key";
+  reflection.practice = null;
   reflection.updateAnswer.mockReset();
   reflection.save.mockReset();
   reflection.clear.mockReset();
@@ -130,6 +135,7 @@ describe("CoachPanel DOM contract", () => {
     expect(onStartTraining).toHaveBeenCalledWith({
       answer: "Сначала оценю безопасность короля.",
       question: "Какой ответ соперника нужно проверить первым?",
+      reflectionKey: "position-key",
     });
   });
 
@@ -144,5 +150,15 @@ describe("CoachPanel DOM contract", () => {
     act(() => trainingButton?.click());
 
     expect(onStartTraining).not.toHaveBeenCalled();
+  });
+
+  it("показывает сохранённый исход проверки", () => {
+    reflection.practice = {
+      outcome: "verified",
+      attemptedAt: "2026-07-28T12:05:00.000Z",
+    };
+    const { container } = render();
+
+    expect(container.textContent).toContain("Проверено на доске: ход совпал с расчётом.");
   });
 });

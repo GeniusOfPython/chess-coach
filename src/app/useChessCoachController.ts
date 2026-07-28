@@ -42,6 +42,7 @@ import {
   addNativeDeepLinkListener,
 } from "../platform/nativeEvents";
 import { parseDeepLink } from "../platform/deepLinks";
+import { useAiCoachReflectionJournal } from "../hooks/useAiCoachReflectionJournal";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
@@ -74,6 +75,7 @@ export function useChessCoachController() {
     resetPrivacyConsent,
   } = useAppPreferences();
   const entitlement = useEntitlement();
+  const aiReflections = useAiCoachReflectionJournal();
 
   const {
     isBotThinking,
@@ -580,6 +582,7 @@ export function useChessCoachController() {
     entitlement,
     access,
     rewardToast,
+    aiReflections,
     resultCelebration: {
       visible: match.result.celebrationVisible,
       close: match.result.closeCelebration,

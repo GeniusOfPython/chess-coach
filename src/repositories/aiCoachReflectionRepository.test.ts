@@ -47,12 +47,17 @@ describe("AI Coach reflection repository", () => {
     const repository = createAiCoachReflectionRepository(createStorage());
     const now = new Date("2026-07-28T12:00:00.000Z");
 
-    repository.save(request, "Сначала проверю защиту короля.", now);
+    repository.save(request, "Сначала проверю защиту короля.", {
+      question: "Какой ответ соперника нужно проверить?",
+      now,
+    });
 
     expect(repository.load(request)).toEqual({
       answer: "Сначала проверю защиту короля.",
       key: expect.any(String),
+      question: "Какой ответ соперника нужно проверить?",
       updatedAt: now.toISOString(),
+      practice: null,
     });
   });
 
@@ -68,5 +73,27 @@ describe("AI Coach reflection repository", () => {
     expect(repository.load(request)).toBeNull();
     expect(storage.values.get(settingsStorageKeys.aiCoachReflections))
       .toContain('"entries":[]');
+  });
+
+  it("сохраняет исход проверки и выводит журнал без старого формата", () => {
+    const storage = createStorage();
+    const repository = createAiCoachReflectionRepository(storage);
+    const savedAt = new Date("2026-07-28T12:00:00.000Z");
+    const attemptedAt = new Date("2026-07-28T12:05:00.000Z");
+
+    const saved = repository.save(request, "Проверю защиту короля.", {
+      question: "Какой ответ соперника нужно проверить?",
+      now: savedAt,
+    });
+    const result = repository.recordPractice(saved!.key, true, attemptedAt);
+
+    expect(result?.practice).toEqual({
+      outcome: "verified",
+      attemptedAt: attemptedAt.toISOString(),
+    });
+    expect(repository.list()).toHaveLength(1);
+
+    repository.remove(saved!.key);
+    expect(repository.list()).toEqual([]);
   });
 });

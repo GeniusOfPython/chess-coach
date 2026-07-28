@@ -1,12 +1,14 @@
 export type AiReflectionTrainingInput = {
   answer: string;
   question: string;
+  reflectionKey: string;
 };
 
 export type AiReflectionTrainingContext = {
   kind: "ai_reflection";
   answer: string;
   question: string;
+  reflectionKey: string;
 };
 
 export function createAiReflectionTrainingContext(
@@ -14,8 +16,9 @@ export function createAiReflectionTrainingContext(
 ): AiReflectionTrainingContext | null {
   const answer = input.answer.trim();
   const question = input.question.trim();
+  const reflectionKey = input.reflectionKey.trim();
 
-  if (!answer || !question) {
+  if (!answer || !question || !reflectionKey) {
     return null;
   }
 
@@ -23,5 +26,6 @@ export function createAiReflectionTrainingContext(
     kind: "ai_reflection",
     answer,
     question,
+    reflectionKey,
   };
 }
