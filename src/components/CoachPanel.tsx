@@ -96,7 +96,7 @@ export default function CoachPanel({
   });
 
   function startReflectionTraining() {
-    if (!aiCoach.advice || !reflection.key) {
+    if (!aiCoach.advice || !reflection.key || !verifiedFacts) {
       return;
     }
 
@@ -104,6 +104,10 @@ export default function CoachPanel({
       answer: reflection.answer,
       question: aiCoach.advice.question,
       reflectionKey: reflection.key,
+      target: {
+        positionFen: verifiedFacts.position.fen,
+        bestMove: verifiedFacts.recommendation.bestMove,
+      },
     });
   }
 
