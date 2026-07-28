@@ -330,6 +330,71 @@
   font-weight: 700;
 }
 
+.ai-coach-reflection {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid rgba(177, 159, 255, 0.24);
+  border-radius: 11px;
+  background: rgba(8, 9, 22, 0.28);
+}
+
+.ai-coach-reflection label {
+  color: #e4dcff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ai-coach-reflection textarea {
+  min-height: 78px;
+  resize: vertical;
+  padding: 9px 10px;
+  border: 1px solid rgba(177, 159, 255, 0.32);
+  border-radius: 9px;
+  background: rgba(4, 5, 15, 0.42);
+  color: #f4f1ff;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.ai-coach-reflection textarea::placeholder {
+  color: #aaa5ba;
+}
+
+.ai-coach-reflection-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #b9b5c8;
+  font-size: 12px;
+}
+
+.ai-coach-reflection-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.ai-coach-reflection-footer button {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid rgba(177, 159, 255, 0.36);
+  border-radius: 8px;
+  background: rgba(120, 91, 230, 0.16);
+  color: #eeeaff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ai-coach-reflection-footer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .ai-coach-answer .ai-coach-grounding {
   margin-top: 10px;
   color: var(--text-muted);
@@ -356,6 +421,17 @@
 @media (prefers-reduced-motion: reduce) {
   .ai-coach-loading span {
     animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-coach-reflection-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ai-coach-reflection-footer > div {
+    justify-content: flex-start;
   }
 }
 

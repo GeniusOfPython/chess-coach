@@ -200,6 +200,7 @@ export function useAiCoach({
   }
 
   return {
+    request,
     status,
     advice,
     adviceSource,

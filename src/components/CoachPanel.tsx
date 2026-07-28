@@ -4,6 +4,7 @@ import { buildCoachPlan } from "../analysis/coachPlan";
 import { createVerifiedChessFacts } from "../analysis/verifiedChessFacts";
 import type { FeatureAccess } from "../features/featureAccess";
 import { useAiCoach } from "../hooks/useAiCoach";
+import { useAiCoachReflection } from "../hooks/useAiCoachReflection";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { getAiCoachAction } from "../ai/coachUiState";
 import LoadingSkeleton from "./LoadingSkeleton";
@@ -56,6 +57,7 @@ export default function CoachPanel({
     isOnline: networkStatus === "online",
     enabled: aiCoachEnabled,
   });
+  const reflection = useAiCoachReflection(aiCoach.request);
 
   if (!analysis || !verifiedFacts) {
     return (
@@ -219,6 +221,40 @@ export default function CoachPanel({
             )}
 
             <p className="ai-coach-question">Вопрос: {aiCoach.advice.question}</p>
+
+            <div className="ai-coach-reflection">
+              <label htmlFor="ai-coach-reflection-answer">
+                Твоя мысль
+              </label>
+              <textarea
+                id="ai-coach-reflection-answer"
+                value={reflection.answer}
+                maxLength={reflection.maximumLength}
+                placeholder="Сформулируй ответ до проверки на доске"
+                onChange={(event) => reflection.updateAnswer(event.target.value)}
+              />
+              <div className="ai-coach-reflection-footer">
+                <span aria-live="polite">
+                  {reflection.saved
+                    ? "Мысль сохранена для этой позиции"
+                    : `${reflection.answer.length}/${reflection.maximumLength}`}
+                </span>
+                <div>
+                  {reflection.answer && (
+                    <button type="button" onClick={reflection.clear}>
+                      Очистить
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!reflection.answer.trim() || reflection.saved}
+                    onClick={reflection.save}
+                  >
+                    Сохранить мысль
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <p className="ai-coach-grounding">
               Ответ сверён с расчётом позиции.

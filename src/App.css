@@ -88,6 +88,35 @@ h1 {
   gap: 8px;
 }
 
+.next-action-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #c7a85c;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgb(199 168 92 / 13%), rgb(28 33 30 / 90%)),
+    #1c211e;
+}
+
+.next-action-card strong {
+  font-size: 19px;
+}
+
+.next-action-card p {
+  margin: 0;
+  color: #c7cec9;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.next-action-card button {
+  margin-top: 2px;
+  border-color: #f8dfa0;
+  background: linear-gradient(135deg, #f4d98e 0%, #d9ae4f 100%);
+  color: #1b1508;
+}
+
 .status-card strong {
   font-size: 20px;
 }

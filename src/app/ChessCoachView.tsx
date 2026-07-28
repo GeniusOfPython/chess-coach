@@ -17,6 +17,8 @@ import GameSessionCard from "../components/GameSessionCard";
 import MoveFeedbackCard from "../components/MoveFeedbackCard";
 import BotFairPlayNotice from "../components/BotFairPlayNotice";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import NextActionCard from "../components/NextActionCard";
+import { getNextAction } from "./nextAction";
 import {
   INITIAL_POSITION_FEN,
   type ChessCoachController,
@@ -71,6 +73,55 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
         : preferences.gameMode === "bot" && !session.isBotGameStarted
           ? "Настрой партию и запусти её"
           : game.status;
+  const mainReviewItem = review.items.find(
+    (item) => item.isPlayerDecision && (
+      item.verdict === "inaccuracy" ||
+      item.verdict === "mistake" ||
+      item.verdict === "blunder"
+    ),
+  );
+  const nextAction = getNextAction({
+    activeBotGame: derived.isActiveBotGame,
+    botGameStarted: session.isBotGameStarted,
+    dueReviewCount: training.repetition.due,
+    gameMode: preferences.gameMode,
+    hasReviewableMoves: game.history.length >= 4,
+    playerSide: preferences.playerSide,
+    reviewCompleted: review.status === "done",
+    reviewHasMistakes: Boolean(mainReviewItem),
+    trainingReady: training.task.status === "ready",
+  });
+
+  function handleNextAction() {
+    if (!nextAction) {
+      return;
+    }
+
+    if (nextAction.kind === "start_game") {
+      actions.handleStartBotGame();
+      return;
+    }
+
+    if (nextAction.kind === "open_training") {
+      preferences.setActiveWorkspace("coach");
+      return;
+    }
+
+    if (nextAction.kind === "review_game") {
+      preferences.setActiveWorkspace("game");
+      actions.handleRunGameReview();
+      return;
+    }
+
+    if (nextAction.kind === "review_due") {
+      actions.handleStartDueReviewTraining();
+      return;
+    }
+
+    if (mainReviewItem) {
+      actions.handlePracticeMainMistake(mainReviewItem);
+    }
+  }
 
   return (
     <main
@@ -180,6 +231,8 @@ export default function ChessCoachView({ controller }: ChessCoachViewProps) {
             retryDisabled={session.isBotThinking}
             onRetry={botTurn.retry}
           />
+
+          <NextActionCard action={nextAction} onAction={handleNextAction} />
 
           {!derived.isActiveBotGame && (
             <MoveFeedbackCard review={session.lastMoveReview} />
