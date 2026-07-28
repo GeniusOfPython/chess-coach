@@ -13,6 +13,7 @@ type Props = {
   analysis: EngineAnalysis | null;
   position: string;
   access: FeatureAccess;
+  onStartTraining: () => void;
 };
 
 const priorityLabels = {
@@ -37,6 +38,7 @@ export default function CoachPanel({
   analysis,
   position,
   access,
+  onStartTraining,
 }: Props) {
   const networkStatus = useNetworkStatus();
   const aiCoachEnabled = import.meta.env.VITE_AI_COACH_ENABLED === "true";
@@ -255,6 +257,18 @@ export default function CoachPanel({
                 </div>
               </div>
             </div>
+
+            <button
+              type="button"
+              className="ai-coach-action ai-coach-training-action"
+              disabled={!reflection.saved}
+              title={reflection.saved
+                ? "Открыть позицию как задачу без подсказок"
+                : "Сначала сохрани свою мысль"}
+              onClick={onStartTraining}
+            >
+              Проверить мысль на доске
+            </button>
 
             <p className="ai-coach-grounding">
               Ответ сверён с расчётом позиции.

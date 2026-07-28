@@ -7,7 +7,7 @@ import CoachPanel from "./CoachPanel";
 
 const reflection = vi.hoisted(() => ({
   answer: "Сначала оценю безопасность короля.",
-  saved: false,
+  saved: true,
   maximumLength: 500,
   updateAnswer: vi.fn(),
   save: vi.fn(),
@@ -63,6 +63,7 @@ const analysis: EngineAnalysis = {
 };
 
 function render() {
+  const onStartTraining = vi.fn();
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -75,16 +76,17 @@ function render() {
         tier: "free",
         aiCoachQuota: { limit: 3, period: "day" },
       } as never}
+      onStartTraining={onStartTraining}
     />,
   ));
   mounted.push({ container, root });
 
-  return container;
+  return { container, onStartTraining };
 }
 
 afterEach(() => {
   reflection.answer = "Сначала оценю безопасность короля.";
-  reflection.saved = false;
+  reflection.saved = true;
   reflection.updateAnswer.mockReset();
   reflection.save.mockReset();
   reflection.clear.mockReset();
@@ -97,7 +99,8 @@ afterEach(() => {
 
 describe("CoachPanel DOM contract", () => {
   it("показывает вопрос ИИ и сохраняет мысль пользователя", () => {
-    const container = render();
+    reflection.saved = false;
+    const { container } = render();
     const answer = container.querySelector<HTMLTextAreaElement>(
       "#ai-coach-reflection-answer",
     );
@@ -111,5 +114,31 @@ describe("CoachPanel DOM contract", () => {
     act(() => saveButton?.click());
 
     expect(reflection.save).toHaveBeenCalledOnce();
+  });
+
+  it("открывает тренировку только после сохранения мысли", () => {
+    const { container, onStartTraining } = render();
+    const trainingButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Проверить мысль на доске");
+
+    expect(trainingButton).toBeInstanceOf(HTMLButtonElement);
+    expect(trainingButton).not.toHaveProperty("disabled", true);
+
+    act(() => trainingButton?.click());
+
+    expect(onStartTraining).toHaveBeenCalledOnce();
+  });
+
+  it("не позволяет открыть тренировку с несохранённым ответом", () => {
+    reflection.saved = false;
+    const { container, onStartTraining } = render();
+    const trainingButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Проверить мысль на доске");
+
+    expect(trainingButton).toHaveProperty("disabled", true);
+
+    act(() => trainingButton?.click());
+
+    expect(onStartTraining).not.toHaveBeenCalled();
   });
 });
