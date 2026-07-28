@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { canShareText, shareText } from "../platform/share";
 import "./PgnPanel.css";
 
 type Props = {
@@ -52,6 +53,26 @@ export default function PgnPanel({
     setMessage("PGN-файл скачан.");
   }
 
+  async function handleSharePgn() {
+    if (!pgn.trim()) {
+      setMessage("PGN пока пустой: в партии нет ходов.");
+      return;
+    }
+
+    const result = await shareText({
+      title: "Шахматная партия",
+      text: pgn,
+    });
+
+    setMessage(
+      result === "shared"
+        ? "Открыто системное меню отправки PGN."
+        : result === "copied"
+          ? "PGN скопирован: системное меню отправки недоступно."
+          : "Не удалось открыть системное меню отправки.",
+    );
+  }
+
   function handleImportPgn() {
     const success = onImportPgn(importText);
 
@@ -78,6 +99,12 @@ export default function PgnPanel({
         <button type="button" onClick={handleDownloadPgn}>
           Скачать PGN
         </button>
+
+        {canShareText() && (
+          <button type="button" onClick={() => void handleSharePgn()}>
+            Поделиться PGN
+          </button>
+        )}
       </div>
 
       <textarea

@@ -22,6 +22,12 @@ const stages = [
     args: ["run", "check:e2e-contracts"],
   },
   {
+    id: "native-projects",
+    title: "Capacitor Android and iOS projects",
+    command: "npm",
+    args: ["run", "check:native"],
+  },
+  {
     id: "lint",
     title: "Static analysis",
     command: "npm",
@@ -134,6 +140,13 @@ const stages = [
           title: "Trusted entitlement and subscription lifecycle E2E",
           command: "npm",
           args: ["run", "test:e2e:entitlement"],
+          env: { E2E_USE_PREVIEW: "1" },
+        },
+        {
+          id: "e2e-deep-links",
+          title: "Native and PWA deep-link navigation E2E",
+          command: "npm",
+          args: ["run", "test:e2e:deep-links"],
           env: { E2E_USE_PREVIEW: "1" },
         },
         {

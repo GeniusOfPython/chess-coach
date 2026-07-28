@@ -9,10 +9,16 @@ import { recoverCorruptedAppStorage } from "./platform/appStorageHealth";
 import { installGlobalErrorHandlers } from "./platform/diagnostics/globalErrorHandlers";
 import { registerServiceWorker } from "./platform/registerServiceWorker";
 import { initializeAppStoragePersistence } from "./platform/storageMigration";
+import { isNativeMobileShell } from "./platform/mobile";
 
 installGlobalErrorHandlers();
 
 async function startApplication() {
+  const nativeRuntime = isNativeMobileShell()
+    ? await import("./platform/nativeRuntime")
+    : null;
+
+  await nativeRuntime?.initializeNativeRuntime();
   await initializeAppStoragePersistence();
   const storageRecovery = recoverCorruptedAppStorage();
   registerServiceWorker();
@@ -25,6 +31,10 @@ async function startApplication() {
       </>
     </ErrorBoundary>,
   );
+
+  window.requestAnimationFrame(() => {
+    void nativeRuntime?.finishNativeLaunch();
+  });
 }
 
 void startApplication();

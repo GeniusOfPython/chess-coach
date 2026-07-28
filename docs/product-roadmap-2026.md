@@ -112,11 +112,15 @@ grace period, динамические предложения магазина, 
 
 ## Этап 5. Android/iOS через Capacitor
 
-- адаптеры хранилища, haptics, share и lifecycle;
+Состояние: базовая нативная оболочка завершена. Android/iOS-проекты, lifecycle,
+Back, Haptics, Share, Keyboard, Status Bar, Splash, deep links и автоматическая
+синхронизация подключены. Остаются магазины, реклама, push и device QA.
+
+- адаптеры haptics, share и lifecycle — завершено;
 - StoreKit и Google Play Billing с серверной проверкой чеков;
 - rewarded ads через отдельный platform adapter;
 - push только для полезных событий: готов план, приглашение, ход в дневной партии;
-- safe areas, keyboard, back gesture, deep links;
+- safe areas, keyboard, back gesture и deep links — завершено;
 - тесты low-memory, background/foreground и обновления приложения.
 
 Веб остаётся основной средой разработки. Нативные интеграции не должны проникать в шахматный домен и React-компоненты.

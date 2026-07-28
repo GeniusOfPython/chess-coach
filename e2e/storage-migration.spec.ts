@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { Chess } from "chess.js";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 function expectPgnMoves(pgn: string | null, expectedMoves: string[]) {
   expect(pgn).not.toBeNull();
@@ -22,7 +22,7 @@ test("переносит localStorage в IndexedDB и восстанавлива
     },
   });
 
-  await page.goto("/");
+  await openApplication(page);
   await expect(
     page.getByRole("heading", { name: "Шахматный помощник" }),
   ).toBeVisible();
@@ -96,7 +96,7 @@ test("продолжает работать на localStorage при недос�
     },
   });
 
-  await page.goto("/");
+  await openApplication(page);
 
   await expect(
     page.getByRole("heading", { name: "Шахматный помощник" }),

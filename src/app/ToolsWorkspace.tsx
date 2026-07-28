@@ -163,7 +163,12 @@ export default function ToolsWorkspace({
           canManageSubscription={entitlement.canManageSubscription}
           managementStatus={entitlement.managementStatus}
           privacyConsent={preferences.privacyConsent}
-          showMonetizationSettings={platform.showAdvertisingUi}
+          showMonetizationSettings={
+            platform.isNativeApp ||
+            entitlement.canPurchase ||
+            entitlement.canRestorePurchases ||
+            entitlement.canManageSubscription
+          }
           onCompactUiChange={preferences.setCompactUi}
           onShowAnalysisArrowsChange={preferences.setShowAnalysisArrows}
           onBoardThemeChange={preferences.setBoardTheme}

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Chess, type Color, type Square } from "chess.js";
 import { useChessGame } from "../hooks/useChessGame";
 import { useEngineAnalysis } from "../hooks/useEngineAnalysis";
@@ -37,10 +37,16 @@ import {
   type LearningGoal,
 } from "../analysis/diagnosticProfile";
 import { useEntitlement } from "../hooks/useEntitlement";
+import {
+  addNativeBackHandler,
+  addNativeDeepLinkListener,
+} from "../platform/nativeEvents";
+import { parseDeepLink } from "../platform/deepLinks";
 
 export const INITIAL_POSITION_FEN = new Chess().fen();
 
 export function useChessCoachController() {
+  const initialDeepLinkHandled = useRef(false);
   const {
     state: onboardingState,
     startDiagnostic,
@@ -141,6 +147,42 @@ export function useChessCoachController() {
     started: isBotGameStarted,
     isGameOver: isMatchFinished,
   });
+
+  useEffect(() => {
+    const applyDeepLink = (rawUrl: string) => {
+      const target = parseDeepLink(rawUrl);
+
+      if (!target) {
+        return;
+      }
+
+      setActiveWorkspace(target.workspace);
+
+      if (
+        target.moveIndex !== undefined &&
+        !isActiveBotGame &&
+        target.moveIndex < fenHistory.length
+      ) {
+        setSelectedSquare(null);
+        clearAnalysis();
+        viewMove(target.moveIndex);
+      }
+    };
+
+    if (!initialDeepLinkHandled.current) {
+      initialDeepLinkHandled.current = true;
+      applyDeepLink(window.location.href);
+    }
+
+    return addNativeDeepLinkListener(applyDeepLink);
+  }, [
+    clearAnalysis,
+    fenHistory.length,
+    isActiveBotGame,
+    setActiveWorkspace,
+    setSelectedSquare,
+    viewMove,
+  ]);
 
   const legalMoveSquares = isViewingCurrentPosition && selectedSquare
     ? game
@@ -256,6 +298,28 @@ export function useChessCoachController() {
     setActiveWorkspace,
     showRewardToast,
   });
+  const celebrationVisible = match.result.celebrationVisible;
+  const closeCelebration = match.result.closeCelebration;
+
+  useEffect(() => addNativeBackHandler(() => {
+    if (celebrationVisible) {
+      closeCelebration();
+      return true;
+    }
+
+    if (activeWorkspace !== null) {
+      setActiveWorkspace(null);
+      return true;
+    }
+
+    return onboardingState.status === "pending";
+  }), [
+    activeWorkspace,
+    celebrationVisible,
+    closeCelebration,
+    onboardingState.status,
+    setActiveWorkspace,
+  ]);
 
   useEffect(() => {
     if (

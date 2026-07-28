@@ -10,6 +10,7 @@ import {
   type PurchaseProvider,
 } from "../platform/purchases/purchaseProvider";
 import { entitlementRepository } from "../repositories/entitlementRepository";
+import { addNativeResumeListener } from "../platform/nativeEvents";
 import type {
   EntitlementSnapshot,
   EntitlementVerificationStatus,
@@ -126,8 +127,12 @@ export function useEntitlement(
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    const removeNativeResumeListener = addNativeResumeListener(() => {
+      void refreshEntitlement();
+    });
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      removeNativeResumeListener();
     };
   }, [refreshEntitlement]);
 

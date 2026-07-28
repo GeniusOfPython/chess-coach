@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 test.beforeEach(async ({ page }) => {
   await installDeterministicAppState(page, { activeWorkspace: "tools" });
@@ -9,7 +9,7 @@ test("основной сценарий доступен без мыши и не
   page,
   browserName,
 }) => {
-  await page.goto("/");
+  await openApplication(page);
 
   const skipLink = page.getByRole("link", {
     name: "Перейти к рабочей области",

@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+
 export type NativePlatform = "web" | "android" | "ios";
 
 export type NativeBridgeState = {
@@ -8,36 +10,8 @@ export type NativeBridgeState = {
   supportsHaptics: boolean;
 };
 
-type CapacitorLike = {
-  getPlatform?: () => string;
-  isNativePlatform?: () => boolean;
-};
-
-type NativeHapticsLike = {
-  impact?: (options: { style: "LIGHT" | "MEDIUM" }) => Promise<void>;
-  notification?: (options: { type: "SUCCESS" | "WARNING" | "ERROR" }) => Promise<void>;
-};
-
-function getCapacitor() {
-  return (window as unknown as {
-    Capacitor?: CapacitorLike;
-  }).Capacitor;
-}
-
-function getNativeHaptics() {
-  return (window as unknown as {
-    Haptics?: NativeHapticsLike;
-  }).Haptics;
-}
-
-function readCapacitorPlatform(): NativePlatform {
-  const platform = getCapacitor()?.getPlatform?.();
-
-  if (platform === "android" || platform === "ios") {
-    return platform;
-  }
-
-  return "web";
+export function normalizeNativePlatform(platform: string): NativePlatform {
+  return platform === "android" || platform === "ios" ? platform : "web";
 }
 
 function canUseBrowserVibration() {
@@ -45,52 +19,30 @@ function canUseBrowserVibration() {
 }
 
 function vibrate(pattern: number | number[]) {
-  if (!canUseBrowserVibration()) {
-    return;
+  if (canUseBrowserVibration()) {
+    window.navigator.vibrate(pattern);
   }
-
-  window.navigator.vibrate(pattern);
 }
 
-async function triggerNativeImpact(style: "LIGHT" | "MEDIUM") {
-  const capacitor = getCapacitor();
-
-  if (!capacitor?.isNativePlatform?.()) {
-    return false;
-  }
-
-  const haptics = getNativeHaptics();
-
-  if (!haptics?.impact) {
-    return false;
-  }
-
-  await haptics.impact({ style });
-  return true;
-}
-
-async function triggerNativeNotification(
-  type: "SUCCESS" | "WARNING" | "ERROR",
+async function tryNativeHaptic(
+  action: (plugin: typeof import("@capacitor/haptics")) => Promise<void>,
 ) {
-  const capacitor = getCapacitor();
-
-  if (!capacitor?.isNativePlatform?.()) {
+  if (!Capacitor.isNativePlatform()) {
     return false;
   }
 
-  const haptics = getNativeHaptics();
-
-  if (!haptics?.notification) {
+  try {
+    await action(await import("@capacitor/haptics"));
+    return true;
+  } catch (error) {
+    console.warn("Нативный haptic недоступен:", error);
     return false;
   }
-
-  await haptics.notification({ type });
-  return true;
 }
 
 export function getNativeBridgeState(): NativeBridgeState {
-  const platform = readCapacitorPlatform();
-  const isNative = platform === "android" || platform === "ios";
+  const platform = normalizeNativePlatform(Capacitor.getPlatform());
+  const isNative = Capacitor.isNativePlatform();
 
   return {
     platform,
@@ -102,7 +54,11 @@ export function getNativeBridgeState(): NativeBridgeState {
 }
 
 export async function triggerLightHaptic() {
-  if (await triggerNativeImpact("LIGHT")) {
+  if (
+    await tryNativeHaptic(({ Haptics, ImpactStyle }) =>
+      Haptics.impact({ style: ImpactStyle.Light })
+    )
+  ) {
     return;
   }
 
@@ -110,7 +66,11 @@ export async function triggerLightHaptic() {
 }
 
 export async function triggerMoveHaptic() {
-  if (await triggerNativeImpact("MEDIUM")) {
+  if (
+    await tryNativeHaptic(({ Haptics, ImpactStyle }) =>
+      Haptics.impact({ style: ImpactStyle.Medium })
+    )
+  ) {
     return;
   }
 
@@ -118,7 +78,11 @@ export async function triggerMoveHaptic() {
 }
 
 export async function triggerSuccessHaptic() {
-  if (await triggerNativeNotification("SUCCESS")) {
+  if (
+    await tryNativeHaptic(({ Haptics, NotificationType }) =>
+      Haptics.notification({ type: NotificationType.Success })
+    )
+  ) {
     return;
   }
 
@@ -126,7 +90,11 @@ export async function triggerSuccessHaptic() {
 }
 
 export async function triggerWarningHaptic() {
-  if (await triggerNativeNotification("WARNING")) {
+  if (
+    await tryNativeHaptic(({ Haptics, NotificationType }) =>
+      Haptics.notification({ type: NotificationType.Warning })
+    )
+  ) {
     return;
   }
 
@@ -134,7 +102,11 @@ export async function triggerWarningHaptic() {
 }
 
 export async function triggerErrorHaptic() {
-  if (await triggerNativeNotification("ERROR")) {
+  if (
+    await tryNativeHaptic(({ Haptics, NotificationType }) =>
+      Haptics.notification({ type: NotificationType.Error })
+    )
+  ) {
     return;
   }
 

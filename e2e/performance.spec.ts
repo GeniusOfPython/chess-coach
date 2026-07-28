@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 type WebVitals = {
   supported: {
@@ -89,7 +89,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("главный экран укладывается в бюджеты Core Web Vitals", async ({ page }) => {
-  await page.goto("/", { waitUntil: "networkidle" });
+  await openApplication(page, { waitUntil: "networkidle" });
   await expect(
     page.getByRole("heading", { name: "Шахматный помощник" }),
   ).toBeVisible();

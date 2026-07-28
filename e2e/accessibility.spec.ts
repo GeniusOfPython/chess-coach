@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import {
+  installDeterministicAppState,
+  openApplication,
+  openCollapsibleSection,
+  openWorkspace,
+} from "./testHarness";
 
 async function expectNoAccessibilityViolations(page: Page, state: string) {
   const results = await new AxeBuilder({ page })
@@ -23,15 +28,16 @@ async function expectNoAccessibilityViolations(page: Page, state: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await installDeterministicAppState(page, { activeWorkspace: "tools" });
+  await installDeterministicAppState(page, { activeWorkspace: "coach" });
 });
 
 test("главный экран и панель импорта соответствуют WCAG 2.1 AA", async ({ page }) => {
-  await page.goto("/");
+  await openApplication(page);
   await expect(page.getByRole("heading", { name: "Шахматный помощник" })).toBeVisible();
 
   await expectNoAccessibilityViolations(page, "main-screen");
-  await page.getByText("PGN и FEN", { exact: true }).click();
+  await openWorkspace(page, "Ещё");
+  await openCollapsibleSection(page, "PGN и FEN");
   await expect(page.getByRole("button", { name: "Импортировать PGN" })).toBeVisible();
 
   await expectNoAccessibilityViolations(page, "pgn-panel");

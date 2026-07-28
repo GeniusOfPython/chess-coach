@@ -12,6 +12,7 @@ ADR фиксируют решения, которые нельзя безопа�
 - `0008-private-crash-reporting-and-storage-recovery.md` — приватная диагностика и восстановление локальных данных.
 - `0009-versioned-indexeddb-storage-migrations.md` — версионированный переход на IndexedDB.
 - `0010-verified-entitlements-and-purchase-adapter.md` — проверяемое право доступа без пользовательского переключателя тарифа.
+- `0011-capacitor-native-shell.md` — единая Android/iOS-оболочка и граница нативного кода.
 
 Статусы:
 

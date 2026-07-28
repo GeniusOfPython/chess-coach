@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import {
+  installDeterministicAppState,
+  openApplication,
+  setRuntimeEntitlementOverride,
+} from "./testHarness";
 
 test("старый переключатель тарифа не предоставляет Premium", async ({ page }) => {
   await installDeterministicAppState(page, {
@@ -19,7 +23,7 @@ test("старый переключатель тарифа не предоста
     },
   });
 
-  await page.goto("/");
+  await openApplication(page);
 
   await expect(page.getByText("Разбор хода с оценкой", { exact: true }))
     .toBeVisible();
@@ -33,7 +37,7 @@ test("истёкший временный доступ возвращает Free
     entitlement: "expired",
   });
 
-  await page.goto("/");
+  await openApplication(page);
 
   await expect(page.getByText("Разбор хода с оценкой", { exact: true }))
     .toBeVisible();
@@ -45,7 +49,7 @@ test("проверенный Premium открывает расширенный �
     entitlement: "premium",
   });
 
-  await page.goto("/");
+  await openApplication(page);
 
   await expect(page.getByText("Разбор последнего хода", { exact: true }))
     .toBeVisible();
@@ -59,7 +63,7 @@ test("офлайн-проверка сохраняет Premium только в �
     entitlement: "offline",
   });
 
-  await page.goto("/");
+  await openApplication(page);
   await expect(page.getByText("Разбор последнего хода", { exact: true }))
     .toBeVisible();
 });
@@ -70,22 +74,21 @@ test("просроченный offline grace возвращает Free", async (
     entitlement: "stale",
   });
 
-  await page.goto("/");
+  await openApplication(page);
   await expect(page.getByText("Разбор хода с оценкой", { exact: true }))
     .toBeVisible();
 });
 
-test("мобильный пользователь получает тарифы, покупает Premium и открывает управление", async ({ page }) => {
+test("платёжный адаптер получает тарифы, покупает Premium и открывает управление", async ({ page }) => {
   await installDeterministicAppState(page, {
     activeWorkspace: "tools",
     entitlement: "free",
-    nativePlatform: "android",
     storageEntries: {
       "chess-coach.section.settings": "open",
     },
   });
 
-  await page.goto("/");
+  await openApplication(page);
   await page.getByRole("button", { name: "Посмотреть Premium" }).click();
   await expect(page.getByRole("button", { name: /Premium на месяц/u }))
     .toBeVisible();
@@ -98,4 +101,33 @@ test("мобильный пользователь получает тарифы,
       "chess-coach.e2e-subscription-management-opened",
     )
   )).toBe("true");
+});
+
+test("событие возврата в приложение повторно проверяет право доступа", async ({ page }) => {
+  await installDeterministicAppState(page, {
+    activeWorkspace: "game",
+    entitlement: "premium",
+  });
+
+  await openApplication(page);
+  await expect(page.getByText("Разбор последнего хода", { exact: true }))
+    .toBeVisible();
+
+  await setRuntimeEntitlementOverride(page, {
+    version: 2,
+    kind: "free",
+    source: "none",
+    expiresAt: null,
+    verifiedAt: null,
+    verificationMode: null,
+    autoRenews: false,
+  });
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("chess-coach:native-resume"));
+  });
+
+  await expect(page.getByText("Разбор хода с оценкой", { exact: true }))
+    .toBeVisible();
+  await expect(page.getByText("Разбор последнего хода", { exact: true }))
+    .toHaveCount(0);
 });

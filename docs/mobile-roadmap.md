@@ -1,41 +1,29 @@
-# Подготовка к Android и iOS
+# Android и iOS
 
-Проект пока остается обычным Vite/React-приложением. Это правильно: сначала доводим логику тренера, затем упаковываем готовый web-клиент в мобильную оболочку.
+## Текущее состояние
 
-## Уже подготовлено
+Мобильная оболочка подключена через Capacitor 8. В репозитории находятся
+полноценные проекты `android/` и `ios/`, а `npm run mobile:sync` воспроизводимо
+собирает web-клиент, копирует его в WebView и синхронизирует плагины.
 
-- Добавлен `manifest.webmanifest` для режима standalone/PWA.
-- Добавлены mobile meta-теги в `index.html`.
-- Добавлены safe-area отступы для iPhone с вырезами.
-- Увеличены touch-target зоны кнопок на сенсорных устройствах.
-- Добавлен слой `featureAccess`, который позже можно связать с подпиской.
+Реализовано:
 
-## Рекомендуемый путь для мобильной версии
+- официальный App lifecycle и обновление entitlement после возврата;
+- системная кнопка Back: закрытие результата или рабочей вкладки до выхода;
+- Haptics через официальный plugin с web-fallback;
+- системное Share для PGN;
+- Keyboard, Status Bar, Splash Screen и safe areas;
+- отдельная проверка целостности нативных проектов в quality gate;
+- одна кодовая база без импортов нативных SDK в шахматный домен.
 
-1. Довести web-версию до стабильной 1.0.
-2. Добавить Capacitor.
-3. Подключить Android/iOS проекты.
-4. Проверить работу Stockfish Worker внутри WebView.
-5. Добавить покупку Premium через Google Play Billing / Apple In-App Purchase.
-6. Подключить `featureAccess` к состоянию подписки.
+## Следующий мобильный блок
 
-## Будущие команды
+1. Проверить debug-сборку и Stockfish Worker на реальном Android-устройстве.
+2. Проверить foreground/background, клавиатуру и safe areas на iPhone.
+3. Подключить StoreKit/Google Play Billing к готовому purchase adapter.
+4. Добавить серверную проверку чеков до выдачи Premium.
+5. Подключить crash reporting без PGN, FEN и персональных шахматных данных.
+6. Подготовить signing, privacy manifests, Data Safety и TestFlight/Internal test.
 
-Команды не добавлены в `package.json`, чтобы не ломать текущий проект зависимостями раньше времени.
-
-```bash
-npm install @capacitor/core @capacitor/cli
-npx cap init "Chess Coach" "com.artem409.chesscoach"
-npm run build
-npx cap add android
-npx cap add ios
-npx cap sync
-```
-
-## Premium-функции-кандидаты
-
-- Разбор последнего хода.
-- Пояснения тренера.
-- Журнал ошибок.
-- Расширенная статистика.
-- Нейросетевой разбор партии.
+Rewarded ads, push и deep links добавляются только после проверки основного
+учебного цикла на устройствах. Они не должны проникать в game/analysis layers.

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   installDeterministicAppState,
+  openApplication,
   waitForStableInterface,
 } from "./testHarness";
 
@@ -14,7 +15,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("основной экран сохраняет утверждённую компоновку", async ({ page }) => {
-  await page.goto("/", { waitUntil: "networkidle" });
+  await openApplication(page, { waitUntil: "networkidle" });
   await expect(
     page.getByRole("heading", { name: "Шахматный помощник" }),
   ).toBeVisible();

@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const customChromiumPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 const useProductionBuild = process.env.E2E_USE_PREVIEW === "1";
+const reuseExistingServer = process.env.E2E_REUSE_SERVER === "1";
 const chromiumLaunchOptions = customChromiumPath
   ? {
       executablePath: customChromiumPath,
@@ -62,7 +63,7 @@ export default defineConfig({
       ? "npm run preview -- --host 127.0.0.1 --port 4173"
       : "npm run dev -- --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer,
     timeout: 120_000,
   },
 });

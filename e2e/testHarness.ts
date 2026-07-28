@@ -1,10 +1,11 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+
+const startupErrorStorageKey = "chess-coach.e2e-startup-error";
 
 type DeterministicAppStateOptions = {
   activeWorkspace?: "coach" | "game" | "tools" | "none";
   onboarding?: "complete" | "pending";
   entitlement?: "premium" | "free" | "expired" | "offline" | "stale";
-  nativePlatform?: "web" | "android" | "ios";
   storageEntries?: Record<string, string>;
   indexedDb?: "available" | "unavailable";
 };
@@ -15,7 +16,6 @@ export async function installDeterministicAppState(
     activeWorkspace = "coach",
     onboarding = "complete",
     entitlement = "premium",
-    nativePlatform = "web",
     storageEntries = {},
     indexedDb = "available",
   }: DeterministicAppStateOptions = {},
@@ -26,9 +26,27 @@ export async function installDeterministicAppState(
     entitlementState,
     entries,
     indexedDbState,
-    platform,
   }) => {
     const installationMarker = "chess-coach.e2e-state-installed";
+
+    const recordStartupError = (reason: unknown) => {
+      const message = reason instanceof Error
+        ? `${reason.name}: ${reason.message}`
+        : typeof reason === "string"
+          ? reason
+          : "Неизвестная ошибка запуска";
+      window.sessionStorage.setItem(
+        "chess-coach.e2e-startup-error",
+        message,
+      );
+    };
+
+    window.addEventListener("error", (event) => {
+      recordStartupError(event.error ?? event.message);
+    });
+    window.addEventListener("unhandledrejection", (event) => {
+      recordStartupError(event.reason);
+    });
 
     if (window.sessionStorage.getItem(installationMarker) !== "true") {
       window.sessionStorage.setItem(installationMarker, "true");
@@ -65,9 +83,7 @@ export async function installDeterministicAppState(
           kind: entitlementState === "expired" ? "temporary" : "premium",
           source: entitlementState === "expired"
             ? "trial"
-            : platform === "ios"
-              ? "app_store"
-              : "play_store",
+            : "play_store",
           expiresAt: entitlementState === "expired"
             ? "2020-01-01T00:00:00.000Z"
             : new Date(now + 30 * 24 * 60 * 60 * 1_000).toISOString(),
@@ -85,18 +101,15 @@ export async function installDeterministicAppState(
           autoRenews: entitlementState === "premium",
         };
 
-    Object.defineProperty(window, "Capacitor", {
-      configurable: true,
-      value: {
-        getPlatform: () => platform,
-        isNativePlatform: () => platform !== "web",
-      },
-    });
-
     Object.defineProperty(window, "ChessCoachPurchases", {
       configurable: true,
       value: {
-        getCurrentEntitlement: async () => entitlementValue,
+        getCurrentEntitlement: async () => {
+          const runtimeOverride = window.sessionStorage.getItem(
+            "chess-coach.e2e-entitlement-override",
+          );
+          return runtimeOverride ? JSON.parse(runtimeOverride) : entitlementValue;
+        },
         getOfferings: async () => [
           {
             productId: "premium.monthly",
@@ -116,7 +129,7 @@ export async function installDeterministicAppState(
         purchase: async () => ({
           version: 2,
           kind: "premium",
-          source: platform === "ios" ? "app_store" : "play_store",
+          source: "play_store",
           expiresAt: new Date(
             Date.now() + 30 * 24 * 60 * 60 * 1_000,
           ).toISOString(),
@@ -209,8 +222,24 @@ export async function installDeterministicAppState(
     entitlementState: entitlement,
     entries: storageEntries,
     indexedDbState: indexedDb,
-    platform: nativePlatform,
   });
+}
+
+export async function openApplication(
+  page: Page,
+  options?: Parameters<Page["goto"]>[1],
+) {
+  await page.goto("/", options);
+
+  await expect.poll(async () => page.evaluate((key) =>
+    window.sessionStorage.getItem(key), startupErrorStorageKey
+  ), {
+    message: "Приложение завершило запуск с ошибкой JavaScript",
+  }).toBeNull();
+
+  await expect(
+    page.getByRole("heading", { name: "Шахматный помощник" }),
+  ).toBeVisible();
 }
 
 export async function waitForStableInterface(page: Page) {
@@ -219,4 +248,44 @@ export async function waitForStableInterface(page: Page) {
     await document.fonts.ready;
     window.scrollTo(0, 0);
   });
+}
+
+export async function openWorkspace(
+  page: Page,
+  workspace: "Учёба" | "Партия" | "Ещё",
+) {
+  const tab = page.getByRole("tab", { name: new RegExp(workspace, "u") });
+
+  await expect(tab).toBeVisible();
+
+  if (await tab.getAttribute("aria-selected") !== "true") {
+    await tab.click();
+  }
+
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+}
+
+export async function openCollapsibleSection(page: Page, title: string) {
+  const summary = page.locator("summary").filter({ hasText: title }).first();
+  const section = summary.locator("..");
+
+  await expect(summary).toBeVisible();
+
+  if (await section.getAttribute("open") === null) {
+    await summary.click();
+  }
+
+  await expect(section).toHaveAttribute("open", "");
+}
+
+export async function setRuntimeEntitlementOverride(
+  page: Page,
+  entitlement: Record<string, unknown>,
+) {
+  await page.evaluate((value) => {
+    window.sessionStorage.setItem(
+      "chess-coach.e2e-entitlement-override",
+      JSON.stringify(value),
+    );
+  }, entitlement);
 }

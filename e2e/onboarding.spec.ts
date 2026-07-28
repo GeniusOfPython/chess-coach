@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 test.beforeEach(async ({ page }) => {
   await installDeterministicAppState(page, {
@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("первый запуск переводит выбранную цель в диагностическую партию", async ({ page }) => {
-  await page.goto("/");
+  await openApplication(page);
 
   const dialog = page.getByRole("dialog", { name: "Настроим тренера под тебя" });
   await expect(dialog).toBeVisible();

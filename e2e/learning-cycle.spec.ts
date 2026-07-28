@@ -1,20 +1,26 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import {
+  installDeterministicAppState,
+  openApplication,
+  openCollapsibleSection,
+  openWorkspace,
+} from "./testHarness";
 
 const PGN = "1. e4 e5";
 
 test.beforeEach(async ({ page }) => {
-  await installDeterministicAppState(page, { activeWorkspace: "tools" });
+  await installDeterministicAppState(page, { activeWorkspace: "coach" });
 });
 
 test("партия проходит путь от импорта до исправления ошибки", async ({ page }) => {
-  await page.goto("/");
-  await page.getByText("PGN и FEN", { exact: true }).click();
+  await openApplication(page);
+  await openWorkspace(page, "Ещё");
+  await openCollapsibleSection(page, "PGN и FEN");
   await page.getByLabel("PGN для импорта").fill(PGN);
   await page.getByRole("button", { name: "Импортировать PGN" }).click();
   await expect(page.getByText(/PGN импортирован/)).toBeVisible();
 
-  await page.getByRole("tab", { name: /Партия/ }).click();
+  await openWorkspace(page, "Партия");
   await page.getByRole("button", { name: "Разобрать" }).click();
   await expect(page.getByText("Ключевые переломные моменты")).toBeVisible();
 

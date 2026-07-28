@@ -1,6 +1,15 @@
-export type AppPlatform = "web" | "android" | "ios";
+import { Capacitor } from "@capacitor/core";
+import { normalizeNativePlatform, type NativePlatform } from "./nativeBridge";
+
+export type AppPlatform = NativePlatform;
 
 export function detectAppPlatform(): AppPlatform {
+  const nativePlatform = normalizeNativePlatform(Capacitor.getPlatform());
+
+  if (nativePlatform !== "web") {
+    return nativePlatform;
+  }
+
   const userAgent = window.navigator.userAgent.toLowerCase();
 
   if (userAgent.includes("android")) {
@@ -25,17 +34,6 @@ export function isTouchDevice() {
   );
 }
 
-
-type CapacitorBridge = {
-  isNativePlatform?: () => boolean;
-};
-
 export function isNativeMobileShell() {
-  const globalWindow = window as Window & {
-    Capacitor?: CapacitorBridge;
-  };
-
-  return Boolean(
-    globalWindow.Capacitor?.isNativePlatform?.(),
-  );
+  return Capacitor.isNativePlatform();
 }

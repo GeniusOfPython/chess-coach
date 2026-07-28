@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 const now = "2026-07-22T12:00:00.000Z";
 
@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("restores due mistakes and starts a repetition session", async ({ page }) => {
-  await page.goto("/");
+  await openApplication(page);
 
   await expect(page.getByText("1 к повторению")).toBeVisible();
   await expect(page.getByText("Слабая тема: Форсирующие шахи")).toBeVisible();

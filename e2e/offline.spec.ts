@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 test.beforeEach(async ({ page }) => {
   await installDeterministicAppState(page);
@@ -9,7 +9,7 @@ test("установленная PWA запускается без сети из
   context,
   page,
 }) => {
-  await page.goto("/", { waitUntil: "networkidle" });
+  await openApplication(page, { waitUntil: "networkidle" });
 
   const registrationState = await page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installDeterministicAppState } from "./testHarness";
+import { installDeterministicAppState, openApplication } from "./testHarness";
 
 test("приложение точечно восстанавливается после повреждения localStorage", async ({
   page,
@@ -13,7 +13,7 @@ test("приложение точечно восстанавливается п�
     },
   });
 
-  await page.goto("/");
+  await openApplication(page);
 
   await expect(
     page.getByRole("heading", { name: "Шахматный помощник" }),

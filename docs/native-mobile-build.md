@@ -1,98 +1,71 @@
-# Подготовка Android/iOS через Capacitor
+# Сборка Android/iOS через Capacitor
 
-Проект остаётся обычным React/Vite-приложением. Мобильная версия позже будет собираться как native shell через Capacitor: внутри Android/iOS-приложения будет открываться собранная web-версия из `dist`.
+Проект использует Capacitor 8 и хранит нативные проекты в `android/` и `ios/`.
+Папки являются исходным кодом приложения и должны попадать в Git. Скопированные
+web-ресурсы, локальные SDK-пути, build-каталоги и signing secrets исключены.
 
-## Что уже подготовлено
+## Единый цикл синхронизации
 
-- `capacitor.config.json` — базовая конфигурация мобильного приложения.
-- `src/platform/nativeBridge.ts` — единое место для проверки платформы: web / android / ios.
-- `src/platform/mobile.ts` — уже используется для скрытия рекламы в браузере и подготовки рекламы только для native mobile.
-- `src/platform/purchases/purchaseProvider.ts` — контракт получения тарифов,
-  покупки, восстановления и управления подпиской.
-- `manifest.webmanifest`, `public/sw.js` и service worker — основа для офлайн-работы.
-
-## Когда переходить к реальной мобильной сборке
-
-Не сейчас. Сначала лучше довести web-версию до стабильной версии 1.0:
-
-1. стабильная игра против бота;
-2. понятный тренерский анализ;
-3. удобный интерфейс;
-4. импорт/экспорт PGN/FEN;
-5. автосохранение;
-6. офлайн-работа;
-7. стабильная сборка `npm run build`.
-
-После этого подключать Android/iOS.
-
-## Будущие команды
-
-Когда придёт время реально собирать мобильную версию, установить Capacitor:
-
-```cmd
-npm.cmd install @capacitor/core
-npm.cmd install -D @capacitor/cli @capacitor/android @capacitor/ios
+```bash
+npm ci
+npm run check
+npm run mobile:sync
 ```
 
-Добавить платформы:
+`mobile:sync` сначала выполняет строгую production-сборку, затем запускает
+`cap sync`. Нельзя копировать старый `dist` в native-проекты вручную.
 
-```cmd
-npx cap add android
-npx cap add ios
+Дополнительная диагностика конфигурации:
+
+```bash
+npm run mobile:doctor
 ```
 
-Собрать web-версию и синхронизировать её с мобильными проектами:
+## Android
 
-```cmd
-npm.cmd run build
-npx cap sync
+Сгенерированная конфигурация использует minSdk 24, compileSdk/targetSdk 36.
+Для локальной сборки требуются Android Studio, Android SDK 36 и JDK 21.
+
+```bash
+npm run mobile:android
 ```
 
-Открыть Android Studio:
+Команда синхронизирует проект и открывает каталог `android/` в Android Studio.
+Release signing-файл и пароли нельзя хранить в репозитории.
 
-```cmd
-npx cap open android
+## iOS
+
+Deployment target — iOS 15. Сборка выполняется на macOS с Xcode:
+
+```bash
+npm run mobile:ios
 ```
 
-Открыть Xcode на macOS:
+Swift Package Manager подключает плагины из `ios/App/CapApp-SPM/Package.swift`.
+Provisioning profile и signing team задаются локально в Xcode.
 
-```cmd
-npx cap open ios
-```
+## Нативный runtime
 
-## Где подключать платёжный SDK
+- `src/platform/nativeRuntime.ts` — lifecycle, Back, Keyboard, Status Bar и Splash;
+- `src/platform/nativeBridge.ts` — Haptics и определение платформы;
+- `src/platform/share.ts` — системное меню отправки;
+- `src/platform/purchases/purchaseProvider.ts` — граница будущего магазина.
 
-StoreKit, Google Play Billing или RevenueCat подключается к глобальному мосту
-`window.ChessCoachPurchases`. React-код обращается только к адаптеру:
+При возврате из background приложение повторно проверяет entitlement. Android
+Back сначала закрывает итог партии или активную рабочую вкладку, затем использует
+историю WebView и только на корневом экране завершает приложение.
 
-```text
-src/platform/purchases/purchaseProvider.ts
-```
+Service worker внутри native shell не регистрируется: офлайн-ресурсы уже входят
+в приложение. Web/PWA продолжает использовать собственный service worker.
 
-Мост должен реализовать получение текущего entitlement, список предложений,
-покупку, восстановление и открытие системного экрана управления. Product ID и
-цены остаются в конфигурации магазина. Локальный `localStorage` не может
-активировать Premium.
+## Что ещё не реализовано
 
-## Где потом подключать рекламу
+- StoreKit и Google Play Billing;
+- серверная проверка чеков;
+- рекламный SDK и consent platform;
+- push notifications и deep links;
+- release signing и публикация в магазинах;
+- device E2E и low-memory/background стресс-тесты.
 
-Реклама должна включаться только в native mobile:
-
-```text
-src/platform/mobile.ts
-src/features/consent.ts
-src/components/AdSlot.tsx
-```
-
-В браузерной версии рекламный интерфейс скрыт, чтобы не перегружать UI во время разработки.
-
-## Что важно для App Store / Google Play
-
-Перед публикацией понадобятся:
-
-- политика конфиденциальности;
-- описание использования рекламы;
-- описание покупок/подписки;
-- корректная обработка согласия на рекламу;
-- для iOS — App Tracking Transparency, если будет персонализированная реклама или трекинг;
-- для Android — корректная настройка AdMob и Data Safety в Google Play Console.
+Наличие нативных проектов не означает готовность к публикации. Релизным
+критерием остаётся проверка на реальных устройствах и sandbox-магазинах.
